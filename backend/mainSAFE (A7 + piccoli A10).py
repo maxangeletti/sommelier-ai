@@ -30,7 +30,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 # Build signature (anti-confusione / anti-regressione)
 # =========================
 
-BUILD_ID = "SommelierAI v0.2 SAFE+PERF + A9 FINAL 2026-02-23"
+BUILD_ID = "SommelierAI v0.2 STABILE + A/B/D (CSV schema real) + cache-safe 2026-02-22-intensityfix + locmatchfix-2026-02-23 + A7-loctokens-2026-02-23"
 
 # =========================
 # Config
@@ -129,111 +129,6 @@ class CsvCache:
 
 CSV_CACHE = CsvCache()
 
-# =========================
-# Location index (SAFE+PERF)
-# - accelera _extract_location_terms (denom/zone + vocab)
-# - cache invalidata su CSV mtime
-# =========================
-
-LOCATION_STOP = {
-    "d", "di", "da", "del", "della", "dell", "de", "la", "le", "il", "lo", "al", "alla", "alle", "dei",
-    "doc", "docg", "igt", "dop", "dopg",
-}
-
-@dataclass
-class LocationIndex:
-    # denom normalizzata -> token significativi (stop rimossi)
-    denom_sig_tokens: Dict[str, Tuple[str, ...]]
-    # zone normalizzata -> token significativi (stop rimossi)
-    zone_sig_tokens: Dict[str, Tuple[str, ...]]
-    # denom normalizzata -> set(zone normalizzate)
-    denom_to_zones: Dict[str, set]
-    # vocab tokens (region/zone/denomination) per fallback
-    vocab_tokens: set
-
-
-@dataclass
-class LocationIndexCache:
-    idx: Optional[LocationIndex] = None
-    mtime: float = 0.0
-    rows: int = 0
-    last_build_ts: float = 0.0
-
-
-LOCATION_INDEX_CACHE = LocationIndexCache()
-
-
-def _build_location_index(df: pd.DataFrame) -> LocationIndex:
-    # vocab tokens (fallback)
-    vocab: set[str] = set()
-    for col in ["region", "zone", "denomination"]:
-        if col in df.columns:
-            for v in df[col].astype(str).tolist():
-                vv = _norm_lc(v).strip()
-                if not vv:
-                    continue
-                for t in _loc_tokens(vv):
-                    if t:
-                        vocab.add(t)
-
-    # denominazioni
-    denom_sig_tokens: Dict[str, Tuple[str, ...]] = {}
-    denom_values: set[str] = set()
-    if "denomination" in df.columns:
-        denom_values = set(_norm_lc(x).strip() for x in df["denomination"].astype(str).tolist() if x)
-
-    for d in denom_values:
-        if not d:
-            continue
-        toks = tuple([t for t in _loc_tokens(d) if t and t not in LOCATION_STOP])
-        if toks:
-            denom_sig_tokens[d] = toks
-
-    # zone
-    zone_sig_tokens: Dict[str, Tuple[str, ...]] = {}
-    zone_values: set[str] = set()
-    if "zone" in df.columns:
-        zone_values = set(_norm_lc(x).strip() for x in df["zone"].astype(str).tolist() if x)
-
-    for z in zone_values:
-        if not z:
-            continue
-        toks = tuple([t for t in _loc_tokens(z) if t and t not in LOCATION_STOP])
-        if toks:
-            zone_sig_tokens[z] = toks
-
-    # mapping denom -> zones
-    denom_to_zones: Dict[str, set] = {}
-    if "denomination" in df.columns and "zone" in df.columns and len(df) > 0:
-        dcol = df["denomination"].astype(str).map(_norm_lc)
-        zcol = df["zone"].astype(str).map(_norm_lc)
-        for d, z in zip(dcol.tolist(), zcol.tolist()):
-            dd = (d or "").strip()
-            zz = (z or "").strip()
-            if not dd or not zz:
-                continue
-            denom_to_zones.setdefault(dd, set()).add(zz)
-
-    return LocationIndex(
-        denom_sig_tokens=denom_sig_tokens,
-        zone_sig_tokens=zone_sig_tokens,
-        denom_to_zones=denom_to_zones,
-        vocab_tokens=vocab,
-    )
-
-
-def get_location_index(df: pd.DataFrame) -> LocationIndex:
-    # Invalida su mtime o change di rows (fallback extra)
-    mtime = float(CSV_CACHE.mtime or 0.0)
-    rows = int(len(df))
-    if (LOCATION_INDEX_CACHE.idx is None) or (mtime and mtime != LOCATION_INDEX_CACHE.mtime) or (rows != LOCATION_INDEX_CACHE.rows):
-        LOCATION_INDEX_CACHE.idx = _build_location_index(df)
-        LOCATION_INDEX_CACHE.mtime = mtime
-        LOCATION_INDEX_CACHE.rows = rows
-        LOCATION_INDEX_CACHE.last_build_ts = _now()
-    return LOCATION_INDEX_CACHE.idx
-
-
 
 # ---- CSV schema reale (quello che hai mostrato) ----
 CSV_EXPECTED_COLS = [
@@ -278,8 +173,7 @@ def get_wines_df() -> pd.DataFrame:
 
 @app.on_event("startup")
 def _warmup_on_startup() -> None:
-    df = get_wines_df()
-    _ = get_location_index(df)
+    _ = get_wines_df()
 
 
 # =========================
@@ -351,11 +245,11 @@ def parse_price(query: str) -> Dict[str, Any]:
     if m2:
         return {"min": float(m2.group(1)), "max": float(m2.group(2)), "mode": "range"}
 
-    m3 = re.search(r"\b(sotto|fino a|entro|meno di|max)\s+(?:i|ai|a|ad|di)?\s*(\d{1,3})\b", q)
+    m3 = re.search(r"\b(sotto|fino a|entro|meno di|max)\s+(\d{1,3})\b", q)
     if m3:
         return {"min": None, "max": float(m3.group(2)), "mode": "max"}
 
-    m4 = re.search(r"\b(sopra|oltre|almeno|min)\s+(?:i|ai|a|ad|di)?\s*(\d{1,3})\b", q)
+    m4 = re.search(r"\b(sopra|oltre|almeno|min)\s+(\d{1,3})\b", q)
     if m4:
         return {"min": float(m4.group(2)), "max": None, "mode": "min"}
 
@@ -599,61 +493,6 @@ def parse_value_intent(query: str) -> bool:
 
 # =========================
 # Match helpers (T2: match sort)
-
-# -------------------------
-# A9.1 — Implicit denom → grape boost (SAFE):
-# - NON modifica __match_score (per non rompere i test location 1.0 / 0.5)
-# - Applica un piccolo boost al campo "score" SOLO quando sort=match e l’utente non ha chiesto vitigni espliciti.
-# -------------------------
-
-IMPLICIT_DENOM_GRAPES: Dict[str, List[str]] = {
-    # Piemonte
-    "barolo": ["nebbiolo"],
-    "barbaresco": ["nebbiolo"],
-    # Toscana
-    "brunello di montalcino": ["sangiovese"],
-    "chianti classico": ["sangiovese"],
-    # Veneto
-    "amarone della valpolicella": ["corvina", "corvinone", "rondinella"],
-    # Campania
-    "taurasi": ["aglianico"],
-    # Sicilia
-    "etna rosso": ["nerello mascalese", "nerello cappuccio"],
-}
-
-def _implied_grapes_from_location_terms(location_terms: List[str]) -> List[str]:
-    denoms: List[str] = []
-    for t in location_terms or []:
-        tt = _norm_lc(t).strip()
-        if tt.startswith("denom:"):
-            d = tt.split(":", 1)[1].strip()
-            if d:
-                denoms.append(d)
-    out: List[str] = []
-    for d in denoms:
-        out.extend(IMPLICIT_DENOM_GRAPES.get(d, []))
-    # dedup stabile
-    seen = set()
-    uniq: List[str] = []
-    for g in out:
-        gg = _norm_lc(g).strip()
-        if gg and gg not in seen:
-            seen.add(gg)
-            uniq.append(gg)
-    return uniq
-
-def _row_implied_grape_boost(row: Any, implied_grapes: List[str]) -> float:
-    """Ritorna un piccolo boost (0.05) se il vino contiene uno dei vitigni impliciti."""
-    if not implied_grapes:
-        return 0.0
-    gv = _norm_lc(getattr(row, "grape_varieties", ""))
-    if not gv:
-        return 0.0
-    for g in implied_grapes:
-        if g and re.search(rf"\b{re.escape(g)}\b", gv):
-            return 0.05
-    return 0.0
-
 # =========================
 
 STRUCTURED_KEYWORDS_RE = re.compile(
@@ -729,68 +568,99 @@ def _loc_tokens(s: str) -> List[str]:
 
 def _extract_location_terms(df: pd.DataFrame, query: str) -> List[str]:
     """
-    Estrae termini di location con un minimo di "struttura" (data-driven):
-    - denom:<x> se l'utente cita una denominazione (token match tollerante a "di/del/..." e apostrofi)
-    - comune:<x> se l'utente cita una zone/comune presente nel dataset per quella denominazione
+    Estrae termini di location con un minimo di "struttura":
+    - denom:<x> se l'utente cita una denominazione (es. barolo)
+    - comune:<x> se l'utente cita un comune/sottozona del Barolo (es. serralunga)
     - fallback: tokens presenti nel vocab (come prima), per non perdere copertura
     """
     q = _norm_lc(query)
     if not q:
         return []
 
-    idx = get_location_index(df)
+    # Costruiamo vocab dal dataset come prima (stabile e data-driven)
+    vocab: set[str] = set()
+    for col in ["region", "zone", "denomination"]:
+        if col in df.columns:
+            for v in df[col].astype(str).str.lower().tolist():
+                v = v.strip()
+                if v:
+                    for t in _loc_tokens(v):
+                        if t:
+                            vocab.add(t)
 
-    # 1) Denominazioni (data-driven) — token match
+    # stopwords come prima
+    stop = {
+        "d", "di", "da", "del", "della", "dell", "de", "la", "le", "il", "lo", "al", "alla", "alle", "dei",
+        "doc", "docg", "igt", "dop", "dopg",
+    }
+
+    # 1) Denominazioni — DATA DRIVEN (dal dataset) + token match (tollerante a "di/del/...")
     out: List[str] = []
     found_denoms: List[str] = []
 
+    denom_stop = {
+        "d", "di", "da", "del", "della", "dell", "de", "la", "le", "il", "lo", "al", "alla", "alle", "dei",
+        "doc", "docg", "igt", "dop", "dopg",
+    }
+
     q_tokens = set(_loc_tokens(q))
 
-    for denom, d_tokens in idx.denom_sig_tokens.items():
-        if not d_tokens:
-            continue
-        if all(t in q_tokens for t in d_tokens):
-            found_denoms.append(denom)
-            out.append(f"denom:{denom}")
+    if "denomination" in df.columns:
+        denom_values = set(_norm_lc(x).strip() for x in df["denomination"].astype(str).tolist() if x)
 
-    # 1b) Zone/Comuni data-driven: solo per denom matchate
-    if found_denoms:
-        for d in found_denoms:
-            zones = idx.denom_to_zones.get(d, set()) or set()
-            for z in sorted(zones):
-                z_tokens = idx.zone_sig_tokens.get(z)
-                if not z_tokens:
-                    continue
+        for d in denom_values:
+            if not d:
+                continue
 
-                # Match "comune/zone" robusto:
-                # - se la zone ha almeno un token "forte" (len>=5), basta che UNO di quelli compaia nella query
-                #   (es. "serralunga" deve matchare "serralunga d'alba" anche se manca "alba")
-                # - altrimenti (zone corta) richiediamo tutti i token
-                strong = [t for t in z_tokens if len(t) >= 5]
-                if strong:
-                    if any(t in q_tokens for t in strong):
-                        out.append(f"comune:{z}")
-                else:
-                    if all(t in q_tokens for t in z_tokens):
-                        out.append(f"comune:{z}")
+            d_tokens = [t for t in _loc_tokens(d) if t and t not in denom_stop]
+            if not d_tokens:
+                continue
+
+            # match se TUTTI i token significativi della denom sono presenti nella query
+            if all(t in q_tokens for t in d_tokens):
+                found_denoms.append(d)
+                out.append(f"denom:{d}")
+
+    # 1b) Se ho una denom matchata, estraggo automaticamente zone rilevanti dal dataset (no hardcode)
+    # Nota: qui "zone" spesso coincide con comune/sottozona nel CSV.
+    if found_denoms and "zone" in df.columns and "denomination" in df.columns:
+        sub = df.loc[
+            df["denomination"].astype(str).str.lower().isin(set(found_denoms)),
+            "zone"
+        ].astype(str)
+
+        for z in sorted(set(_norm_lc(x).strip() for x in sub.tolist() if x)):
+            if not z:
+                continue
+
+            z_tokens = [t for t in _loc_tokens(z) if t and t not in denom_stop]
+            if not z_tokens:
+                continue
+
+            if all(t in q_tokens for t in z_tokens):
+                out.append(f"comune:{z}")
+    # 2) (A6.1) Comuni/sottozone: ora gestiti in modo data-driven via 'zone' filtrate per denominazione.
 
     # 3) Fallback tokens dal vocab (come prima) — ma evitiamo rumore e doppioni
-    fallback_terms: List[str] = []
-    for t in q_tokens:
+    tokens = set(_loc_tokens(q))
+    fallback_terms = []
+    for t in tokens:
         tt = _norm_lc(t).strip()
         if not tt:
             continue
-        if tt in LOCATION_STOP or len(tt) < 4:
+        if tt in stop or len(tt) < 4:
             continue
-        if tt in idx.vocab_tokens:
+        if tt in vocab:
             fallback_terms.append(tt)
 
+    # Dedup + ordinamento stabile
     # Se ho termini strutturati (denom/comune), i fallback plain non servono e possono creare rumore.
     has_structured = any(t.startswith("denom:") or t.startswith("comune:") for t in out)
     if has_structured:
         return sorted(set(out))
 
     return sorted(set(out + fallback_terms))
+
 
 def _row_location_match(row: Any, location_terms: List[str]) -> float:
     """
@@ -955,71 +825,6 @@ def _row_intensity_match(row: Any, intensity_req: Optional[str]) -> float:
     return 1.0 if got == intensity_req else 0.0
 
 
-
-# =========================
-# Ranking modes (groundwork) — A9.4
-# =========================
-#
-# Nota: per ora NON cambia l'API e NON introduce nuove modalità lato client.
-# Serve solo a:
-# - rendere esplicito in meta quale "rank_mode" è stato effettivamente applicato
-# - centralizzare (in modo leggibile) profili di peso / strategie per futuri switch (Smart A2, ecc.)
-#
-# Regola: nessuna regressione di comportamento nello step A9.4.
-
-def _resolve_rank_mode(sort: str, value_intent: bool) -> str:
-    """Modalità logica effettiva (solo meta)."""
-    s = (sort or "relevance").strip() or "relevance"
-    if s in {"quality", "price_value", "match"}:
-        return s
-    # relevance con intento value => di fatto "value-first" (già presente in _apply_sort)
-    if s == "relevance" and value_intent:
-        return "price_value"
-    return "relevance"
-
-
-def _is_location_driven_query(
-    grapes_req: list[str],
-    aromas_req: list[str],
-    intensity_req: str | None,
-    typology_req: dict[str, str | None],
-    structured_req: bool,
-    location_terms: list[str],
-) -> bool:
-    """True se la query è quasi solo geografica."""
-    if not location_terms:
-        return False
-    if grapes_req or aromas_req or intensity_req:
-        return False
-    if typology_req.get("sparkling") or typology_req.get("sweetness"):
-        return False
-    if structured_req:
-        return False
-    return True
-
-
-# Profili pesi (match_score) — groundwork per ranking modes futuri.
-# NOTA: i pesi sono normalizzati in _compute_match_score in base alle parti presenti.
-MATCH_WEIGHT_PROFILES = {
-    "default": {
-        "grapes": 0.35,
-        "aromas": 0.25,
-        "intensity": 0.15,
-        "typology": 0.15,
-        "structured": 0.10,
-        "location": 0.20,
-    },
-    # location-driven: aumenta importanza location (A9.2)
-    "location_driven": {
-        "grapes": 0.35,
-        "aromas": 0.25,
-        "intensity": 0.15,
-        "typology": 0.15,
-        "structured": 0.10,
-        "location": 0.40,
-    },
-}
-
 def _compute_match_score(
     row: Any,
     grapes_req: List[str],
@@ -1033,32 +838,20 @@ def _compute_match_score(
     Match score continuo 0..1.
     Pesi normalizzati sulle richieste effettive (non penalizza se l’utente non chiede una dimensione).
     """
-
-    profile = "location_driven" if _is_location_driven_query(
-        grapes_req=grapes_req,
-        aromas_req=aromas_req,
-        intensity_req=intensity_req,
-        typology_req=typology_req,
-        structured_req=structured_req,
-        location_terms=location_terms,
-    ) else "default"
-    W = MATCH_WEIGHT_PROFILES.get(profile, MATCH_WEIGHT_PROFILES["default"])
-
     parts: List[Tuple[float, float]] = []
 
-
     if grapes_req:
-        parts.append((W.get('grapes', 0.35), _row_grape_match(row, grapes_req)))
+        parts.append((0.35, _row_grape_match(row, grapes_req)))
     if aromas_req:
-        parts.append((W.get('aromas', 0.25), _row_aroma_match(row, aromas_req)))
+        parts.append((0.25, _row_aroma_match(row, aromas_req)))
     if intensity_req:
-        parts.append((W.get('intensity', 0.15), _row_intensity_match(row, intensity_req)))
+        parts.append((0.15, _row_intensity_match(row, intensity_req)))
     if typology_req.get("sparkling") or typology_req.get("sweetness"):
-        parts.append((W.get('typology', 0.15), _row_typology_match(row, typology_req)))
+        parts.append((0.15, _row_typology_match(row, typology_req)))
     if structured_req:
-        parts.append((W.get('structured', 0.10), _row_structured_match(row)))
+        parts.append((0.10, _row_structured_match(row)))
     if location_terms:
-        parts.append((W.get('location', 0.20), _row_location_match(row, location_terms)))
+        parts.append((0.20, _row_location_match(row, location_terms)))
 
     if not parts:
         return 0.0
@@ -1077,6 +870,7 @@ def _compute_match_score(
 # =========================
 # Filtering helpers
 # =========================
+
 def _filter_by_price(df: pd.DataFrame, price_info: Dict[str, Any]) -> pd.DataFrame:
     mode = price_info.get("mode", "none")
     if mode == "none":
@@ -1456,10 +1250,6 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
     structured_req = parse_structured_keyword(q)
     location_terms = _extract_location_terms(df, q)
 
-    # A9.1 — vitigni impliciti da denominazione (boost leggero solo per sort=match)
-    implied_grapes = _implied_grapes_from_location_terms(location_terms) if (sort == "match" and not grapes_req) else []
-
-
     filtered = df
 
     filtered = _filter_by_price(filtered, price_info)
@@ -1505,8 +1295,7 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
 
         pr_eff = _price_effective(r)
         if pr_eff and pr_eff > 0:
-            # A9.3a — value_score più realistico: diminishing returns ~ sqrt(prezzo)
-            card["__value_score"] = round(float(quality_raw / math.sqrt(pr_eff + 10.0)), 6)
+            card["__value_score"] = round(float(quality_raw / math.log(pr_eff + 2.0)), 6)
         else:
             card["__value_score"] = 0.0
 
@@ -1524,13 +1313,6 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
             6,
         )
 
-        # A9.1 — piccolo boost sullo score (solo sort=match, no vitigni espliciti)
-        if implied_grapes:
-            _b = _row_implied_grape_boost(r, implied_grapes)
-            if _b > 0.0:
-                card["__implicit_grape_boost"] = round(float(_b), 6)
-                card["score"] = round(float(card.get("score", 0.0)) + float(_b), 4)
-
         scored.append(card)
 
     sorted_cards = _apply_sort(scored, sort, value_intent=value_intent)[:limit]
@@ -1541,7 +1323,6 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
         "build_id": BUILD_ID,
         "query": q,
         "sort": sort,
-        "rank_mode": _resolve_rank_mode(sort, value_intent),
         "limit": limit,
         "filters": {
             "price": price_info,
@@ -1634,16 +1415,12 @@ def get_search_stream(
 @app.get("/stats")
 def get_stats() -> JSONResponse:
     df = get_wines_df()
-    _ = get_location_index(df)
     payload = {
         "build_id": BUILD_ID,
         "csv_path": CSV_PATH,
         "rows": int(len(df)),
         "csv_mtime": CSV_CACHE.mtime,
         "last_load_ts": CSV_CACHE.last_load_ts,
-        "location_index_mtime": LOCATION_INDEX_CACHE.mtime,
-        "location_index_rows": LOCATION_INDEX_CACHE.rows,
-        "location_index_last_build_ts": LOCATION_INDEX_CACHE.last_build_ts,
         "search_cache_size": len(SEARCH_CACHE),
         "search_cache_ttl_sec": SEARCH_CACHE_TTL_SEC,
         "search_cache_cap": SEARCH_CACHE_CAP,

@@ -30,7 +30,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 # Build signature (anti-confusione / anti-regressione)
 # =========================
 
-BUILD_ID = "SommelierAI v0.2 SAFE+PERF + A9 FINAL 2026-02-23"
+BUILD_ID = "SommelierAI v0.2 STABILE + A/B/D (CSV schema real) + cache-safe 2026-02-22-intensityfix + locmatchfix-2026-02-23 + A7-loctokens-2026-02-23 + A8-locindex-2026-02-23 + A9-1-zonematchfix-2026-02-23 + A9-2-locweight-2026-02-23 + A9-3-valuesqrt-2026-02-23 + A9-4-rankmodes-2026-02-23"
 
 # =========================
 # Config
@@ -351,11 +351,11 @@ def parse_price(query: str) -> Dict[str, Any]:
     if m2:
         return {"min": float(m2.group(1)), "max": float(m2.group(2)), "mode": "range"}
 
-    m3 = re.search(r"\b(sotto|fino a|entro|meno di|max)\s+(?:i|ai|a|ad|di)?\s*(\d{1,3})\b", q)
+    m3 = re.search(r"\b(sotto|fino a|entro|meno di|max)\s+(\d{1,3})\b", q)
     if m3:
         return {"min": None, "max": float(m3.group(2)), "mode": "max"}
 
-    m4 = re.search(r"\b(sopra|oltre|almeno|min)\s+(?:i|ai|a|ad|di)?\s*(\d{1,3})\b", q)
+    m4 = re.search(r"\b(sopra|oltre|almeno|min)\s+(\d{1,3})\b", q)
     if m4:
         return {"min": float(m4.group(2)), "max": None, "mode": "min"}
 
@@ -1541,7 +1541,6 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
         "build_id": BUILD_ID,
         "query": q,
         "sort": sort,
-        "rank_mode": _resolve_rank_mode(sort, value_intent),
         "limit": limit,
         "filters": {
             "price": price_info,
@@ -1696,3 +1695,18 @@ def get_suggestions() -> JSONResponse:
 #   forme molto divergenti (es. abbreviazioni), potremmo aggiungere una normalizzazione
 #   leggera (apostrofi/spazi) mantenendo il comportamento data-driven.
 # -----------------------------------------------------------------------------
+
+# =========================
+# Mini test manuali (regressioni rapide) — A9.4
+# =========================
+# 1) Location match (deve restare: Serralunga=1.0, Monforte=0.5)
+# curl -s -X POST "http://127.0.0.1:8000/search" -H "Content-Type: application/json" #   -d '{"query":"barolo serralunga","sort":"match","limit":10}' | python3 -c "import sys,json; d=json.load(sys.stdin); # print('rank_mode:', d.get('meta',{}).get('rank_mode')); # print('location_terms:', d.get('meta',{}).get('filters',{}).get('location_terms')); # print('\n'.join([f\"{r.get('__match_score',0):>4}  {r.get('name','')} | denom={r.get('denomination','')} | zone={r.get('zone','')}\" for r in d.get('results',[])[:5]]))"
+#
+# 2) Denom+comune (deve produrre termini strutturati)
+# curl -s -X POST "http://127.0.0.1:8000/search" -H "Content-Type: application/json" #   -d '{"query":"brunello montalcino","sort":"match","limit":5}' | python3 -c "import sys,json; d=json.load(sys.stdin); # print('rank_mode:', d.get('meta',{}).get('rank_mode')); # print(d.get('meta',{}).get('filters',{}).get('location_terms'))"
+#
+# 3) Price/Value sorting sanity (controllo rapido value_score)
+# curl -s -X POST "http://127.0.0.1:8000/search" -H "Content-Type: application/json" #   -d '{"query":"rosso strutturato","sort":"price_value","limit":10}' | python3 -c "import sys,json; d=json.load(sys.stdin); # print('rank_mode:', d.get('meta',{}).get('rank_mode')); # print('\n'.join([f\"{r.get('__value_score',0):>8}  €{r.get('price','')}  {r.get('name','')}\" for r in d.get('results',[])[:10]]))"
+#
+# Nota rapida (non cambio ora):
+# - rank_mode è solo meta e non cambia il comportamento dell'API; serve per futuri switch UI (modalità ranking).

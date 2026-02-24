@@ -351,11 +351,11 @@ def parse_price(query: str) -> Dict[str, Any]:
     if m2:
         return {"min": float(m2.group(1)), "max": float(m2.group(2)), "mode": "range"}
 
-    m3 = re.search(r"\b(sotto|fino a|entro|meno di|max)\s+(?:i|ai|a|ad|di)?\s*(\d{1,3})\b", q)
+    m3 = re.search(r"\b(sotto|fino a|entro|meno di|max)\s+(\d{1,3})\b", q)
     if m3:
         return {"min": None, "max": float(m3.group(2)), "mode": "max"}
 
-    m4 = re.search(r"\b(sopra|oltre|almeno|min)\s+(?:i|ai|a|ad|di)?\s*(\d{1,3})\b", q)
+    m4 = re.search(r"\b(sopra|oltre|almeno|min)\s+(\d{1,3})\b", q)
     if m4:
         return {"min": float(m4.group(2)), "max": None, "mode": "min"}
 

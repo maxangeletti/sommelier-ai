@@ -30,7 +30,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 # Build signature (anti-confusione / anti-regressione)
 # =========================
 
-BUILD_ID = "SommelierAI v0.2 SAFE+PERF + A9 FINAL 2026-02-23"
+BUILD_ID = "SommelierAI v0.2 STABILE + A/B/D (CSV schema real) + cache-safe 2026-02-22-intensityfix + locmatchfix-2026-02-23 + A7-loctokens-2026-02-23 + A8-locindex-2026-02-23 + A9-1-zonematchfix-2026-02-23"
 
 # =========================
 # Config
@@ -351,11 +351,11 @@ def parse_price(query: str) -> Dict[str, Any]:
     if m2:
         return {"min": float(m2.group(1)), "max": float(m2.group(2)), "mode": "range"}
 
-    m3 = re.search(r"\b(sotto|fino a|entro|meno di|max)\s+(?:i|ai|a|ad|di)?\s*(\d{1,3})\b", q)
+    m3 = re.search(r"\b(sotto|fino a|entro|meno di|max)\s+(\d{1,3})\b", q)
     if m3:
         return {"min": None, "max": float(m3.group(2)), "mode": "max"}
 
-    m4 = re.search(r"\b(sopra|oltre|almeno|min)\s+(?:i|ai|a|ad|di)?\s*(\d{1,3})\b", q)
+    m4 = re.search(r"\b(sopra|oltre|almeno|min)\s+(\d{1,3})\b", q)
     if m4:
         return {"min": float(m4.group(2)), "max": None, "mode": "min"}
 
@@ -955,71 +955,6 @@ def _row_intensity_match(row: Any, intensity_req: Optional[str]) -> float:
     return 1.0 if got == intensity_req else 0.0
 
 
-
-# =========================
-# Ranking modes (groundwork) — A9.4
-# =========================
-#
-# Nota: per ora NON cambia l'API e NON introduce nuove modalità lato client.
-# Serve solo a:
-# - rendere esplicito in meta quale "rank_mode" è stato effettivamente applicato
-# - centralizzare (in modo leggibile) profili di peso / strategie per futuri switch (Smart A2, ecc.)
-#
-# Regola: nessuna regressione di comportamento nello step A9.4.
-
-def _resolve_rank_mode(sort: str, value_intent: bool) -> str:
-    """Modalità logica effettiva (solo meta)."""
-    s = (sort or "relevance").strip() or "relevance"
-    if s in {"quality", "price_value", "match"}:
-        return s
-    # relevance con intento value => di fatto "value-first" (già presente in _apply_sort)
-    if s == "relevance" and value_intent:
-        return "price_value"
-    return "relevance"
-
-
-def _is_location_driven_query(
-    grapes_req: list[str],
-    aromas_req: list[str],
-    intensity_req: str | None,
-    typology_req: dict[str, str | None],
-    structured_req: bool,
-    location_terms: list[str],
-) -> bool:
-    """True se la query è quasi solo geografica."""
-    if not location_terms:
-        return False
-    if grapes_req or aromas_req or intensity_req:
-        return False
-    if typology_req.get("sparkling") or typology_req.get("sweetness"):
-        return False
-    if structured_req:
-        return False
-    return True
-
-
-# Profili pesi (match_score) — groundwork per ranking modes futuri.
-# NOTA: i pesi sono normalizzati in _compute_match_score in base alle parti presenti.
-MATCH_WEIGHT_PROFILES = {
-    "default": {
-        "grapes": 0.35,
-        "aromas": 0.25,
-        "intensity": 0.15,
-        "typology": 0.15,
-        "structured": 0.10,
-        "location": 0.20,
-    },
-    # location-driven: aumenta importanza location (A9.2)
-    "location_driven": {
-        "grapes": 0.35,
-        "aromas": 0.25,
-        "intensity": 0.15,
-        "typology": 0.15,
-        "structured": 0.10,
-        "location": 0.40,
-    },
-}
-
 def _compute_match_score(
     row: Any,
     grapes_req: List[str],
@@ -1033,32 +968,20 @@ def _compute_match_score(
     Match score continuo 0..1.
     Pesi normalizzati sulle richieste effettive (non penalizza se l’utente non chiede una dimensione).
     """
-
-    profile = "location_driven" if _is_location_driven_query(
-        grapes_req=grapes_req,
-        aromas_req=aromas_req,
-        intensity_req=intensity_req,
-        typology_req=typology_req,
-        structured_req=structured_req,
-        location_terms=location_terms,
-    ) else "default"
-    W = MATCH_WEIGHT_PROFILES.get(profile, MATCH_WEIGHT_PROFILES["default"])
-
     parts: List[Tuple[float, float]] = []
 
-
     if grapes_req:
-        parts.append((W.get('grapes', 0.35), _row_grape_match(row, grapes_req)))
+        parts.append((0.35, _row_grape_match(row, grapes_req)))
     if aromas_req:
-        parts.append((W.get('aromas', 0.25), _row_aroma_match(row, aromas_req)))
+        parts.append((0.25, _row_aroma_match(row, aromas_req)))
     if intensity_req:
-        parts.append((W.get('intensity', 0.15), _row_intensity_match(row, intensity_req)))
+        parts.append((0.15, _row_intensity_match(row, intensity_req)))
     if typology_req.get("sparkling") or typology_req.get("sweetness"):
-        parts.append((W.get('typology', 0.15), _row_typology_match(row, typology_req)))
+        parts.append((0.15, _row_typology_match(row, typology_req)))
     if structured_req:
-        parts.append((W.get('structured', 0.10), _row_structured_match(row)))
+        parts.append((0.10, _row_structured_match(row)))
     if location_terms:
-        parts.append((W.get('location', 0.20), _row_location_match(row, location_terms)))
+        parts.append((0.20, _row_location_match(row, location_terms)))
 
     if not parts:
         return 0.0
@@ -1077,6 +1000,7 @@ def _compute_match_score(
 # =========================
 # Filtering helpers
 # =========================
+
 def _filter_by_price(df: pd.DataFrame, price_info: Dict[str, Any]) -> pd.DataFrame:
     mode = price_info.get("mode", "none")
     if mode == "none":
@@ -1505,8 +1429,7 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
 
         pr_eff = _price_effective(r)
         if pr_eff and pr_eff > 0:
-            # A9.3a — value_score più realistico: diminishing returns ~ sqrt(prezzo)
-            card["__value_score"] = round(float(quality_raw / math.sqrt(pr_eff + 10.0)), 6)
+            card["__value_score"] = round(float(quality_raw / math.log(pr_eff + 2.0)), 6)
         else:
             card["__value_score"] = 0.0
 
@@ -1541,7 +1464,6 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
         "build_id": BUILD_ID,
         "query": q,
         "sort": sort,
-        "rank_mode": _resolve_rank_mode(sort, value_intent),
         "limit": limit,
         "filters": {
             "price": price_info,
