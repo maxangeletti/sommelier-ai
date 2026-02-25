@@ -1117,3 +1117,132 @@ def get_suggestions() -> JSONResponse:
         "Un vino con buon rapporto qualità prezzo",
     ]
     return JSONResponse({"suggestions": suggestions})
+@app.post("/debug_rank")
+def post_debug_rank(payload: Dict[str, Any] = Body(...)) -> JSONResponse:
+    """
+    Ranking debugger (read-only).
+    NON modifica engine / ranking / ordinamento.
+    Espone breakdown dei punteggi per capire perché un vino sta sopra un altro.
+    """
+    query = _norm(payload.get("query", ""))
+    limit = int(payload.get("limit") or 10)
+    limit = _clamp(limit, 1, 50)
+
+    # usa la stessa pipeline di run_search (senza cambiare nulla)
+    df = get_wines_df()
+    q = _norm(query)
+
+    price_info = parse_price(q)
+    region = parse_region(q)
+
+    grapes_req = parse_grapes(q)
+    aromas_req = parse_aromas(q)
+    intensity_req = parse_intensity_request(q)
+    typology_req = parse_typology_request(q)
+    foods_req = parse_food_request(q)
+    color_req = parse_color_request(q)
+    value_intent = parse_value_intent(q)
+
+    filtered = df
+
+    filtered = _filter_by_price(filtered, price_info)
+
+    if region:
+        for col in ["region", "zone", "denomination", "country"]:
+            filtered = _filter_by_text_contains(filtered, col, region)
+
+    filtered = _filter_by_color(filtered, color_req)
+    filtered = _filter_new_A_B_D(filtered, grapes_req, aromas_req, intensity_req, typology_req)
+
+    if price_info.get("mode") == "extreme":
+        prices = filtered["price_avg"].map(_parse_float_maybe)
+        prices_min = filtered["price_min"].map(_parse_float_maybe)
+        effective = prices.copy()
+        effective[effective.isna()] = prices_min[effective.isna()]
+        if len(filtered) > 0:
+            idx = effective.idxmax() if price_info.get("extreme") == "max" else effective.idxmin()
+            filtered = filtered.loc[[idx]]
+
+    rows = list(filtered.itertuples(index=False))
+
+    scored_cards: List[Dict[str, Any]] = []
+    debug_rows: List[Dict[str, Any]] = []
+
+    for r in rows:
+        boosts = {
+            "grape_match": bool(grapes_req),
+            "aroma_match": bool(aromas_req),
+            "intensity_match": bool(intensity_req),
+            "typology_match": bool(typology_req.get("sparkling") or typology_req.get("sweetness")),
+            "food_match": food_match(r, foods_req),
+            "foods_present": bool(foods_req),
+        }
+
+        # score “ufficiale”
+        score, price_delta = _score_row(r, price_info, boosts, value_intent=value_intent)
+        card = _build_wine_card(r, rank=0, score=score, price_delta=price_delta)
+        scored_cards.append(card)
+
+        # breakdown extra (read-only)
+        pr_eff = _price_effective(r)
+        q_raw = _parse_float_maybe(getattr(r, "quality", ""))
+
+        debug_rows.append({
+            "id": card.get("id", ""),
+            "name": card.get("name", ""),
+            "producer": card.get("producer", ""),
+            "denomination": card.get("denomination", ""),
+            "zone": card.get("zone", ""),
+            "vintage": card.get("vintage", ""),
+
+            "score": float(card.get("score", 0.0)),
+            "price_effective": pr_eff,
+            "price_mode": price_info.get("mode", "none"),
+            "price_min_filter": price_info.get("min"),
+            "price_max_filter": price_info.get("max"),
+            "price_target": price_info.get("target"),
+            "price_delta": float(card.get("__price_delta", 0.0)),
+
+            "quality_raw": q_raw,
+            "value_intent": bool(value_intent),
+
+            "boosts": {
+                "grape_match": bool(boosts.get("grape_match")),
+                "aroma_match": bool(boosts.get("aroma_match")),
+                "intensity_match": bool(boosts.get("intensity_match")),
+                "typology_match": bool(boosts.get("typology_match")),
+                "food_match": bool(boosts.get("food_match")),
+                "foods_present": bool(boosts.get("foods_present")),
+            },
+
+            "filters": {
+                "region": region,
+                "color": color_req,
+                "grapes": grapes_req,
+                "aromas": aromas_req,
+                "intensity": intensity_req,
+                "typology": typology_req,
+                "foods": foods_req,
+                "price": price_info,
+            },
+        })
+
+    sorted_cards = _apply_sort(scored_cards, "relevance", value_intent=value_intent)[:limit]
+    order = {c["id"]: i+1 for i, c in enumerate(sorted_cards)}
+
+    # aggiungi rank coerente con relevance
+    out = []
+    for d in debug_rows:
+        rid = d.get("id", "")
+        if rid in order:
+            d["rank"] = order[rid]
+            out.append(d)
+
+    out.sort(key=lambda x: x.get("rank", 10**9))
+
+    return JSONResponse({
+        "query": q,
+        "limit": limit,
+        "count": len(out),
+        "results": out,
+    })
