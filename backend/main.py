@@ -143,20 +143,6 @@ def get_wines_df() -> pd.DataFrame:
 
     if CSV_CACHE.df is None or (mtime and mtime != CSV_CACHE.mtime):
         df = _read_csv_safely(CSV_PATH)
-                # --- performance: precompute derived fields (cache-safe) ---
-        # Additive only: non cambia ranking, solo evita df.apply ripetuti su dataset grandi.
-        if "__derived_sparkling" not in df.columns:
-            df["__derived_sparkling"] = df.apply(
-                lambda r: derive_sparkling(r.get("denomination", ""), r.get("style_tags", ""), r.get("name", ""), r.get("description", "")),
-                axis=1,
-            )
-        if "__derived_sweetness_norm" not in df.columns:
-            df["__derived_sweetness_norm"] = df["sweetness"].astype(str).map(normalize_sweetness)
-        if "__derived_intensity" not in df.columns:
-            df["__derived_intensity"] = df.apply(
-                lambda r: derive_intensity(r.get("body", ""), r.get("tannins", ""), r.get("alcohol_level", "")) or "",
-                axis=1,
-            )
         CSV_CACHE.df = df
         CSV_CACHE.mtime = mtime
         CSV_CACHE.rows = int(len(df))
@@ -232,72 +218,30 @@ PRICE_RANGE_RE = re.compile(r"(?P<min>\d{1,3})\s*[-–]\s*(?P<max>\d{1,3})")
 def parse_price(query: str) -> Dict[str, Any]:
     q = _norm_lc(query)
 
-    def _to_float(s: str) -> Optional[float]:
-        try:
-            s = s.strip().replace("€", "")
-            s = s.replace(",", ".")
-            return float(s)
-        except Exception:
-            return None
-
-    # range tipo "20-35" o "20 – 35" anche con virgole "12,5-18,0"
-    m = re.search(r"(?P<min>\d{1,3}(?:[.,]\d+)?)\s*[-–]\s*(?P<max>\d{1,3}(?:[.,]\d+)?)", q)
+    m = PRICE_RANGE_RE.search(q)
     if m:
-        mn = _to_float(m.group("min"))
-        mx = _to_float(m.group("max"))
-        if mn is not None and mx is not None:
-            if mn < 0:
-                mn = 0.0
-            if mx < 0:
-                mx = 0.0
-            if mn > mx:
-                mn, mx = mx, mn
-            return {"min": float(mn), "max": float(mx), "mode": "range"}
+        return {"min": float(m.group("min")), "max": float(m.group("max")), "mode": "range"}
 
-    m2 = re.search(r"\btra\s+(\d{1,3}(?:[.,]\d+)?)\s+e\s+(\d{1,3}(?:[.,]\d+)?)\b", q)
+    m2 = re.search(r"\btra\s+(\d{1,3})\s+e\s+(\d{1,3})\b", q)
     if m2:
-        mn = _to_float(m2.group(1))
-        mx = _to_float(m2.group(2))
-        if mn is not None and mx is not None:
-            if mn < 0:
-                mn = 0.0
-            if mx < 0:
-                mx = 0.0
-            if mn > mx:
-                mn, mx = mx, mn
-            return {"min": float(mn), "max": float(mx), "mode": "range"}
+        return {"min": float(m2.group(1)), "max": float(m2.group(2)), "mode": "range"}
 
-    m3 = re.search(r"\b(sotto|fino a|entro|meno di|max)\s+(\d{1,3}(?:[.,]\d+)?)\b", q)
+    m3 = re.search(r"\b(sotto|fino a|entro|meno di|max)\s+(\d{1,3})\b", q)
     if m3:
-        mx = _to_float(m3.group(2))
-        if mx is not None:
-            if mx < 0:
-                mx = 0.0
-            return {"min": None, "max": float(mx), "mode": "max"}
+        return {"min": None, "max": float(m3.group(2)), "mode": "max"}
 
-    m4 = re.search(r"\b(sopra|oltre|almeno|min)\s+(\d{1,3}(?:[.,]\d+)?)\b", q)
+    m4 = re.search(r"\b(sopra|oltre|almeno|min)\s+(\d{1,3})\b", q)
     if m4:
-        mn = _to_float(m4.group(2))
-        if mn is not None:
-            if mn < 0:
-                mn = 0.0
-            return {"min": float(mn), "max": None, "mode": "min"}
+        return {"min": float(m4.group(2)), "max": None, "mode": "min"}
 
-    m5 = re.search(r"\bda\s+(\d{1,3}(?:[.,]\d+)?)\s+in\s+su\b", q)
+    m5 = re.search(r"\bda\s+(\d{1,3})\s+in\s+su\b", q)
     if m5:
-        mn = _to_float(m5.group(1))
-        if mn is not None:
-            if mn < 0:
-                mn = 0.0
-            return {"min": float(mn), "max": None, "mode": "min"}
+        return {"min": float(m5.group(1)), "max": None, "mode": "min"}
 
-    m6 = re.search(r"\b(intorno a|circa|sui|sul)\s+(\d{1,3}(?:[.,]\d+)?)\b", q)
+    m6 = re.search(r"\b(intorno a|circa|sui|sul)\s+(\d{1,3})\b", q)
     if m6:
-        val = _to_float(m6.group(2))
-        if val is not None:
-            if val < 0:
-                val = 0.0
-            return {"target": float(val), "delta": 1.0, "mode": "target"}
+        val = float(m6.group(2))
+        return {"target": val, "delta": 1.0, "mode": "target"}
 
     if re.search(r"\beconomic[oa]\b|\beconomico\b|\beconomica\b", q):
         return {"max": 15.99, "mode": "max", "fallback": "economico"}
@@ -309,22 +253,20 @@ def parse_price(query: str) -> Dict[str, Any]:
     if re.search(r"\b(pi[uù]\s+economico|vino\s+pi[uù]\s+economico)\b", q):
         return {"extreme": "min", "mode": "extreme"}
 
-    # target esplicito con simbolo euro vicino: "30€" / "€30" / "30 euro"
-    m7 = re.search(r"(?:€\s*)?(\d{1,3}(?:[.,]\d+)?)(?:\s*€|\s*euro)\b", q)
-    if m7:
-        val = _to_float(m7.group(1))
-        if val is not None:
-            if val < 0:
-                val = 0.0
-            return {"target": float(val), "delta": 1.0, "mode": "target"}
+    if re.search(r"\b(euro|€)\b", q):
+        m7 = re.search(r"(\d{1,3})", q)
+        if m7:
+            return {"target": float(m7.group(1)), "delta": 1.0, "mode": "target"}
 
     return {"mode": "none"}
+
 
 # --- region parsing (robusto ma semplice) ---
 REGION_PATTERNS = [
     r"\bpiemonte\b", r"\btoscana\b", r"\bveneto\b", r"\bsicilia\b", r"\bpuglia\b", r"\btrentino\b",
     r"\bloira\b", r"\bborgogna\b", r"\bbordeaux\b", r"\bchampagne\b", r"\balsazia\b",
 ]
+
 
 def parse_region(query: str) -> Optional[str]:
     q = _norm_lc(query)
@@ -394,6 +336,16 @@ def parse_food_request(query: str) -> List[str]:
                 found.append(canonical)
                 break
     return sorted(set(found))
+
+def parse_style_intent(query: str) -> Dict[str, bool]:
+    q = _norm_lc(query)
+    return {
+        "elegant": bool(re.search(r"\belegant[eaio]?\b", q)),
+        "important_dinner": bool(re.search(r"\bcena\s+importante\b|\boccasione\s+speciale\b", q)),
+        "aperitivo": bool(re.search(r"\baperitivo\b|\bapericena\b", q)),
+        "meditation": bool(re.search(r"\bmeditazione\b", q)),
+    }
+
 
 def food_match(row: Any, foods_req: List[str]) -> bool:
     if not foods_req:
@@ -718,8 +670,12 @@ def _filter_new_A_B_D(
     sw_req = typology_req.get("sweetness")
 
     if sp_req or sw_req or intensity_req:
-        derived_sp = df.get("__derived_sparkling")
-        derived_sw = df.get("__derived_sweetness_norm")
+        # compute derived columns on the fly (vectorized apply is fine at this scale; dataset is cached)
+        derived_sp = df.apply(
+            lambda r: derive_sparkling(r.get("denomination", ""), r.get("style_tags", ""), r.get("name", ""), r.get("description", "")),
+            axis=1,
+        )
+        derived_sw = df["sweetness"].astype(str).map(normalize_sweetness)
 
         if sp_req:
             df = df.loc[derived_sp.eq(sp_req)]
@@ -728,9 +684,12 @@ def _filter_new_A_B_D(
 
     # A) intensity: derived from body/tannins/alcohol_level
     if intensity_req:
-        derived_int = df.get("__derived_intensity")
+        derived_int = df.apply(
+            lambda r: derive_intensity(r.get("body", ""), r.get("tannins", ""), r.get("alcohol_level", "")) or "",
+            axis=1,
+        )
         df = df.loc[derived_int.eq(intensity_req)]
-    
+
     return df
 
 
@@ -818,23 +777,24 @@ def _score_row(row: Any, price_info: Dict[str, Any], boosts: Dict[str, bool], va
 
 
     return base, price_delta
-def _score_row_a9v1(row: Any, price_info: Dict[str, Any], boosts: Dict[str, bool]) -> Tuple[float, float]:
-    """
-    A9v1 (opzionale): come A9, ma con micro value-boost cappato per rompere i pareggi.
-    NON usata di default.
-    """
+
+def _score_row_a9v1(
+    row: Any,
+    price_info: Dict[str, Any],
+    boosts: Dict[str, bool],
+    style_intent: Optional[Dict[str, bool]] = None,
+) -> Tuple[float, float]:
+    """A9v1/A9v2 (opzionale): A9 + micro value boost; A9v2 aggiunge intent semantico (se style_intent presente)."""
     base = _score_quality(row)
 
     pr = _price_effective(row)
     price_delta = 0.0
 
-    # Manteniamo identico il comportamento target (se presente)
     if price_info.get("mode") == "target" and pr is not None:
         tgt = float(price_info.get("target", 0.0))
         price_delta = abs(pr - tgt)
         base += max(0.0, 1.2 - price_delta) * 0.25
 
-    # Boost A/B/D identici
     if boosts.get("grape_match"):
         base += 0.6
     if boosts.get("aroma_match"):
@@ -848,33 +808,61 @@ def _score_row_a9v1(row: Any, price_info: Dict[str, Any], boosts: Dict[str, bool
     elif boosts.get("foods_present"):
         base -= 0.25
 
-    # Micro value boost (solo A9v1): piccolo e cappato, non deve ribaltare la qualità
-    # Idea: stesso quality -> prezzo più basso leggermente premiato
     if pr is not None and pr > 0:
-        q = _parse_float_maybe(getattr(row, "quality", "")) or base
+        qv = _parse_float_maybe(getattr(row, "quality", ""))
+        q = qv if qv is not None else base
         v = (q + 0.75) / math.log(pr + 2.0)
-        base += min(v * 0.10, 0.20)  # cappato forte
-    
-    # ---- A9v2 Intent core (micro, cappato) ----
-    intent_boost = 0.0
+        base += min(v * 0.10, 0.20)
 
-    # coerenza colore (solo micro)
-    col = _norm_lc(getattr(row, "color", ""))
-    if "rosso" in col:
-        intent_boost += 0.04
+    # ---- A9v2 Style intent (optional) ----
+    if style_intent:
+        sb = 0.0
+        di = _norm_lc(getattr(row, "__derived_intensity", "")) or _norm_lc(
+            derive_intensity(
+                _norm(getattr(row, "body", "")),
+                _norm(getattr(row, "tannins", "")),
+                _norm(getattr(row, "alcohol_level", "")),
+            )
+            or ""
+        )
+        sparkling = _norm_lc(getattr(row, "__derived_sparkling", "")) or _norm_lc(
+            derive_sparkling(
+                _norm(getattr(row, "denomination", "")),
+                _norm(getattr(row, "style_tags", "")),
+                _norm(getattr(row, "name", "")),
+                _norm(getattr(row, "description", "")),
+            )
+            or ""
+        )
+        denom = _norm_lc(getattr(row, "denomination", ""))
 
-    # coerenza fascia prezzo (solo se filtro min attivo)
-    if price_info.get("mode") == "min" and pr is not None:
-        if pr >= float(price_info.get("min", 0.0)):
-            intent_boost += 0.06
+        if style_intent.get("elegant"):
+            if di in ("low", "medium"):
+                sb += 0.10
+            elif di == "high":
+                sb -= 0.05
 
-    # vini strutturati premium leggermente premiati (solo se qualità alta)
-    if pr is not None and pr > 0:
-        q = _parse_float_maybe(getattr(row, "quality", "")) or base
-        if q >= 4.6 and pr >= 40:
-            intent_boost += 0.07
+        if style_intent.get("important_dinner"):
+            if denom in ("barolo", "brunello di montalcino", "amarone della valpolicella", "barbaresco"):
+                sb += 0.08
+            qv = _parse_float_maybe(getattr(row, "quality", ""))
+            if qv is not None and qv >= 4.6:
+                sb += 0.05
 
-    base += min(intent_boost, 0.25)
+        if style_intent.get("aperitivo"):
+            if "spumante" in sparkling:
+                sb += 0.12
+            if di == "low":
+                sb += 0.06
+
+        if style_intent.get("meditation"):
+            if di == "high":
+                sb += 0.10
+            qv = _parse_float_maybe(getattr(row, "quality", ""))
+            if qv is not None and qv >= 4.7:
+                sb += 0.06
+
+        base += max(-0.10, min(sb, 0.25))
 
     return base, price_delta
 
@@ -1022,6 +1010,8 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
     # VALUE intent (solo se richiesto dall'utente)
     value_intent = parse_value_intent(q)
 
+    style_intent = parse_style_intent(q)
+
     filtered = df
 
     # price filter
@@ -1063,14 +1053,15 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
             "food_match": food_match(r, foods_req),
             "foods_present": bool(foods_req),
         }
-        
-        if sort in ("relevance_a9v1", "relevance_a9v2"):
+        if sort == "relevance_a9v1":
             s, pdlt = _score_row_a9v1(r, price_info, boosts)
+        elif sort == "relevance_a9v2":
+            s, pdlt = _score_row_a9v1(r, price_info, boosts, style_intent=style_intent)
         else:
             s, pdlt = _score_row(r, price_info, boosts, value_intent=value_intent)
-
         scored.append(_build_wine_card(r, rank=0, score=s, price_delta=pdlt))
-        sorted_cards = _apply_sort(scored, sort, value_intent=value_intent)[:limit]
+
+    sorted_cards = _apply_sort(scored, sort, value_intent=value_intent)[:limit]
     for i, c in enumerate(sorted_cards, start=1):
         c["rank"] = i
 
@@ -1187,132 +1178,3 @@ def get_suggestions() -> JSONResponse:
         "Un vino con buon rapporto qualità prezzo",
     ]
     return JSONResponse({"suggestions": suggestions})
-@app.post("/debug_rank")
-def post_debug_rank(payload: Dict[str, Any] = Body(...)) -> JSONResponse:
-    """
-    Ranking debugger (read-only).
-    NON modifica engine / ranking / ordinamento.
-    Espone breakdown dei punteggi per capire perché un vino sta sopra un altro.
-    """
-    query = _norm(payload.get("query", ""))
-    limit = int(payload.get("limit") or 10)
-    limit = _clamp(limit, 1, 50)
-
-    # usa la stessa pipeline di run_search (senza cambiare nulla)
-    df = get_wines_df()
-    q = _norm(query)
-
-    price_info = parse_price(q)
-    region = parse_region(q)
-
-    grapes_req = parse_grapes(q)
-    aromas_req = parse_aromas(q)
-    intensity_req = parse_intensity_request(q)
-    typology_req = parse_typology_request(q)
-    foods_req = parse_food_request(q)
-    color_req = parse_color_request(q)
-    value_intent = parse_value_intent(q)
-
-    filtered = df
-
-    filtered = _filter_by_price(filtered, price_info)
-
-    if region:
-        for col in ["region", "zone", "denomination", "country"]:
-            filtered = _filter_by_text_contains(filtered, col, region)
-
-    filtered = _filter_by_color(filtered, color_req)
-    filtered = _filter_new_A_B_D(filtered, grapes_req, aromas_req, intensity_req, typology_req)
-
-    if price_info.get("mode") == "extreme":
-        prices = filtered["price_avg"].map(_parse_float_maybe)
-        prices_min = filtered["price_min"].map(_parse_float_maybe)
-        effective = prices.copy()
-        effective[effective.isna()] = prices_min[effective.isna()]
-        if len(filtered) > 0:
-            idx = effective.idxmax() if price_info.get("extreme") == "max" else effective.idxmin()
-            filtered = filtered.loc[[idx]]
-
-    rows = list(filtered.itertuples(index=False))
-
-    scored_cards: List[Dict[str, Any]] = []
-    debug_rows: List[Dict[str, Any]] = []
-
-    for r in rows:
-        boosts = {
-            "grape_match": bool(grapes_req),
-            "aroma_match": bool(aromas_req),
-            "intensity_match": bool(intensity_req),
-            "typology_match": bool(typology_req.get("sparkling") or typology_req.get("sweetness")),
-            "food_match": food_match(r, foods_req),
-            "foods_present": bool(foods_req),
-        }
-
-        # score “ufficiale”
-        score, price_delta = _score_row(r, price_info, boosts, value_intent=value_intent)
-        card = _build_wine_card(r, rank=0, score=score, price_delta=price_delta)
-        scored_cards.append(card)
-
-        # breakdown extra (read-only)
-        pr_eff = _price_effective(r)
-        q_raw = _parse_float_maybe(getattr(r, "quality", ""))
-
-        debug_rows.append({
-            "id": card.get("id", ""),
-            "name": card.get("name", ""),
-            "producer": card.get("producer", ""),
-            "denomination": card.get("denomination", ""),
-            "zone": card.get("zone", ""),
-            "vintage": card.get("vintage", ""),
-
-            "score": float(card.get("score", 0.0)),
-            "price_effective": pr_eff,
-            "price_mode": price_info.get("mode", "none"),
-            "price_min_filter": price_info.get("min"),
-            "price_max_filter": price_info.get("max"),
-            "price_target": price_info.get("target"),
-            "price_delta": float(card.get("__price_delta", 0.0)),
-
-            "quality_raw": q_raw,
-            "value_intent": bool(value_intent),
-
-            "boosts": {
-                "grape_match": bool(boosts.get("grape_match")),
-                "aroma_match": bool(boosts.get("aroma_match")),
-                "intensity_match": bool(boosts.get("intensity_match")),
-                "typology_match": bool(boosts.get("typology_match")),
-                "food_match": bool(boosts.get("food_match")),
-                "foods_present": bool(boosts.get("foods_present")),
-            },
-
-            "filters": {
-                "region": region,
-                "color": color_req,
-                "grapes": grapes_req,
-                "aromas": aromas_req,
-                "intensity": intensity_req,
-                "typology": typology_req,
-                "foods": foods_req,
-                "price": price_info,
-            },
-        })
-
-    sorted_cards = _apply_sort(scored_cards, "relevance", value_intent=value_intent)[:limit]
-    order = {c["id"]: i+1 for i, c in enumerate(sorted_cards)}
-
-    # aggiungi rank coerente con relevance
-    out = []
-    for d in debug_rows:
-        rid = d.get("id", "")
-        if rid in order:
-            d["rank"] = order[rid]
-            out.append(d)
-
-    out.sort(key=lambda x: x.get("rank", 10**9))
-
-    return JSONResponse({
-        "query": q,
-        "limit": limit,
-        "count": len(out),
-        "results": out,
-    })
