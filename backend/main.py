@@ -884,11 +884,25 @@ def _score_row_a9v1(
                 sb -= 0.05
 
         if style_intent.get("important_dinner"):
-            if denom in ("barolo", "brunello di montalcino", "amarone della valpolicella", "barbaresco"):
-                sb += 0.08
+            # Prestige score derivato (no hardcoding): usa qualità + fascia prezzo
             qv = _parse_float_maybe(getattr(row, "quality", ""))
-            if qv is not None and qv >= 4.6:
-                sb += 0.05
+            pr_eff = _price_effective(row)
+
+            prestige = 0.0
+            if qv is not None:
+                if qv >= 4.75:
+                    prestige += 0.08
+                elif qv >= 4.6:
+                    prestige += 0.05
+
+            if pr_eff is not None:
+                if pr_eff >= 70:
+                    prestige += 0.06
+                elif pr_eff >= 45:
+                    prestige += 0.04
+
+            # micro boost cappato
+            sb += min(prestige, 0.14)
 
         if style_intent.get("aperitivo"):
             if "spumante" in sparkling:
