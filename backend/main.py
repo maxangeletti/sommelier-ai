@@ -143,6 +143,20 @@ def get_wines_df() -> pd.DataFrame:
 
     if CSV_CACHE.df is None or (mtime and mtime != CSV_CACHE.mtime):
         df = _read_csv_safely(CSV_PATH)
+                # --- performance: precompute derived fields (cache-safe) ---
+        # Additive only: non cambia ranking, solo evita df.apply ripetuti su dataset grandi.
+        if "__derived_sparkling" not in df.columns:
+            df["__derived_sparkling"] = df.apply(
+                lambda r: derive_sparkling(r.get("denomination", ""), r.get("style_tags", ""), r.get("name", ""), r.get("description", "")),
+                axis=1,
+            )
+        if "__derived_sweetness_norm" not in df.columns:
+            df["__derived_sweetness_norm"] = df["sweetness"].astype(str).map(normalize_sweetness)
+        if "__derived_intensity" not in df.columns:
+            df["__derived_intensity"] = df.apply(
+                lambda r: derive_intensity(r.get("body", ""), r.get("tannins", ""), r.get("alcohol_level", "")) or "",
+                axis=1,
+            )
         CSV_CACHE.df = df
         CSV_CACHE.mtime = mtime
         CSV_CACHE.rows = int(len(df))
@@ -704,12 +718,8 @@ def _filter_new_A_B_D(
     sw_req = typology_req.get("sweetness")
 
     if sp_req or sw_req or intensity_req:
-        # compute derived columns on the fly (vectorized apply is fine at this scale; dataset is cached)
-        derived_sp = df.apply(
-            lambda r: derive_sparkling(r.get("denomination", ""), r.get("style_tags", ""), r.get("name", ""), r.get("description", "")),
-            axis=1,
-        )
-        derived_sw = df["sweetness"].astype(str).map(normalize_sweetness)
+        derived_sp = df.get("__derived_sparkling")
+        derived_sw = df.get("__derived_sweetness_norm")
 
         if sp_req:
             df = df.loc[derived_sp.eq(sp_req)]
@@ -718,12 +728,9 @@ def _filter_new_A_B_D(
 
     # A) intensity: derived from body/tannins/alcohol_level
     if intensity_req:
-        derived_int = df.apply(
-            lambda r: derive_intensity(r.get("body", ""), r.get("tannins", ""), r.get("alcohol_level", "")) or "",
-            axis=1,
-        )
+        derived_int = df.get("__derived_intensity")
         df = df.loc[derived_int.eq(intensity_req)]
-
+    
     return df
 
 
