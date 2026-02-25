@@ -854,6 +854,27 @@ def _score_row_a9v1(row: Any, price_info: Dict[str, Any], boosts: Dict[str, bool
         q = _parse_float_maybe(getattr(row, "quality", "")) or base
         v = (q + 0.75) / math.log(pr + 2.0)
         base += min(v * 0.10, 0.20)  # cappato forte
+    
+    # ---- A9v2 Intent core (micro, cappato) ----
+    intent_boost = 0.0
+
+    # coerenza colore (solo micro)
+    col = _norm_lc(getattr(row, "color", ""))
+    if "rosso" in col:
+        intent_boost += 0.04
+
+    # coerenza fascia prezzo (solo se filtro min attivo)
+    if price_info.get("mode") == "min" and pr is not None:
+        if pr >= float(price_info.get("min", 0.0)):
+            intent_boost += 0.06
+
+    # vini strutturati premium leggermente premiati (solo se qualità alta)
+    if pr is not None and pr > 0:
+        q = _parse_float_maybe(getattr(row, "quality", "")) or base
+        if q >= 4.6 and pr >= 40:
+            intent_boost += 0.07
+
+    base += min(intent_boost, 0.25)
 
     return base, price_delta
 
@@ -1043,13 +1064,13 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
             "foods_present": bool(foods_req),
         }
         
-        if sort == "relevance_a9v1":
+        if sort in ("relevance_a9v1", "relevance_a9v2"):
             s, pdlt = _score_row_a9v1(r, price_info, boosts)
         else:
             s, pdlt = _score_row(r, price_info, boosts, value_intent=value_intent)
-        scored.append(_build_wine_card(r, rank=0, score=s, price_delta=pdlt))
 
-    sorted_cards = _apply_sort(scored, sort, value_intent=value_intent)[:limit]
+        scored.append(_build_wine_card(r, rank=0, score=s, price_delta=pdlt))
+        sorted_cards = _apply_sort(scored, sort, value_intent=value_intent)[:limit]
     for i, c in enumerate(sorted_cards, start=1):
         c["rank"] = i
 
@@ -1081,7 +1102,7 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
 # =========================
 
 def _normalize_sort(sort: Optional[str]) -> str:
-    allowed = {"relevance", "relevance_a9v1", "price_asc", "price_desc", "rating", "popular"}
+    allowed = {"relevance", "relevance_a9v1", "relevance_a9v2", "price_asc", "price_desc", "rating", "popular"}
     s = (sort or "relevance").strip()
     return s if s in allowed else "relevance"
 
