@@ -361,6 +361,39 @@ def food_match(row: Any, foods_req: List[str]) -> bool:
             if v and v in fp:
                 return True
     return False
+
+def food_match_strength(row: Any, foods_req: List[str]) -> float:
+    """
+    Strength 0.0–1.0 (deterministico).
+    - 1.0 match diretto categoria o variante nel food_pairings
+    - 0.5 match debole (keyword presente ma non canonical)
+    """
+    if not foods_req:
+        return 0.0
+    fp = _norm_lc(getattr(row, "food_pairings", ""))
+    if not fp:
+        return 0.0
+
+    # match diretto
+    for canonical in foods_req:
+        if canonical and canonical in fp:
+            return 1.0
+        for v in FOOD_KEYWORDS.get(canonical, []):
+            if v and v in fp:
+                return 1.0
+
+    # match debole: se compare una keyword di un'altra categoria ma vicina
+    # (es. "brasato" -> carne) quando foods_req include "carne" ma fp non ha canonical
+    weak_hits = 0
+    for canonical in foods_req:
+        for v in FOOD_KEYWORDS.get(canonical, []):
+            if v and v in fp:
+                weak_hits += 1
+    if weak_hits > 0:
+        return 0.5
+
+    return 0.0
+
 def parse_aromas(query: str) -> List[str]:
     q = _norm_lc(query)
     requested: List[str] = []
@@ -803,10 +836,18 @@ def _score_row_a9v1(
         base += 0.25
     if boosts.get("typology_match"):
         base += 0.35
+    
+    # v1: cibo-vino (boolean)
     if boosts.get("food_match"):
         base += 0.45
     elif boosts.get("foods_present"):
         base -= 0.25
+
+    # v2: cibo-vino (strength) SOLO se style_intent presente (cioè relevance_a9v2)
+    if style_intent and boosts.get("foods_present"):
+        fs = food_match_strength(row, boosts.get("foods_req", [])) if isinstance(boosts.get("foods_req"), list) else 0.0
+        # micro boost cappato: 0.0..+0.25
+        base += min(max(fs, 0.0), 1.0) * 0.25
 
     if pr is not None and pr > 0:
         qv = _parse_float_maybe(getattr(row, "quality", ""))
@@ -1052,6 +1093,7 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
             "typology_match": bool(typology_req.get("sparkling") or typology_req.get("sweetness")),
             "food_match": food_match(r, foods_req),
             "foods_present": bool(foods_req),
+            "foods_req": foods_req,
         }
         if sort == "relevance_a9v1":
             s, pdlt = _score_row_a9v1(r, price_info, boosts)
