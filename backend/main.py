@@ -818,6 +818,45 @@ def _score_row(row: Any, price_info: Dict[str, Any], boosts: Dict[str, bool], va
 
 
     return base, price_delta
+def _score_row_a9v1(row: Any, price_info: Dict[str, Any], boosts: Dict[str, bool]) -> Tuple[float, float]:
+    """
+    A9v1 (opzionale): come A9, ma con micro value-boost cappato per rompere i pareggi.
+    NON usata di default.
+    """
+    base = _score_quality(row)
+
+    pr = _price_effective(row)
+    price_delta = 0.0
+
+    # Manteniamo identico il comportamento target (se presente)
+    if price_info.get("mode") == "target" and pr is not None:
+        tgt = float(price_info.get("target", 0.0))
+        price_delta = abs(pr - tgt)
+        base += max(0.0, 1.2 - price_delta) * 0.25
+
+    # Boost A/B/D identici
+    if boosts.get("grape_match"):
+        base += 0.6
+    if boosts.get("aroma_match"):
+        base += 0.35
+    if boosts.get("intensity_match"):
+        base += 0.25
+    if boosts.get("typology_match"):
+        base += 0.35
+    if boosts.get("food_match"):
+        base += 0.45
+    elif boosts.get("foods_present"):
+        base -= 0.25
+
+    # Micro value boost (solo A9v1): piccolo e cappato, non deve ribaltare la qualità
+    # Idea: stesso quality -> prezzo più basso leggermente premiato
+    if pr is not None and pr > 0:
+        q = _parse_float_maybe(getattr(row, "quality", "")) or base
+        v = (q + 0.75) / math.log(pr + 2.0)
+        base += min(v * 0.10, 0.20)  # cappato forte
+
+    return base, price_delta
+
 
 def _build_wine_card(row: Any, rank: int, score: float, price_delta: float) -> Dict[str, Any]:
     # prezzo mostrato: preferiamo price_avg, fallback price_min
@@ -1004,7 +1043,10 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
             "foods_present": bool(foods_req),
         }
         
-        s, pdlt = _score_row(r, price_info, boosts, value_intent=value_intent)
+        if sort == "relevance_a9v1":
+            s, pdlt = _score_row_a9v1(r, price_info, boosts)
+        else:
+            s, pdlt = _score_row(r, price_info, boosts, value_intent=value_intent)
         scored.append(_build_wine_card(r, rank=0, score=s, price_delta=pdlt))
 
     sorted_cards = _apply_sort(scored, sort, value_intent=value_intent)[:limit]
@@ -1039,7 +1081,7 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
 # =========================
 
 def _normalize_sort(sort: Optional[str]) -> str:
-    allowed = {"relevance", "price_asc", "price_desc", "rating", "popular"}
+    allowed = {"relevance", "relevance_a9v1", "price_asc", "price_desc", "rating", "popular"}
     s = (sort or "relevance").strip()
     return s if s in allowed else "relevance"
 
