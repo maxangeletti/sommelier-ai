@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Backup
+*_bak.py
+
+# Output temporanei
+out.json
+
+# Misc stray files
+backend/1{print
