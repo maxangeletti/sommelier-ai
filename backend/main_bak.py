@@ -30,7 +30,7 @@ BUILD_ID = "SommelierAI v0.2 STABILE + A/B/D (CSV schema real) + cache-safe 2026
 APP_TITLE = "SommelierAI Backend"
 
 # Default: ../data/wines.csv (dato che backend/main.py sta in /backend e il CSV sta in /data)
-DEFAULT_CSV_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "wines.normalized.csv"))
+DEFAULT_CSV_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "wines.csv"))
 CSV_PATH = os.getenv("SOMMELIERAI_CSV_PATH", DEFAULT_CSV_PATH)
 
 SEARCH_CACHE_TTL_SEC = float(os.getenv("SOMMELIERAI_SEARCH_CACHE_TTL_SEC", "45"))
@@ -327,9 +327,6 @@ FOOD_KEYWORDS = {
     # contesti
     "aperitivo": ["aperitivo", "apericena", "stuzzichini"],
 }
-# Export: elenco canonical (utile per normalizzazione CSV / test)
-FOOD_CANONICAL = sorted(list(FOOD_KEYWORDS.keys()))
-
 def parse_food_request(query: str) -> List[str]:
     q = _norm_lc(query)
     found: List[str] = []
@@ -1264,30 +1261,3 @@ def get_suggestions() -> JSONResponse:
         "Un vino con buon rapporto qualità prezzo",
     ]
     return JSONResponse({"suggestions": suggestions})
-
-# --- CLI: normalize CSV ---
-if __name__ == "__main__":
-    import sys
-    import pandas as pd
-
-    if "--normalize-csv" in sys.argv:
-        print("Normalizing CSV...")
-
-        src = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "wines.csv"))
-        dst = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "wines.normalized.csv"))
-
-        df = pd.read_csv(src)
-
-        # normalizza food_pairings (split su ; e |)
-        def clean_fp(x):
-            if not isinstance(x, str):
-                return ""
-            tokens = [t.strip() for t in re.split(r"[;|]", x) if t.strip()]
-            return "|".join(sorted(set(tokens)))
-
-        if "food_pairings" in df.columns:
-            df["food_pairings"] = df["food_pairings"].apply(clean_fp)
-
-        df.to_csv(dst, index=False)
-        print("WROTE:", dst)
-        sys.exit(0)
