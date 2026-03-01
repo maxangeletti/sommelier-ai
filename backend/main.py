@@ -1658,22 +1658,27 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
     sorted_cards = _apply_sort(scored, sort, value_intent=value_intent)[:limit]
     for i, c in enumerate(sorted_cards, start=1):
         c["rank"] = i
-
-    meta = {
-        "build_id": BUILD_ID,
-        "query": q,
-        "sort": sort,
-        "limit": limit,
-        "filters": {
-            "price": price_info,
-            "region": region,
-            "color": color_req,
-            "grapes": grapes_req,
-            "aromas": aromas_req,
-            "intensity": intensity_req,
-            "typology": typology_req,
-            "foods": foods_req,
-            "value_intent": value_intent,
+    # UX: se name è generico, rendilo univoco con producer (solo se serve)
+    for c in sorted_cards:
+        p = (c.get("producer") or "").strip()
+        n = (c.get("name") or "").strip()
+        if p and n and p.lower() not in n.lower():
+            c["name"] = f"{n} — {p}"
+        meta = {
+            "build_id": BUILD_ID,
+            "query": q,
+            "sort": sort,
+            "limit": limit,
+            "filters": {
+                "price": price_info,
+                "region": region,
+                "color": color_req,
+                "grapes": grapes_req,
+                "aromas": aromas_req,
+                "intensity": intensity_req,
+                "typology": typology_req,
+                "foods": foods_req,
+                "value_intent": value_intent,
         },
         "count": len(sorted_cards),
         "timestamp": int(_now()),
@@ -1713,7 +1718,7 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
             "rows": debug_rows,
             "delta_vs_top": delta_vs_top,
         }
-
+    sorted_cards = dedup_strict(sorted_cards)
     return {"results": sorted_cards, "meta": meta}
 
 
@@ -1726,6 +1731,42 @@ def _normalize_sort(sort: Optional[str]) -> str:
     s = (sort or "relevance").strip()
     return s if s in allowed else "relevance"
 
+def dedup_strict(results: list[dict]) -> list[dict]:
+    """
+    Dedup STRICT: elimina solo copie certe.
+    Chiave: producer + denomination + zone + vintage + price (tutti normalizzati).
+    Tie-break: tiene quello con score più alto, poi match_score più alto.
+    """
+    def norm(x):
+        return (str(x).strip().lower() if x is not None else "")
+
+    best_by_key: dict[tuple, dict] = {}
+
+    for r in results:
+        key = (
+            norm(r.get("producer")),
+            norm(r.get("denomination")),
+            norm(r.get("zone")),
+            norm(r.get("vintage")),
+            norm(r.get("price")),
+        )
+
+        cur = best_by_key.get(key)
+        if cur is None:
+            best_by_key[key] = r
+            continue
+
+        # tie-break deterministico
+        s_new = float(r.get("score", 0.0) or 0.0)
+        s_old = float(cur.get("score", 0.0) or 0.0)
+
+        m_new = float(r.get("match_score", r.get("__match_score", 0.0)) or 0.0)
+        m_old = float(cur.get("match_score", cur.get("__match_score", 0.0)) or 0.0)
+
+        if (s_new, m_new) > (s_old, m_old):
+            best_by_key[key] = r
+
+    return list(best_by_key.values())
 
 # =========================
 # Endpoints
@@ -1781,6 +1822,8 @@ def get_search_stream(
     def gen() -> Iterable[str]:
         yield ":ok\n\n"
         results = cached.get("results", [])
+        results = dedup_strict(results)
+
         for card in results:
             yield _sse_data({"type": "delta", "wine": card})
         yield _sse_data({"type": "final", "results": results, "meta": cached.get("meta", {})})
