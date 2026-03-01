@@ -754,8 +754,10 @@ def _filter_new_A_B_D(
 
 def _score_quality(row: Any) -> float:
     """
-    Usa qualità/balance/persistence se numeriche; altrimenti fallback semplice basato su presenza.
+    Usa qualità/balance/persistence se numeriche.
+    Se assenti, fallback su rating_overall (0..5).
     """
+
     q = _parse_float_maybe(getattr(row, "quality", ""))
     b = _parse_float_maybe(getattr(row, "balance", ""))
     p = _parse_float_maybe(getattr(row, "persistence", ""))
@@ -771,12 +773,12 @@ def _score_quality(row: Any) -> float:
     if parts > 0:
         return score / parts
 
-    # fallback: se ci sono campi testuali non vuoti, assegna un minimo
-    txt_hits = 0
-    for k in ["quality", "balance", "persistence"]:
-        if _norm(getattr(row, k, "")):
-            txt_hits += 1
-    return float(txt_hits) * 0.5
+    # ✅ Fallback serio: usa rating_overall se disponibile
+    r = _parse_float_maybe(getattr(row, "rating_overall", ""))
+    if r is not None and r > 0:
+        return max(0.0, min(5.0, r))
+
+    return 0.0
 
 
 def _price_effective(row: Any) -> Optional[float]:
@@ -1032,38 +1034,55 @@ def _score_row_a9v2_composite(
     if M <= 0.0:
         M = 0.5
 
-    # ---------- weights (Opzione 3 Food-smart) ----------
-    Wm, Wq, Wv, Wf, Wo, Wi = 0.52, 0.18, 0.08, 0.17, 0.03, 0.02
+        # ---------- weights (Opzione 3 Food-smart) ----------
+    # ✅ OPTION A (anti double-count):
+    # - "overall_base" NON include match (M)
+    # - M influisce solo come moltiplicatore leggero (match_factor)
+    Wq = 0.28
+    Wv = 0.18
+    Wf = 0.34
+    Wo = 0.10
+    Wi = 0.03
 
-    composite = (Wm * M) + (Wq * Q) + (Wv * V) + (Wf * F) + (Wo * O) + (Wi * I)
+    # normalizza pesi base (senza match)
+    Wsum = (Wq + Wv + Wf + Wo + Wi) or 1.0
+    Wq /= Wsum
+    Wv /= Wsum
+    Wf /= Wsum
+    Wo /= Wsum
+    Wi /= Wsum
 
-    # scala finale ~0..5 (come uno score "stelline-like")
-    score_out = composite * 5.0
+    overall_base = (
+        Wq * Q +
+        Wv * V +
+        Wf * F +
+        Wo * O +
+        Wi * I
+    )
+
+    # Match come fattore (non additivo) → evita ridondanza in UI se mostri anche "Match %"
+    match_factor = 0.55 + 0.45 * M  # range: [0.75 .. 1.00]
+    composite01 = _clamp01(overall_base * match_factor)
+
+    score_out = round(5.0 * composite01, 6)
+    price_delta = round(V, 6)
 
     if debug_out is not None:
-        # Components + weights for debugger (stable, deterministic)
         debug_out.update({
-            "components": {
-                "M": round(M, 4),
-                "Q": round(Q, 4),
-                "V": round(V, 4),
-                "F": round(F, 4),
-                "O": round(O, 4),
-                "I": round(I, 4),
-            },
-            "weights": {
-                "M": Wm, "Q": Wq, "V": Wv, "F": Wf, "O": Wo, "I": Wi
-            },
-            "contrib": {
-                "M": round(Wm * M, 6),
-                "Q": round(Wq * Q, 6),
-                "V": round(Wv * V, 6),
-                "F": round(Wf * F, 6),
-                "O": round(Wo * O, 6),
-                "I": round(Wi * I, 6),
-            },
-            "composite_0_1": round(composite, 6),
-            "score_0_5": round(score_out, 6),
+            "__quality_score": round(Q, 6),
+            "__value_score": round(V, 6),
+            "__food_score": round(F, 6),
+            "__other_score": round(O, 6),
+            "__intensity_score": round(I, 6),
+            "__match_score_ui": round(M, 6),
+
+            # nuovi campi per capire bene cosa succede
+            "__overall_base_0_1": round(_clamp01(overall_base), 6),
+            "__match_factor": round(match_factor, 6),
+            "__composite_0_1": round(composite01, 6),
+
+            "__composite_score": score_out,
+            "__price_delta": price_delta,
         })
 
     return score_out, price_delta
@@ -1577,6 +1596,27 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
             s, pdlt = _score_row(r, price_info, boosts, value_intent=value_intent)
 
         card = _build_wine_card(r, rank=0, score=s, price_delta=pdlt, match_score=mscore)
+        # ✅ Debug fields (B): only when debug=true (do NOT change default payload/UX)
+        if debug:
+            # Normalize components to 0..1 for easy comparison
+            q_raw_dbg = _score_quality(r)
+            Q_dbg = _clamp01(q_raw_dbg / 5.0)
+
+            pr_dbg = _price_effective(r)
+            V_dbg = 0.0
+            if pr_dbg is not None and pr_dbg > 0:
+                qv_dbg = _parse_float_maybe(getattr(r, "quality", ""))
+                q_for_value_dbg = qv_dbg if qv_dbg is not None else q_raw_dbg
+                v_raw_dbg = (q_for_value_dbg + 0.75) / math.log(pr_dbg + 2.0)
+                V_dbg = _clamp01(v_raw_dbg / 2.0)
+
+            card["__quality_score"] = round(float(Q_dbg), 6)
+            card["__value_score"] = round(float(V_dbg), 6)
+            card["__final_score"] = card.get("score")  # score used for ordering (avoid double counting)
+
+            # include explainability when debugging
+            card["match_breakdown"] = mbd
+            card["match_explanation"] = mexpl
         if sort == "relevance_v2":
             card["match_breakdown"] = mbd
             card["match_explanation"] = mexpl
