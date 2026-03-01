@@ -1278,46 +1278,6 @@ def _match_score_row_explain(
     return score, breakdown, expl
 
 
-
-
-def _ui_highlights_for_relevance_v2(components: Dict[str, Any]) -> List[str]:
-    """Explainability light (UI): massimo 3 badge, deterministico. Solo per relevance_v2."""
-    try:
-        M = float(components.get("M", 0.0) or 0.0)
-        Q = float(components.get("Q", 0.0) or 0.0)
-        V = float(components.get("V", 0.0) or 0.0)
-        O = float(components.get("O", 0.0) or 0.0)
-        I = float(components.get("I", 0.0) or 0.0)
-    except Exception:
-        return []
-
-    out: List[str] = []
-
-    # 🍽 Food / Match
-    if M >= 0.90:
-        out.append("🍽 Abbinamento centrato")
-    elif M >= 0.60:
-        out.append("🍽 Buon abbinamento")
-
-    # ⭐ Qualità
-    if Q >= 0.85:
-        out.append("⭐ Alta qualità")
-    elif Q >= 0.75:
-        out.append("⭐ Qualità sopra la media")
-
-    # 💰 Value
-    if V >= 0.85:
-        out.append("💰 Ottimo rapporto qualità/prezzo")
-
-    # 🎯 Occasion
-    if O > 0.0:
-        out.append("🎯 Ideale per l'occasione")
-
-    # 🔥 Intensità
-    if I > 0.0:
-        out.append("🔥 Intensità coerente")
-
-    return out[:3]
 def _match_score_row(
     row: Any,
     query: str,
@@ -1427,17 +1387,6 @@ def _build_wine_card(row: Any, rank: int, score: float, price_delta: float, matc
 
 def _apply_sort(cards: List[Dict[str, Any]], sort: str, value_intent: bool = False) -> List[Dict[str, Any]]:
     sort = sort or "relevance"
-    
-    if sort == "match":
-        # match desc, poi score desc, poi price_delta asc (stabile)
-        return sorted(
-            cards,
-            key=lambda c: (
-                -float(c.get("__match_score", 0.0)),
-                -float(c.get("score", 0.0)),
-                float(c.get("__price_delta", 0.0)),
-             ),
-         )
 
     if sort == "price_asc":
         return sorted(cards, key=lambda c: _parse_float_maybe(c.get("price", "")) or float("inf"))
@@ -1570,8 +1519,10 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
             s, pdlt = _score_row_a9v1(r, price_info, boosts, style_intent=style_intent)
         elif sort == "relevance_v2":
             dbg_comp: Dict[str, Any] = {}
-            # Always compute composite components (for UI highlights). Debugger may also reuse them.
-            s, pdlt = _score_row_a9v2_composite(r, price_info, boosts, style_intent=style_intent, debug_out=dbg_comp)
+            if debug:
+                s, pdlt = _score_row_a9v2_composite(r, price_info, boosts, style_intent=style_intent, debug_out=dbg_comp)
+            else:
+                s, pdlt = _score_row_a9v2_composite(r, price_info, boosts, style_intent=style_intent)
 
         else:
             s, pdlt = _score_row(r, price_info, boosts, value_intent=value_intent)
@@ -1580,10 +1531,6 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
         if sort == "relevance_v2":
             card["match_breakdown"] = mbd
             card["match_explanation"] = mexpl
-            try:
-                card["ui_highlights"] = _ui_highlights_for_relevance_v2((dbg_comp or {}).get("components", {}))
-            except Exception:
-                card["ui_highlights"] = []
         scored.append(card)
 
         if debug:
@@ -1661,12 +1608,30 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
                 keys = set(top_contrib.keys()) | set(contrib.keys())
                 contrib_delta = {k: float((top_contrib.get(k) or 0.0) - (contrib.get(k) or 0.0)) for k in sorted(keys)}
 
+                # wins_on / loses_on: quali componenti fanno vincere/perdere rispetto al top
+                eps = 1e-6
+                wins = sorted([(k, v) for k, v in contrib_delta.items() if v > eps], key=lambda kv: kv[1], reverse=True)
+                loses = sorted([(k, v) for k, v in contrib_delta.items() if v < -eps], key=lambda kv: kv[1])
+
+                wins_on = [k for k, _ in wins[:3]]
+                loses_on = [k for k, _ in loses[:3]]
+
+                parts: List[str] = []
+                if wins_on:
+                    parts.append("Top wins mainly on " + ", ".join(wins_on))
+                if loses_on:
+                    parts.append("competitor compensates on " + ", ".join(loses_on))
+                summary = "; ".join(parts) if parts else "Nearly tied; no meaningful component deltas."
+
                 delta_vs_top.append({
                     "rank": r.get("rank"),
                     "id": r.get("id"),
                     "name": r.get("name"),
                     "delta_composite_0_1": top_c01 - c01,
                     "delta_contrib": contrib_delta,
+                    "wins_on": wins_on,
+                    "loses_on": loses_on,
+                    "summary": summary,
                 })
 
         meta["debug"] = {
@@ -1682,7 +1647,7 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
 # =========================
 
 def _normalize_sort(sort: Optional[str]) -> str:
-    allowed = {"relevance", "match", "relevance_a9v1", "relevance_a9v2", "price_asc", "price_desc", "rating", "popular", "relevance_v2"}
+    allowed = {"relevance", "relevance_a9v1", "relevance_a9v2", "price_asc", "price_desc", "rating", "popular", "relevance_v2"}
     s = (sort or "relevance").strip()
     return s if s in allowed else "relevance"
 
