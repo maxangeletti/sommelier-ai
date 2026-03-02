@@ -94,6 +94,13 @@ def _parse_float_maybe(v: Any) -> Optional[float]:
 def _clamp(n: int, lo: int, hi: int) -> int:
     return max(lo, min(n, hi))
 
+def _filter_by_text_contains(df: pd.DataFrame, col: str, val: str) -> pd.DataFrame:
+    """Filter DataFrame rows where column contains val (case-insensitive)."""
+    if col not in df.columns or not val:
+        return df
+    v = _norm_lc(val)
+    return df.loc[df[col].astype(str).str.lower().str.contains(v, na=False)]
+
 
 # =========================
 # CSV cache (mtime + warmup)
@@ -310,10 +317,8 @@ AROMA_KEYWORDS = {
 }
 
 
-
-
 # --- v1.0: Food pairing intent (match cibo-vino) ---
-# Parsing SAFE: attivo solo se l’utente cita cibi/contesti espliciti nella query.
+# Parsing SAFE: attivo solo se l'utente cita cibi/contesti espliciti nella query.
 FOOD_KEYWORDS = {
     # categorie
     "pesce": ["pesce", "seafood", "sushi", "crudo", "ostriche", "crostacei", "gamberi", "scampi", "tonno", "salmone"],
@@ -573,7 +578,7 @@ VALUE_INTENT_RE = re.compile(
 
 # --- Color intent (bianco/rosso/rosato) ---
 def parse_color_request(query: str) -> Optional[str]:
-    """Ritorna uno tra: 'bianco', 'rosso', 'rosato' se l’utente lo chiede esplicitamente nel testo."""
+    """Ritorna uno tra: 'bianco', 'rosso', 'rosato' se l'utente lo chiede esplicitamente nel testo."""
     q = _norm(query)
 
     # Tokenizzazione semplice per evitare falsi positivi
@@ -693,6 +698,7 @@ def _filter_by_color(df: pd.DataFrame, color_req: Optional[str]) -> pd.DataFrame
         mask = m if mask is None else (mask | m)
 
     return df.loc[mask] if mask is not None else df
+
 def _filter_new_A_B_D(
     df: pd.DataFrame,
     grapes_req: List[str],
@@ -713,7 +719,7 @@ def _filter_new_A_B_D(
         lc = df["description"].astype(str).str.lower()
         mask = False
         for a in aromas_req:
-            # we search canonical word too (it’s what parse_aromas returns)
+            # we search canonical word too (it's what parse_aromas returns)
             mask = mask | lc.str.contains(re.escape(a), na=False)
             # also search for any variant of that canonical in description for robustness
             for v in AROMA_KEYWORDS.get(a, []):
@@ -831,7 +837,6 @@ def _score_row(row: Any, price_info: Dict[str, Any], boosts: Dict[str, bool], va
         base += 0.45
     elif boosts.get("foods_present"):
         base -= 0.25
-
 
     return base, price_delta
 
@@ -1019,13 +1024,13 @@ def _score_row_a9v2_composite(
     # anche intent semantico, se presente
     if style_intent:
         if style_intent.get("important_dinner") or style_intent.get("aperitivo") or style_intent.get("meditation"):
-            # se c’è un intent, O non deve restare sempre 0: lo “accendiamo” leggero
+            # se c'è un intent, O non deve restare sempre 0: lo "accendiamo" leggero
             O = max(O, 0.5)
 
     # I: intensity alignment (bool)
     I = 1.0 if boosts.get("intensity_match") else 0.0
 
-    # M: match “stabile” (0..1). Usiamo lo stesso che hai per la barra.
+    # M: match "stabile" (0..1). Usiamo lo stesso che hai per la barra.
     # Se per qualche motivo non è disponibile, fallback neutro 0.5
     try:
         M = _clamp01(float(boosts.get("__match_score_ui", 0.0)))
@@ -1034,7 +1039,7 @@ def _score_row_a9v2_composite(
     if M <= 0.0:
         M = 0.5
 
-        # ---------- weights (Opzione 3 Food-smart) ----------
+    # ---------- weights (Opzione 3 Food-smart) ----------
     # ✅ OPTION A (anti double-count):
     # - "overall_base" NON include match (M)
     # - M influisce solo come moltiplicatore leggero (match_factor)
@@ -1297,8 +1302,6 @@ def _match_score_row_explain(
     return score, breakdown, expl
 
 
-
-
 def _ui_highlights_for_relevance_v2(components: Dict[str, Any]) -> List[str]:
     """Explainability light (UI): massimo 3 badge, deterministico. Solo per relevance_v2."""
     try:
@@ -1337,6 +1340,7 @@ def _ui_highlights_for_relevance_v2(components: Dict[str, Any]) -> List[str]:
         out.append("🔥 Intensità coerente")
 
     return out[:3]
+
 def _match_score_row(
     row: Any,
     query: str,
@@ -1408,7 +1412,7 @@ def _build_wine_card(row: Any, rank: int, score: float, price_delta: float, matc
         if v:
             card[k] = v
 
-    # A/B/D: riportiamo anche i campi “veri” del dataset + derivati
+    # A/B/D: riportiamo anche i campi "veri" del dataset + derivati
     gv = _norm(getattr(row, "grape_varieties", ""))
     if gv:
         card["grapes"] = gv  # name stabile verso iOS (grapes)
@@ -1437,8 +1441,8 @@ def _build_wine_card(row: Any, rank: int, score: float, price_delta: float, matc
     if sw:
         card["sweetness"] = sw
 
-    # aroma: non essendoci lista strutturata, non la mettiamo come campo “aromas”
-    # (il requisito “sentori” è gestito come filtro su description)
+    # aroma: non essendoci lista strutturata, non la mettiamo come campo "aromas"
+    # (il requisito "sentori" è gestito come filtro su description)
 
     card["__price_delta"] = round(float(price_delta), 4)
 
@@ -1504,11 +1508,17 @@ def _is_test_wine_row(r: Any) -> bool:
     return False
 
 def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEFAULT, include_test: bool = False, debug: bool = False) -> Dict[str, Any]:
+    import time
+    t0 = time.perf_counter()
+    timings: Dict[str, float] = {}
+
     df = get_wines_df()
+    timings["load_df"] = round(time.perf_counter() - t0, 6)
+    t0 = time.perf_counter()
+    
     limit = _clamp(int(limit or MAX_RESULTS_DEFAULT), 1, MAX_RESULTS_CAP)
-
     q = _norm(query)
-
+    
     price_info = parse_price(q)
     region = parse_region(q)
 
@@ -1540,7 +1550,8 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
 
     # color filter (bianco/rosso/rosato)
     filtered = _filter_by_color(filtered, color_req)
-
+    timings["filters"] = round(time.perf_counter() - t0, 6)
+    t0 = time.perf_counter()
     # A/B/D filters
     filtered = _filter_new_A_B_D(filtered, grapes_req, aromas_req, intensity_req, typology_req)
 
@@ -1582,6 +1593,14 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
         # ✅ UI match score (0..1) + available to relevance_v2 composite as M
         mscore, mbd, mexpl = _match_score_row_explain(r, q, region, grapes_req, color_req, intensity_req, typology_req, foods_req)
         boosts["__match_score_ui"] = mscore
+        
+        # ✅ Flatten match_breakdown per iOS (converte i dict in valori numerici)
+        flatten_mbd = {
+        k: (float(v.get("c", 0.0)) if isinstance(v, dict)
+            else float(v) if isinstance(v, (int, float, str))
+            else 0.0)
+        for k, v in (mbd or {}).items()
+}
 
         if sort == "relevance_a9v1":
             s, pdlt = _score_row_a9v1(r, price_info, boosts)
@@ -1596,6 +1615,10 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
             s, pdlt = _score_row(r, price_info, boosts, value_intent=value_intent)
 
         card = _build_wine_card(r, rank=0, score=s, price_delta=pdlt, match_score=mscore)
+        
+        # ✅ Assegna match_breakdown flattenato (MAI il dict originale)
+        card["match_breakdown"] = flatten_mbd
+        
         # ✅ Debug fields (B): only when debug=true (do NOT change default payload/UX)
         if debug:
             # Normalize components to 0..1 for easy comparison
@@ -1614,11 +1637,10 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
             card["__value_score"] = round(float(V_dbg), 6)
             card["__final_score"] = card.get("score")  # score used for ordering (avoid double counting)
 
-            # include explainability when debugging
-            card["match_breakdown"] = mbd
+            # include explainability when debugging (già flattenato)
             card["match_explanation"] = mexpl
+            
         if sort == "relevance_v2":
-            card["match_breakdown"] = mbd
             card["match_explanation"] = mexpl
             try:
                 card["ui_highlights"] = _ui_highlights_for_relevance_v2((dbg_comp or {}).get("components", {}))
@@ -1651,11 +1673,16 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
                     dbg["composite"] = dbg_comp
                 except NameError:
                     dbg["composite"] = {}
-                dbg["match_breakdown"] = mbd
+                dbg["match_breakdown"] = flatten_mbd  # ✅ flattenato anche qui
                 dbg["match_explanation"] = mexpl
+            else:
+                dbg["match_breakdown"] = flatten_mbd  # ✅ flattenato anche qui
             debug_map[cid] = dbg
-
+            timings["score"] = round(time.perf_counter() - t0, 6)
+            t0 = time.perf_counter()
     sorted_cards = _apply_sort(scored, sort, value_intent=value_intent)[:limit]
+    timings["sort"] = round(time.perf_counter() - t0, 6)
+    t0 = time.perf_counter()
     for i, c in enumerate(sorted_cards, start=1):
         c["rank"] = i
     # UX: se name è generico, rendilo univoco con producer (solo se serve)
@@ -1664,21 +1691,22 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
         n = (c.get("name") or "").strip()
         if p and n and p.lower() not in n.lower():
             c["name"] = f"{n} — {p}"
-        meta = {
-            "build_id": BUILD_ID,
-            "query": q,
-            "sort": sort,
-            "limit": limit,
-            "filters": {
-                "price": price_info,
-                "region": region,
-                "color": color_req,
-                "grapes": grapes_req,
-                "aromas": aromas_req,
-                "intensity": intensity_req,
-                "typology": typology_req,
-                "foods": foods_req,
-                "value_intent": value_intent,
+
+    meta = {
+        "build_id": BUILD_ID,
+        "query": q,
+        "sort": sort,
+        "limit": limit,
+        "filters": {
+            "price": price_info,
+            "region": region,
+            "color": color_req,
+            "grapes": grapes_req,
+            "aromas": aromas_req,
+            "intensity": intensity_req,
+            "typology": typology_req,
+            "foods": foods_req,
+            "value_intent": value_intent,
         },
         "count": len(sorted_cards),
         "timestamp": int(_now()),
@@ -1714,10 +1742,14 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
                     "delta_contrib": contrib_delta,
                 })
 
-        meta["debug"] = {
-            "rows": debug_rows,
-            "delta_vs_top": delta_vs_top,
-        }
+            meta["debug"] = {
+                "rows": debug_rows,
+                "delta_vs_top": delta_vs_top,
+            }
+        meta["timings"] = timings
+        sorted_cards = dedup_strict(sorted_cards)
+        return {"results": sorted_cards, "meta": meta}
+    
     sorted_cards = dedup_strict(sorted_cards)
     return {"results": sorted_cards, "meta": meta}
 
@@ -1811,22 +1843,32 @@ def get_search_stream(
 
     # Cache: disable when debug=true (must be fresh and include meta.debug)
     if not debug:
-        cache_key = _cache_key({"build": BUILD_ID, "ep": "search_stream", "query": query, "sort": sort, "limit": limit, "include_test": include_test})
-        cached = _cache_get(cache_key)
-        if cached is None:
-            cached = run_search(query=query, sort=sort, limit=limit, include_test=include_test, debug=debug)
-            _cache_set(cache_key, cached)
+        cache_key = _cache_key({
+            "build": BUILD_ID,
+            "ep": "search_stream",
+            "query": query,
+            "sort": sort,
+            "limit": limit,
+            "include_test": include_test,
+        })
+        data = _cache_get(cache_key)
+        if data is None:
+            data = run_search(query=query, sort=sort, limit=limit, include_test=include_test, debug=debug)
+            _cache_set(cache_key, data)
     else:
-        cached = run_search(query=query, sort=sort, limit=limit, include_test=include_test, debug=debug)
+        data = run_search(query=query, sort=sort, limit=limit, include_test=include_test, debug=debug)
+
+    # Freeze snapshot (mai più None dentro gen)
+    results = dedup_strict((data or {}).get("results", []))
+    meta = (data or {}).get("meta", {})
 
     def gen() -> Iterable[str]:
         yield ":ok\n\n"
-        results = cached.get("results", [])
-        results = dedup_strict(results)
 
         for card in results:
             yield _sse_data({"type": "delta", "wine": card})
-        yield _sse_data({"type": "final", "results": results, "meta": cached.get("meta", {})})
+
+        yield _sse_data({"type": "final", "results": results, "meta": meta})
         yield "data: [DONE]\n\n"
 
     headers = {
