@@ -1045,14 +1045,20 @@ def _score_row_a9v2_composite(
         M = 0.5
 
     # ---------- weights (Opzione 3 Food-smart) ----------
-    # ✅ OPTION A (anti double-count):
-    # - "overall_base" NON include match (M)
-    # - M influisce solo come moltiplicatore leggero (match_factor)
+    # Base
     Wq = 0.28
-    Wv = 0.18
+    Wv = 0.15
     Wf = 0.34
     Wo = 0.10
     Wi = 0.03
+
+    # ✅ se l'utente chiede "qualità/prezzo" aumentiamo il peso Value (V) in modo controllato
+    if boosts.get("value_intent"):
+        Wq = 0.26
+        Wv = 0.20
+        Wf = 0.30
+        Wo = 0.11
+        Wi = 0.03
 
     # normalizza pesi base (senza match)
     Wsum = (Wq + Wv + Wf + Wo + Wi) or 1.0
@@ -1625,6 +1631,7 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
             "foods_present": bool(foods_req),
             "foods_req": foods_req,
             "occasion_intent": occasion_intent,
+            "value_intent": value_intent,
         }
 
         # ✅ UI match score (0..1) + available to relevance_v2 composite as M
