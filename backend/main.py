@@ -244,11 +244,16 @@ def parse_price(query: str) -> Dict[str, Any]:
     m5 = re.search(r"\bda\s+(\d{1,3})\s+in\s+su\b", q)
     if m5:
         return {"min": float(m5.group(1)), "max": None, "mode": "min"}
-
+ 
     m6 = re.search(r"\b(intorno a|circa|sui|sul)\s+(\d{1,3})\b", q)
     if m6:
         val = float(m6.group(2))
-        return {"target": val, "delta": 1.0, "mode": "target"}
+
+        # ✅ leggi finestra tipo "+/- 20" oppure "±20"
+        m6b = re.search(r"(?:\+/-|±)\s*(\d{1,3})", q)
+        d = float(m6b.group(1)) if m6b else 10.0  # default consigliato (al posto di 1.0)
+
+        return {"target": val, "delta": d, "mode": "target"}
 
     if re.search(r"\beconomic[oa]\b|\beconomico\b|\beconomica\b", q):
         return {"max": 15.99, "mode": "max", "fallback": "economico"}
@@ -263,10 +268,10 @@ def parse_price(query: str) -> Dict[str, Any]:
     if re.search(r"\b(euro|€)\b", q):
         m7 = re.search(r"(\d{1,3})", q)
         if m7:
-            return {"target": float(m7.group(1)), "delta": 1.0, "mode": "target"}
+            # fallback “50 euro” => target con delta più permissivo (coerente con "intorno a")
+            return {"target": float(m7.group(1)), "delta": 10.0, "mode": "target"}
 
     return {"mode": "none"}
-
 
 # --- region parsing (robusto ma semplice) ---
 REGION_PATTERNS = [
@@ -694,7 +699,7 @@ def _filter_by_color(df: pd.DataFrame, color_req: Optional[str]) -> pd.DataFrame
     mask = None
     for c in cols:
         series = df[c].astype(str).map(_norm)
-        m = series.map(lambda s: bool(token_re.search(s)))
+        m = series.str.contains(token_re, regex=True, na=False)
         mask = m if mask is None else (mask | m)
 
     return df.loc[mask] if mask is not None else df
@@ -1065,12 +1070,32 @@ def _score_row_a9v2_composite(
         Wi * I
     )
 
+     # ✅ price_delta: SOLO target mode (abs(pr - tgt)), altrimenti 0.0
+    price_delta_out = 0.0
+    if price_info.get("mode") == "target" and pr is not None:
+        try:
+            tgt = float(price_info.get("target", 0.0))
+            price_delta_out = abs(float(pr) - tgt)
+        except Exception:
+            price_delta_out = 0.0
+    price_delta_out = round(price_delta_out, 6)
+
     # Match come fattore (non additivo) → evita ridondanza in UI se mostri anche "Match %"
     match_factor = 0.55 + 0.45 * M  # range: [0.75 .. 1.00]
     composite01 = _clamp01(overall_base * match_factor)
 
+    # ---- Target proximity bonus (solo se mode=target) ----
+    if price_info.get("mode") == "target":
+        try:
+            delta = float(price_info.get("delta", 1.0))
+            if delta > 0:
+                delta_norm = min(price_delta_out / delta, 1.0)
+                proximity_bonus = (1.0 - delta_norm) * 0.12
+                composite01 = _clamp01(composite01 + proximity_bonus)
+        except Exception:
+            pass
+
     score_out = round(5.0 * composite01, 6)
-    price_delta = round(V, 6)
 
     if debug_out is not None:
         debug_out.update({
@@ -1081,16 +1106,15 @@ def _score_row_a9v2_composite(
             "__intensity_score": round(I, 6),
             "__match_score_ui": round(M, 6),
 
-            # nuovi campi per capire bene cosa succede
             "__overall_base_0_1": round(_clamp01(overall_base), 6),
             "__match_factor": round(match_factor, 6),
             "__composite_0_1": round(composite01, 6),
 
             "__composite_score": score_out,
-            "__price_delta": price_delta,
+            "__price_delta": price_delta_out,
         })
 
-    return score_out, price_delta
+    return score_out, price_delta_out
 
 def _tokenize_query(q: str) -> List[str]:
     q = _norm_lc(q)
@@ -1472,16 +1496,12 @@ def _apply_sort(cards: List[Dict[str, Any]], sort: str, value_intent: bool = Fal
         return sorted(cards, key=lambda c: float(c.get("popularity", 0.0)), reverse=True)
 
     # relevance (default)
-    if value_intent:
-        # tie-break: a parità di score -> prezzo più basso prima, poi __price_delta
+    if value_intent and sort == "relevance":
+    # In modalità qualità/prezzo usiamo solo score composito (già include V in relevance_v2)
         return sorted(
             cards,
-            key=lambda c: (
-                -float(c.get("score", 0.0)),
-                _parse_float_maybe(c.get("price", "")) or float("inf"),
-                float(c.get("__price_delta", 0.0)),
-            ),
-        )
+            key=lambda c: (-float(c.get("score", 0.0)),)
+    )
 
     # relevance normale (come prima)
     return sorted(cards, key=lambda c: (-float(c.get("score", 0.0)), float(c.get("__price_delta", 0.0))))
@@ -1535,6 +1555,10 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
     # VALUE intent (solo se richiesto dall'utente)
     value_intent = parse_value_intent(q)
 
+    # ✅ Opzione 2: se l'utente chiede qualità/prezzo e non ha scelto un sort specifico, usa relevance_v2
+    if value_intent and (not sort or sort == "relevance"):
+        sort = "relevance_v2"
+
     style_intent = parse_style_intent(q)
     occasion_intent = parse_occasion_intent(q)
 
@@ -1571,12 +1595,25 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
     rows = list(filtered.itertuples(index=False))
 
     # hide fixture/test wines unless explicitly requested
+    rows = list(filtered.itertuples(index=False))
+
+    # hide fixture/test wines unless explicitly requested
     if not include_test:
         rows = [r for r in rows if not _is_test_wine_row(r)]
 
+    # debug var sempre definita
+    _debug_sort_after_override = sort
 
+    # Opzione 2
+    if value_intent and sort == "relevance":
+        sort = "relevance_v2"
+
+    # aggiorna dopo eventuale override
+    _debug_sort_after_override = sort
+
+    # QUESTE DEVONO ESSERE FUORI DA OGNI IF
     scored: List[Dict[str, Any]] = []
-    debug_map: Dict[str, Any] = {}  # id -> debug row (filled only if debug)
+    debug_map: Dict[str, Any] = {}
 
     for r in rows:
         boosts = {
@@ -1596,12 +1633,13 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
         
         # ✅ Flatten match_breakdown per iOS (converte i dict in valori numerici)
         flatten_mbd = {
-        k: (float(v.get("c", 0.0)) if isinstance(v, dict)
-            else float(v) if isinstance(v, (int, float, str))
-            else 0.0)
+        k: (
+        float(v.get("c", 0.0)) if isinstance(v, dict)
+        else (float(v) if isinstance(v, (int, float)) else (_parse_float_maybe(v) or 0.0))
+        )
         for k, v in (mbd or {}).items()
-}
-
+        }
+        
         if sort == "relevance_a9v1":
             s, pdlt = _score_row_a9v1(r, price_info, boosts)
         elif sort == "relevance_a9v2":
@@ -1711,6 +1749,8 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
         "count": len(sorted_cards),
         "timestamp": int(_now()),
     }
+    if debug:
+        meta["__debug_sort_after_override"] = _debug_sort_after_override
 
     if debug:
         debug_rows = [
