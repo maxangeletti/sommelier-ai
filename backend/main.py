@@ -1330,22 +1330,34 @@ def _match_score_row_explain(
     expl = expl[:3]
 
     return score, breakdown, expl
-
-
+   
 def _ui_highlights_for_relevance_v2(components: Dict[str, Any]) -> List[str]:
-    """Explainability light (UI): massimo 3 badge, deterministico. Solo per relevance_v2."""
-    try:
-        M = float(components.get("M", 0.0) or 0.0)
-        Q = float(components.get("Q", 0.0) or 0.0)
-        V = float(components.get("V", 0.0) or 0.0)
-        O = float(components.get("O", 0.0) or 0.0)
-        I = float(components.get("I", 0.0) or 0.0)
-    except Exception:
-        return []
+    """
+    Explainability light (UI): massimo 3 badge, deterministico. Solo per relevance_v2.
+    Compatibile con:
+      - chiavi "M/Q/V/O/I"
+      - chiavi "__match_score_ui/__quality_score/__value_score/__other_score/__intensity_score"
+    """
+    def _f(*keys: str, default: float = 0.0) -> float:
+        for k in keys:
+            v = components.get(k, None)
+            if v is None:
+                continue
+            try:
+                return float(v)
+            except Exception:
+                continue
+        return float(default)
+
+    M = _f("M", "__match_score_ui", default=0.0)
+    Q = _f("Q", "__quality_score", default=0.0)
+    V = _f("V", "__value_score", default=0.0)
+    O = _f("O", "__other_score", default=0.0)
+    I = _f("I", "__intensity_score", default=0.0)
 
     out: List[str] = []
 
-    # 🍽 Food / Match
+    # 🍽 Match
     if M >= 0.90:
         out.append("🍽 Abbinamento centrato")
     elif M >= 0.60:
@@ -1360,8 +1372,10 @@ def _ui_highlights_for_relevance_v2(components: Dict[str, Any]) -> List[str]:
     # 💰 Value
     if V >= 0.85:
         out.append("💰 Ottimo rapporto qualità/prezzo")
-
-    # 🎯 Occasion
+    elif V >= 0.75:
+        out.append("💰 Buon rapporto qualità/prezzo")
+        
+    # 🎯 Occasione
     if O > 0.0:
         out.append("🎯 Ideale per l'occasione")
 
@@ -1684,13 +1698,15 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
 
             # include explainability when debugging (già flattenato)
             card["match_explanation"] = mexpl
-            
+                
         if sort == "relevance_v2":
             card["match_explanation"] = mexpl
             try:
-                card["ui_highlights"] = _ui_highlights_for_relevance_v2((dbg_comp or {}).get("components", {}))
+                # ✅ Passiamo dbg_comp completo: contiene __quality_score/__value_score/__match_score_ui...
+                card["ui_highlights"] = _ui_highlights_for_relevance_v2(dbg_comp or {})
             except Exception:
-                card["ui_highlights"] = []
+                 card["ui_highlights"] = []
+
         scored.append(card)
 
         if debug:

@@ -1,88 +1,169 @@
-# SOMMELIERAI --- ROADMAP STRATEGICA UFFICIALE
+📘 SOMMELIERAI — ROADMAP STRATEGICA UFFICIALE
 
-Versione: v1.4 Data aggiornamento: 2026-03-01
+Versione: 1.4
+Data: 03.03.2026
+Baseline tecnica: v0.2.4
+Stato progetto: Alpha avanzata – Ranking Engine stabile
 
-  --------------------------
-  STATO REALE DEL PROGETTO
-  --------------------------
+🟢 FASE 0 — FONDAZIONE (100% ✅)
 
-FASE 0 --- FONDAZIONE - Backend FastAPI - Dataset iniziale - Ranking
-A9 - Match score - Sort relevance / match / price / value - Streaming
-SSE - UI Chat SwiftUI - Favorites - Tier Free limitato - Grouping
-annate - Filtri (vitigno, colore, intensità, prezzo)
+Obiettivo: MVP funzionante con ranking proprietario.
 
-STATO: COMPLETATA (100%)
+✔ Backend FastAPI
+✔ Dataset vini iniziale
+✔ Ranking A9 (v1)
+✔ Match score base
+✔ Sort relevance / price / rating / match
+✔ SSE streaming
+✔ UI chat base
+✔ Favorites
+✔ Tier Free
+✔ Grouping annate
+✔ Filtri principali
 
-FASE 1 --- HARDENING & STABILITÀ
+Status: COMPLETATA
 
-1A --- Hardening filtri - Separazione filtro vs ordinamento - Gestione
-combinazioni multiple STATO: \~85% (serve validazione edge case finale)
+🔵 FASE 1 — HARDENING & STABILITÀ (95% ✅)
 
-1B --- Ranking Debugger (NUOVO STEP ATTIVO) Decisione: Debug attivabile
-SOLO con flag ?debug=true - \_\_match_score - \_\_quality_score -
-\_\_value_score - \_\_final_score - Nessun double counting STATO: 0% (da
-implementare nella prossima sessione)
+Obiettivo: rendere il motore deterministic, spiegabile e stabile.
 
-1C --- Dataset Cleanup - Normalizzazione vitigni - Deduplicazione logica
-STATO: \~50%
+✔ Completato
 
-1D --- Performance & Cache - Base funzionante - Non ancora strutturata
-STATO: \~60%
+A9v2 Composite Engine
 
-STATO FASE 1 COMPLESSIVA: \~70%
+Match come moltiplicatore (no double count)
 
-FASE 2 --- PERCEZIONE INTELLIGENZA
+Target price mode con proximity bonus (0.06)
 
-2A --- Ranking visivo - Overall bar - Match badge - Evidenza primo
-risultato STATO: \~75%
+Delta breakdown (delta_vs_top)
 
-2B --- Badge semantici - Aperitivo - Cena importante - Top
-qualità/prezzo STATO: \~65%
+Flatten match_breakdown
 
-2C --- Micro-reason dinamica - topReasonLabel implementata base - Da
-rendere più esplicita e strutturata STATO: \~60%
+Value intent override (relevance → relevance_v2)
 
-2D --- Modalità ranking (CASE A-B-C-D formalizzati) Decisione corrente:
-CASE B --- Balanced Relevance (default) STATO: 100% definizione teorica,
-60% strutturazione futura
+Test Matrix v1.0
 
-STATO FASE 2 COMPLESSIVA: \~65%
+Freeze + versioning strutturato
 
-FASE 3 --- TESTFLIGHT Prerequisiti: - Ranking Debugger stabile -
-Hardening completo - Performance fluida STATO: 0%
+Repository restructuring professionale
 
-FASE 4 --- EXPERT RATINGS INTEGRATION Campi previsti: -
-expert_rating_avg - expert_rating_sources STATO: 0%
+⏳ Residuo (5%)
 
-FASE 5 --- LLM LAYER - Interpretazione semantica avanzata - Descrizioni
-naturali evolute STATO: 0%
+Golden query set definitivo (12 query)
 
-FASE 6 --- POSIZIONAMENTO & MARKETING - Target - Pricing - Eventi
-(Vinitaly) STATO: embrionale
+Snapshot ufficiali baseline (CI futura)
 
-  -----------------------------
-  RANKING FILOSOFIA UFFICIALE
-  -----------------------------
+Status: STABILE — Production-ready logic
 
-CASE A --- Match First CASE B --- Balanced Relevance (ATTUALE DEFAULT)
-CASE C --- Quality First CASE D --- Dual Mode (Match Mode + Smart Mode)
+🟣 FASE 2 — QUALITÀ PERCEPITA (60%)
 
-Decisione attiva: CASE B
+Obiettivo: rendere evidente il salto qualitativo del ranking.
 
-  ------------------------------------------------------------
-  SEZIONE MATCH (DA DOCUMENTARE NEL DETTAGLIO)
-  ------------------------------------------------------------
-  Il Match rappresenta la coerenza semantica con la query
-  utente. Non deve essere conteggiato due volte nel calcolo
-  finale. Va sempre spiegato chiaramente in UI e
-  documentazione.
+🔄 In corso
 
-  ------------------------------------------------------------
+Debug composito lato backend (completo)
 
-## PRIORITÀ IMMEDIATA PROSSIMA SESSIONE
+Breakdown differenziale (completo)
 
-Implementare Ranking Debugger con flag ?debug=true Validare assenza
-double counting Aggiornare documentazione con breakdown algoritmo
+🔜 Da completare
 
-Documento manutenuto centralmente. Ogni fine sessione verrà rigenerata
-versione aggiornata.
+UI Explainability chiara (perché è primo?)
+
+Badge semantici intelligenti
+
+Visual ranking bar coerente con composite
+
+Modalità ranking selezionabile utente
+
+🟡 FASE 3 — DATA & INTELLIGENCE (30%)
+
+Obiettivo: aumentare qualità reale del motore.
+
+🔜 Previsto
+
+Expert Ratings Integration
+
+Campo: expert_rating_avg
+
+Peso opzionale 0.15–0.25
+
+Dataset cleanup
+
+Espansione vitigni + aromi
+
+Campo “indicato per”
+
+Nuove caratteristiche sensoriali
+
+🔴 FASE 4 — PERFORMANCE & SCALE (20%)
+
+Cache risultati
+
+Debounce intelligente
+
+Ottimizzazione latenza
+
+Refactor architettura modulare ranking
+
+🟠 FASE 5 — STRATEGIA & GO-TO-MARKET (15%)
+
+Posizionamento prodotto
+
+Strategia pricing
+
+Target utenti
+
+Marketing roadmap
+
+Eventi settore (Vinitaly ecc.)
+
+🧠 SEZIONE UFFICIALE — MATCH ENGINE
+Formula finale (A9v2)
+composite01 = overall_base * match_factor
+(+ target proximity bonus 0.06 se attivo)
+Componenti:
+
+Q → Quality
+
+V → Value
+
+F → Food alignment
+
+O → Occasion intent
+
+I → Intensity alignment
+
+M → Match score (moltiplicatore 0.55–1.00)
+
+Caratteristiche:
+
+Deterministico
+
+Explainable
+
+Delta breakdown tra rank
+
+No double counting
+
+Target price soft (non dominante)
+
+Status: ENGINE STABILE v1.0
+
+📊 Stato Complessivo Progetto
+Area	Stato
+Ranking Core	100%
+Debug & Explainability Backend	100%
+UI Explainability	60%
+Data Intelligence	30%
+Performance	20%
+Strategia	15%
+🎯 Prossimo Milestone Raccomandato
+
+👉 UI Explainability upgrade
+(per rendere percepibile il salto qualitativo già raggiunto nel backend)
+
+🔒 Freeze di riferimento
+
+v0.2.4
+
+ranking-v0.6-proximity-006
