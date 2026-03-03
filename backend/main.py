@@ -1095,8 +1095,8 @@ def _score_row_a9v2_composite(
         try:
             delta = float(price_info.get("delta", 1.0))
             if delta > 0:
-                delta_norm = min(price_delta_out / delta, 1.0)
-                proximity_bonus = (1.0 - delta_norm) * 0.12
+                delta_norm = min(price_delta_out / delta, 1.0)  # 0=perfetto, 1=al bordo finestra
+                proximity_bonus = (1.0 - delta_norm) * 0.06     # peso leggero (tuning)
                 composite01 = _clamp01(composite01 + proximity_bonus)
         except Exception:
             pass
@@ -1716,8 +1716,10 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
                 # composite components if available
                 try:
                     dbg["composite"] = dbg_comp
+                    dbg["components"] = (dbg_comp or {}).get("components", {})
                 except NameError:
                     dbg["composite"] = {}
+                    dbg["components"] = {}
                 dbg["match_breakdown"] = flatten_mbd  # ✅ flattenato anche qui
                 dbg["match_explanation"] = mexpl
             else:
@@ -1789,10 +1791,37 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
                     "delta_contrib": contrib_delta,
                 })
 
-            meta["debug"] = {
-                "rows": debug_rows,
-                "delta_vs_top": delta_vs_top,
-            }
+        # ---- Delta vs Top (composite + breakdown) ----
+        delta_vs_top = []
+
+        if debug_rows:
+            top = debug_rows[0]
+            top_comp = (top.get("composite") or {})
+            top_c01 = float(top_comp.get("__composite_0_1", 0.0))
+
+            for r in debug_rows[1:]:
+                comp = (r.get("composite") or {})
+                c01 = float(comp.get("__composite_0_1", 0.0))
+
+                delta = round(top_c01 - c01, 6)
+
+                delta_vs_top.append({
+                    "rank": r.get("rank"),
+                    "id": r.get("id"),
+                    "name": r.get("name"),
+                    "delta_composite_0_1": delta,
+                    "delta_contrib": {
+                        "quality": round(float(top_comp.get("__quality_score", 0.0)) - float(comp.get("__quality_score", 0.0)), 6),
+                        "value": round(float(top_comp.get("__value_score", 0.0)) - float(comp.get("__value_score", 0.0)), 6),
+                        "food": round(float(top_comp.get("__food_score", 0.0)) - float(comp.get("__food_score", 0.0)), 6),
+                        "match": round(float(top_comp.get("__match_score_ui", 0.0)) - float(comp.get("__match_score_ui", 0.0)), 6),
+                    }
+                })
+
+        meta["debug"] = {
+            "rows": debug_rows,
+            "delta_vs_top": delta_vs_top
+        }
         meta["timings"] = timings
         sorted_cards = dedup_strict(sorted_cards)
         return {"results": sorted_cards, "meta": meta}
