@@ -350,13 +350,22 @@ def parse_food_request(query: str) -> List[str]:
                 break
     return sorted(set(found))
 
-def parse_style_intent(query: str) -> Dict[str, bool]:
-    q = _norm_lc(query)
+def parse_style_intent(q: str) -> Dict[str, bool]:
+    qq = _norm_lc(q)
+
+    def _has_any(terms: List[str]) -> bool:
+        return any(t in qq for t in terms)
+
     return {
-        "elegant": bool(re.search(r"\belegant[eaio]?\b", q)),
-        "important_dinner": bool(re.search(r"\bcena\s+importante\b|\boccasione\s+speciale\b", q)),
-        "aperitivo": bool(re.search(r"\baperitivo\b|\bapericena\b", q)),
-        "meditation": bool(re.search(r"\bmeditazione\b", q)),
+        # già esistenti (mantieni se li hai)
+        "elegant": _has_any(["elegante", "fine", "raffinato", "delicato"]),
+        "aperitivo": _has_any(["aperitivo", "aperitif"]),
+        "meditation": _has_any(["meditazione", "da meditazione", "vino da meditazione"]),
+        "important_dinner": _has_any(["cena importante", "occasione speciale", "serata importante"]),
+
+        # ✅ nuovi (B1)
+        "power": _has_any(["potente", "strutturato", "robusto", "corposo", "importante"]),
+        "fresh": _has_any(["fresco", "leggero", "beverino", "snello"]),
     }
 
 def parse_occasion_intent(query: str) -> Optional[str]:
@@ -711,13 +720,23 @@ def _filter_new_A_B_D(
     intensity_req: Optional[str],
     typology_req: Dict[str, Optional[str]],
 ) -> pd.DataFrame:
-    # B) grapes: filter on grape_varieties
+        
+    # B) grapes: filter on grape_varieties (token-aware, robusto su separatori)
     if grapes_req:
-        lc = df["grape_varieties"].astype(str).str.lower()
-        mask = False
+        series = df["grape_varieties"].astype(str).map(_norm_lc)
+
+        # separatori supportati: spazio, virgola, pipe, slash, punto e virgola
+        mask = None
         for g in grapes_req:
-            mask = mask | lc.str.contains(re.escape(g), na=False)
-        df = df.loc[mask]
+            g = _norm_lc(g)
+            if not g:
+                continue
+            token_re = re.compile(rf"(?:^|[\s,;|/]+){re.escape(g)}(?:$|[\s,;|/]+)")
+            m = series.str.contains(token_re, regex=True, na=False)
+            mask = m if mask is None else (mask | m)
+
+        if mask is not None:
+            df = df.loc[mask]
 
     # A) aromas: match on description (free text)
     if aromas_req:
@@ -1090,6 +1109,75 @@ def _score_row_a9v2_composite(
     match_factor = 0.55 + 0.45 * M  # range: [0.75 .. 1.00]
     composite01 = _clamp01(overall_base * match_factor)
 
+    # --- B1 semantic boost (micro, safe) ---
+    sem_boost = 0.0
+
+    body = _norm_lc(str(getattr(row, "body", "") or ""))
+    tan  = _norm_lc(str(getattr(row, "tannins", "") or ""))
+    acid = _norm_lc(str(getattr(row, "acidity", "") or ""))
+    occ  = _norm_lc(str(getattr(row, "occasion", "") or ""))
+    tags_raw = _norm_lc(str(getattr(row, "style_tags", "") or ""))
+    tags = set([t.strip() for t in re.split(r"[;|,]", tags_raw) if t.strip()])
+
+    def _lvl(x: str) -> str:
+        if x in ("alto", "alta", "high"): return "high"
+        if x in ("medio", "media", "medium"): return "medium"
+        if x in ("basso", "bassa", "low"): return "low"
+        return x
+
+    body = _lvl(body)
+    tan = _lvl(tan)
+    acid = _lvl(acid)
+
+    try:
+        alc = float(getattr(row, "alcohol_level", 0.0) or 0.0)
+    except Exception:
+        alc = 0.0
+
+    # elegant / elegante
+    if style_intent and style_intent.get("elegant"):
+        if "elegante" in tags:
+            sem_boost += 0.06
+        elif body == "medium" and tan in ("low", "medium") and acid in ("medium", "high"):
+            sem_boost += 0.03
+    # meditation / meditazione
+    if style_intent and style_intent.get("meditation"):
+        if "meditazione" in occ:
+            sem_boost += 0.05
+        # fallback se nel dataset non c'è "meditazione" come occasion
+        if body == "high" and alc >= 14.0:
+            sem_boost += 0.01
+    # power / potente
+    if style_intent and style_intent.get("power"):
+        if "strutturato" in tags:
+            sem_boost += 0.04
+        if body == "high" and tan in ("medium", "high"):
+            sem_boost += 0.02
+        if alc >= 14.0:
+            sem_boost += 0.01
+
+    # fresh / fresco
+    if style_intent and style_intent.get("fresh"):
+        if ("fresco" in tags) or ("minerale" in tags):
+            sem_boost += 0.04
+        if body in ("low", "medium") and acid == "high" and alc <= 13.0:
+            sem_boost += 0.02
+
+    # cap conservativo
+    sem_boost = min(0.06, sem_boost)
+
+    # ✅ debug/components: traccia semantic boost e flags
+    try:
+        target = dbg_comp.get("components") if isinstance(dbg_comp, dict) and isinstance(dbg_comp.get("components"), dict) else dbg_comp
+        if isinstance(target, dict):
+            target["__semantic_boost"] = round(float(sem_boost), 4)
+            target["__semantic_flags"] = {k: bool(v) for k, v in (style_intent or {}).items()}
+    except Exception:
+        pass
+
+    # applica al punteggio finale
+    composite01 += sem_boost
+
     # ---- Target proximity bonus (solo se mode=target) ----
     if price_info.get("mode") == "target":
         try:
@@ -1118,6 +1206,9 @@ def _score_row_a9v2_composite(
 
             "__composite_score": score_out,
             "__price_delta": price_delta_out,
+            
+            "__semantic_boost": round(sem_boost, 4),
+            "__semantic_flags": {k: bool(v) for k, v in (style_intent or {}).items()},
         })
 
     return score_out, price_delta_out
@@ -1334,6 +1425,10 @@ def _match_score_row_explain(
 def _ui_highlights_for_relevance_v2(components: Dict[str, Any]) -> List[str]:
     """
     Explainability light (UI): massimo 3 badge, deterministico. Solo per relevance_v2.
+    A1 Budget highlights:
+      - 3 slot totali
+      - priorità: Match (se forte) → (Quality/Value) → (Occasione/Intensità)
+      - evita “riempimento” con badge deboli
     Compatibile con:
       - chiavi "M/Q/V/O/I"
       - chiavi "__match_score_ui/__quality_score/__value_score/__other_score/__intensity_score"
@@ -1355,35 +1450,63 @@ def _ui_highlights_for_relevance_v2(components: Dict[str, Any]) -> List[str]:
     O = _f("O", "__other_score", default=0.0)
     I = _f("I", "__intensity_score", default=0.0)
 
-    out: List[str] = []
+    picks: List[str] = []
+    BUDGET = 2
 
-    # 🍽 Match
+    def _add(label: str) -> None:
+        if len(picks) < BUDGET and label not in picks:
+            picks.append(label)
+
+    # 1) 🍽 Match (solo se significativo)
     if M >= 0.90:
-        out.append("🍽 Abbinamento centrato")
+        _add("🍽 Abbinamento centrato")
     elif M >= 0.60:
-        out.append("🍽 Buon abbinamento")
+        _add("🍽 Buon abbinamento")
 
-    # ⭐ Qualità
+    # 2) ⭐ Qualità (badge) + 💰 Value (badge) con budget/peso
+    q_label = None
+    q_strength = 0.0
     if Q >= 0.85:
-        out.append("⭐ Alta qualità")
+        q_label = "⭐ Alta qualità"
+        q_strength = 2.0
     elif Q >= 0.75:
-        out.append("⭐ Qualità sopra la media")
+        q_label = "⭐ Qualità sopra la media"
+        q_strength = 1.0
 
-    # 💰 Value
+    v_label = None
+    v_strength = 0.0
     if V >= 0.85:
-        out.append("💰 Ottimo rapporto qualità/prezzo")
+        v_label = "💰 Ottimo rapporto qualità/prezzo"
+        v_strength = 2.0
     elif V >= 0.75:
-        out.append("💰 Buon rapporto qualità/prezzo")
-        
-    # 🎯 Occasione
-    if O > 0.0:
-        out.append("🎯 Ideale per l'occasione")
+        v_label = "💰 Buon rapporto qualità/prezzo"
+        v_strength = 1.0
 
-    # 🔥 Intensità
-    if I > 0.0:
-        out.append("🔥 Intensità coerente")
+    # Se entrambi forti (>=2.0) aggiungili entrambi.
+    # Se uno è forte e l’altro borderline, preferisci il forte.
+    # Se entrambi borderline, prendi quello con score più alto.
+    if q_label and v_label:
+        if q_strength >= 2.0 and v_strength >= 2.0:
+            _add(q_label)
+            _add(v_label)
+        elif q_strength != v_strength:
+            _add(q_label if q_strength > v_strength else v_label)
+        else:
+            _add(q_label if Q >= V else v_label)
+    else:
+        if q_label:
+            _add(q_label)
+        if v_label:
+            _add(v_label)
 
-    return out[:3]
+    # 3) 🎯 Occasione e 🔥 Intensità solo se resta budget
+    if O > 0.0 and len(picks) < BUDGET:
+        _add("🎯 Ideale per l'occasione")
+
+    if I > 0.0 and len(picks) < BUDGET:
+        _add("🔥 Intensità coerente")
+
+    return picks[:BUDGET]
 
 def _match_score_row(
     row: Any,
@@ -1547,7 +1670,55 @@ def _is_test_wine_row(r: Any) -> bool:
         return True
     return False
 
-def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEFAULT, include_test: bool = False, debug: bool = False) -> Dict[str, Any]:
+def _explain_mode_b(card: Dict[str, Any], dbg_comp: Optional[Dict[str, Any]], mexpl: Any) -> List[str]:
+    """
+    Explain Mode B (presentabile): 2–4 righe max.
+    - Riusa ui_highlights quando disponibili
+    - Aggiunge 1 riga di match_explanation (se c'è)
+    - Aggiunge 1 riga numerica compatta solo se abbiamo componenti (relevance_v2)
+    """
+    out: List[str] = []
+
+    # 1) highlights (premium)
+    hl = card.get("ui_highlights") or []
+    if isinstance(hl, list):
+        out.extend([str(x) for x in hl if x])
+
+    # 2) una riga match explanation (pulita)
+    if len(out) < 4:
+        if isinstance(mexpl, list) and mexpl:
+            out.append(str(mexpl[0]))
+        elif isinstance(mexpl, str) and mexpl.strip():
+            out.append(mexpl.strip())
+
+    # 3) riga score compatta (solo se abbiamo componenti)
+    if len(out) < 4 and isinstance(dbg_comp, dict) and dbg_comp:
+        comps = dbg_comp.get("components") if isinstance(dbg_comp.get("components", None), dict) else dbg_comp
+        try:
+            q = float(comps.get("__quality_score", 0.0) or 0.0)
+            v = float(comps.get("__value_score", 0.0) or 0.0)
+            m = float(comps.get("__match_score_ui", 0.0) or 0.0)
+            if (q > 0.0) or (v > 0.0) or (m > 0.0):
+                out.append(f"📌 Score: match {m:.2f} · qualità {q:.2f} · value {v:.2f}")
+        except Exception:
+            pass
+
+    # de-dup + cap
+    dedup: List[str] = []
+    for s in out:
+        s = (s or "").strip()
+        if s and s not in dedup:
+            dedup.append(s)
+    return dedup[:4]
+
+def run_search(
+    query: str,
+    sort: str = "relevance",
+    limit: int = MAX_RESULTS_DEFAULT,
+    include_test: bool = False,
+    debug: bool = False,
+    explain: bool = False,  # ✅ Explain Mode B toggle
+) -> Dict[str, Any]:    
     import time
     t0 = time.perf_counter()
     timings: Dict[str, float] = {}
@@ -1698,14 +1869,21 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
 
             # include explainability when debugging (già flattenato)
             card["match_explanation"] = mexpl
-                
+               
         if sort == "relevance_v2":
             card["match_explanation"] = mexpl
             try:
                 # ✅ Passiamo dbg_comp completo: contiene __quality_score/__value_score/__match_score_ui...
                 card["ui_highlights"] = _ui_highlights_for_relevance_v2(dbg_comp or {})
             except Exception:
-                 card["ui_highlights"] = []
+                card["ui_highlights"] = []
+
+        # ✅ Explain Mode B: solo se richiesto (default OFF)
+        if explain:
+            try:
+                card["explain"] = _explain_mode_b(card, locals().get("dbg_comp", None), mexpl)
+            except Exception:
+                card["explain"] = []
 
         scored.append(card)
 
@@ -1727,12 +1905,27 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
                     "intensity_req": intensity_req,
                     "typology_req": typology_req,
                 },
+                # ✅ debug-only: campi raw del dataset (per semantic parsing & tuning)
+                "row_fields": {
+                    "color": _norm(getattr(r, "color", "")),
+                    "body": _norm(getattr(r, "body", "")),
+                    "tannins": _norm(getattr(r, "tannins", "")),
+                    "acidity": _norm(getattr(r, "acidity", "")),
+                    "alcohol_level": _norm(getattr(r, "alcohol_level", "")),
+                    "sweetness": _norm(getattr(r, "sweetness", "")),
+                    "style_tags": _norm(getattr(r, "style_tags", "")),
+                    "occasion": _norm(getattr(r, "occasion", "")),
+                },
             }
+            
+            dbg["components"] = dbg_comp
+
             if sort == "relevance_v2":
                 # composite components if available
                 try:
                     dbg["composite"] = dbg_comp
-                    dbg["components"] = (dbg_comp or {}).get("components", {})
+                    # ✅ NON estrarre .get("components"): dbg_comp è flat e contiene già tutto
+                    dbg["components"] = dbg_comp or {}
                 except NameError:
                     dbg["composite"] = {}
                     dbg["components"] = {}
@@ -1774,6 +1967,9 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
         "count": len(sorted_cards),
         "timestamp": int(_now()),
     }
+    if explain:
+        meta["explain_mode"] = "B"
+
     if debug:
         meta["__debug_sort_after_override"] = _debug_sort_after_override
 
@@ -1834,17 +2030,91 @@ def run_search(query: str, sort: str = "relevance", limit: int = MAX_RESULTS_DEF
                     }
                 })
 
+        # ✅ Ranking Debugger (A): vista per-rank pulita per tuning (solo debug)
+        def _fnum(x, default=0.0) -> float:
+            try:
+                return float(x)
+            except Exception:
+                return float(default)
+        def _lvl_norm(x: Any) -> str:
+            s = _norm_lc(str(x or ""))
+            if s in ("alto", "alta", "high"):
+                return "high"
+            if s in ("medio", "media", "medium"):
+                return "medium"
+            if s in ("basso", "bassa", "low"):
+                return "low"
+            return s
+        ranking_rows = []
+        for c in sorted_cards:
+            cid = c.get("id")
+            dbg = debug_map.get(cid, {}) if cid else {}
+            comps = dbg.get("components", {}) if isinstance(dbg.get("components", None), dict) else {}
+            rf = dbg.get("row_fields", {}) if isinstance(dbg.get("row_fields", None), dict) else {}
+
+            m_ui = _fnum(comps.get("__match_score_ui", c.get("__match_score", c.get("match_score", 0.0))), 0.0)
+            q_s = _fnum(comps.get("__quality_score", c.get("__quality_score", 0.0)), 0.0)
+            v_s = _fnum(comps.get("__value_score", c.get("__value_score", 0.0)), 0.0)
+            f_s = _fnum(comps.get("__food_score", 0.0), 0.0)
+            o_s = _fnum(comps.get("__other_score", 0.0), 0.0)
+            i_s = _fnum(comps.get("__intensity_score", 0.0), 0.0)
+
+            row = {
+                "rank": int(c.get("rank") or 0),
+                "id": cid,
+                "name": c.get("name"),
+                "sort": sort,
+                "score": _fnum(c.get("score", 0.0), 0.0),
+                "M": round(m_ui, 4),
+                "Q": round(q_s, 4),
+                "V": round(v_s, 4),
+                "F": round(f_s, 4),
+                "O": round(o_s, 4),
+                "I": round(i_s, 4),
+                "S": round(_fnum(comps.get("__semantic_boost", 0.0), 0.0), 4),
+                "price": c.get("price"),
+                "price_delta": c.get("__price_delta"),
+
+                # ✅ campi utili per semantic parsing / tuning (debug-only)
+                "color": rf.get("color"),
+                "body": _lvl_norm(rf.get("body")),
+                "tannins": _lvl_norm(rf.get("tannins")),
+                "acidity": _lvl_norm(rf.get("acidity")),
+                "alcohol_level": rf.get("alcohol_level"),
+                "sweetness": rf.get("sweetness"),
+                "style_tags": rf.get("style_tags"),
+                "occasion": rf.get("occasion"),
+            }
+        
+            if sort == "relevance_v2":
+                row.update({
+                    "overall_base_0_1": _fnum(comps.get("__overall_base_0_1", 0.0), 0.0),
+                    "match_factor": _fnum(comps.get("__match_factor", 0.0), 0.0),
+                    "composite_0_1": _fnum(comps.get("__composite_0_1", 0.0), 0.0),
+                    "composite_score": _fnum(comps.get("__composite_score", 0.0), 0.0),
+                })
+
+            ranking_rows.append(row)
+            # ✅ delta_vs_prev: distanza dal vino precedente (debug tuning)
+            prev = None
+            for rr in ranking_rows:
+                cur = rr.get("score", 0.0) or 0.0
+                if prev is None:
+                    rr["delta_vs_prev"] = 0.0
+                else:
+                    rr["delta_vs_prev"] = round(float(prev) - float(cur), 4)
+                prev = cur
+
         meta["debug"] = {
             "rows": debug_rows,
-            "delta_vs_top": delta_vs_top
+            "delta_vs_top": delta_vs_top,
+            "ranking_rows": ranking_rows,
         }
         meta["timings"] = timings
-        sorted_cards = dedup_strict(sorted_cards)
-        return {"results": sorted_cards, "meta": meta}
-    
+
+    # ✅ single return path (no duplicati)
     sorted_cards = dedup_strict(sorted_cards)
     return {"results": sorted_cards, "meta": meta}
-
 
 # =========================
 # API helpers
@@ -1895,7 +2165,6 @@ def dedup_strict(results: list[dict]) -> list[dict]:
 # =========================
 # Endpoints
 # =========================
-
 @app.post("/search")
 def post_search(payload: Dict[str, Any] = Body(...)) -> JSONResponse:
     query = _norm(payload.get("query", ""))
@@ -1904,24 +2173,32 @@ def post_search(payload: Dict[str, Any] = Body(...)) -> JSONResponse:
 
     include_test = bool(payload.get("include_test", False))
     debug = bool(payload.get("debug", False))
+    explain = bool(payload.get("explain", False))  # ✅ Explain Mode B toggle (default: OFF)
 
     # Cache: disable when debug=true (must be fresh and include meta.debug)
     if not debug:
-        cache_key = _cache_key({"build": BUILD_ID, "ep": "search", "query": query, "sort": sort, "limit": limit, "include_test": include_test})
+        cache_key = _cache_key({
+            "build": BUILD_ID,
+            "ep": "search",
+            "query": query,
+            "sort": sort,
+            "limit": limit,
+            "include_test": include_test,
+            "explain": explain,
+        })
         cached = _cache_get(cache_key)
         if cached is not None:
             return JSONResponse(cached)
     else:
         cache_key = None
 
-    data = run_search(query=query, sort=sort, limit=limit, include_test=include_test, debug=debug)
+    data = run_search(query=query, sort=sort, limit=limit, include_test=include_test, debug=debug, explain=explain)
 
     if cache_key is not None:
         _cache_set(cache_key, data)
 
     return JSONResponse(data)
-
-
+    
 @app.get("/search_stream")
 def get_search_stream(
     query: str = Query(...),
@@ -1929,7 +2206,9 @@ def get_search_stream(
     limit: int = Query(MAX_RESULTS_DEFAULT),
     include_test: bool = Query(False),
     debug: bool = Query(False),
+    explain: bool = Query(False),  # ✅ Explain Mode B toggle (default: OFF)
 ) -> StreamingResponse:
+
     sort = _normalize_sort(sort)
     limit = int(limit or MAX_RESULTS_DEFAULT)
 
@@ -1942,6 +2221,7 @@ def get_search_stream(
             "sort": sort,
             "limit": limit,
             "include_test": include_test,
+            "explain": explain,
         })
         data = _cache_get(cache_key)
         if data is None:
