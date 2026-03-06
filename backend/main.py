@@ -1672,44 +1672,75 @@ def _is_test_wine_row(r: Any) -> bool:
 
 def _explain_mode_b(card: Dict[str, Any], dbg_comp: Optional[Dict[str, Any]], mexpl: Any) -> List[str]:
     """
-    Explain Mode B (presentabile): 2–4 righe max.
-    - Riusa ui_highlights quando disponibili
-    - Aggiunge 1 riga di match_explanation (se c'è)
-    - Aggiunge 1 riga numerica compatta solo se abbiamo componenti (relevance_v2)
+    Explain Mode B (prodotto): massimo 3 righe, leggibili e UI-ready.
+    Obiettivi:
+    - non duplicare ui_highlights
+    - niente score numerici
+    - spiegazioni corte, coerenti col ranking
     """
     out: List[str] = []
 
-    # 1) highlights (premium)
-    hl = card.get("ui_highlights") or []
-    if isinstance(hl, list):
-        out.extend([str(x) for x in hl if x])
+    comps = dbg_comp.get("components") if isinstance(dbg_comp, dict) and isinstance(dbg_comp.get("components", None), dict) else (dbg_comp or {})
 
-    # 2) una riga match explanation (pulita)
-    if len(out) < 4:
+    def _f(key: str, default: float = 0.0) -> float:
+        try:
+            return float(comps.get(key, default) or default)
+        except Exception:
+            return float(default)
+
+    m = _f("__match_score_ui", _f("__match_score", float(card.get("__match_score", card.get("match_score", 0.0)) or 0.0)))
+    q = _f("__quality_score", 0.0)
+    v = _f("__value_score", 0.0)
+    o = _f("__other_score", 0.0)
+    i = _f("__intensity_score", 0.0)
+    s = _f("__semantic_boost", 0.0)
+
+    # 1) Match / semantic intent
+    if s >= 0.05:
+        out.append("Perfetto per lo stile che cerchi")
+    elif m >= 0.90:
+        out.append("Perfetto per la tua richiesta")
+    elif m >= 0.60:
+        out.append("Buon match per la tua richiesta")
+
+    # 2) Qualità
+    if q >= 0.85:
+        out.append("Qualità alta e profilo convincente")
+    elif q >= 0.75:
+        out.append("Qualità sopra la media")
+
+    # 3) Value
+    if len(out) < 3:
+        if v >= 0.85:
+            out.append("Ottimo rapporto qualità/prezzo")
+        elif v >= 0.75:
+            out.append("Buon rapporto qualità/prezzo")
+
+    # 4) Occasione / intensità come fallback
+    if len(out) < 3 and o > 0.0:
+        out.append("Particolarmente adatto all'occasione")
+    if len(out) < 3 and i > 0.0:
+        out.append("Profilo intenso e coerente con la richiesta")
+
+    # 5) fallback su match explanation solo se siamo ancora corti
+    if len(out) < 3 and not any("richiesta" in x.lower() for x in out):
         if isinstance(mexpl, list) and mexpl:
-            out.append(str(mexpl[0]))
+            txt = str(mexpl[0]).strip()
+            if "parole chiave forti" in txt:
+                out.append("Molto coerente con la tua ricerca")
+            elif txt:
+                out.append(txt)
         elif isinstance(mexpl, str) and mexpl.strip():
             out.append(mexpl.strip())
-
-    # 3) riga score compatta (solo se abbiamo componenti)
-    if len(out) < 4 and isinstance(dbg_comp, dict) and dbg_comp:
-        comps = dbg_comp.get("components") if isinstance(dbg_comp.get("components", None), dict) else dbg_comp
-        try:
-            q = float(comps.get("__quality_score", 0.0) or 0.0)
-            v = float(comps.get("__value_score", 0.0) or 0.0)
-            m = float(comps.get("__match_score_ui", 0.0) or 0.0)
-            if (q > 0.0) or (v > 0.0) or (m > 0.0):
-                out.append(f"📌 Score: match {m:.2f} · qualità {q:.2f} · value {v:.2f}")
-        except Exception:
-            pass
-
+        
     # de-dup + cap
     dedup: List[str] = []
-    for s in out:
-        s = (s or "").strip()
-        if s and s not in dedup:
-            dedup.append(s)
-    return dedup[:4]
+    for sline in out:
+        sline = (sline or "").strip()
+        if sline and sline not in dedup:
+            dedup.append(sline)
+
+    return dedup[:3]
 
 def run_search(
     query: str,
@@ -1881,7 +1912,7 @@ def run_search(
         # ✅ Explain Mode B: solo se richiesto (default OFF)
         if explain:
             try:
-                card["explain"] = _explain_mode_b(card, locals().get("dbg_comp", None), mexpl)
+                card["explain"] = list(_explain_mode_b(card, locals().get("dbg_comp", None), mexpl))                
             except Exception:
                 card["explain"] = []
 
@@ -1918,7 +1949,7 @@ def run_search(
                 },
             }
             
-            dbg["components"] = dbg_comp
+            dbg["components"] = locals().get("dbg_comp", {})
 
             if sort == "relevance_v2":
                 # composite components if available
@@ -2225,10 +2256,24 @@ def get_search_stream(
         })
         data = _cache_get(cache_key)
         if data is None:
-            data = run_search(query=query, sort=sort, limit=limit, include_test=include_test, debug=debug)
+            data = run_search(
+                query=query,
+                sort=sort,
+                limit=limit,
+                include_test=include_test,
+                debug=debug,
+                explain=explain,
+            )
             _cache_set(cache_key, data)
     else:
-        data = run_search(query=query, sort=sort, limit=limit, include_test=include_test, debug=debug)
+        data = run_search(
+            query=query,
+            sort=sort,
+            limit=limit,
+            include_test=include_test,
+            debug=debug,
+            explain=explain,
+        )
 
     # Freeze snapshot (mai più None dentro gen)
     results = dedup_strict((data or {}).get("results", []))
