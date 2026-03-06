@@ -1352,6 +1352,9 @@ def _match_score_row_explain(
         except Exception:
             food_score = 0.0
         food_score = max(0.0, min(1.0, food_score))
+        # tiny floor so "food requested" is still visible in UI even when no pairing is found
+        if food_score <= 0.0:
+            food_score = 0.05
 
     struct_score = 0.0
     if comps_struct:
