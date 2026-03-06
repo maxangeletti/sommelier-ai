@@ -154,8 +154,6 @@ def get_wines_df() -> pd.DataFrame:
         CSV_CACHE.mtime = mtime
         CSV_CACHE.rows = int(len(df))
         CSV_CACHE.last_load_ts = _now()
-        # Invalidate search cache immediately when dataset changes
-        SEARCH_CACHE.clear()
 
     return CSV_CACHE.df
 
@@ -201,11 +199,6 @@ def _cache_get(key: str) -> Optional[Any]:
 def _cache_set(key: str, value: Any) -> None:
     if DISABLE_CACHE:
         return
-    # opportunistic prune of expired entries before enforcing cap
-    now = _now()
-    expired = [k for k, ent in SEARCH_CACHE.items() if now - ent.ts > SEARCH_CACHE_TTL_SEC]
-    for k in expired:
-        SEARCH_CACHE.pop(k, None)
     if len(SEARCH_CACHE) >= SEARCH_CACHE_CAP:
         oldest_key = None
         oldest_ts = float("inf")
@@ -337,7 +330,9 @@ FOOD_KEYWORDS = {
     "carne": ["carne", "bistecca", "manzo", "vitello", "filetto", "tagliata", "grigliata", "bbq", "arrosto", "brasato", "maiale", "agnello", "cacciagione"],
     "pasta": ["pasta", "spaghetti", "tagliatelle", "lasagne", "risotto"],
     "pizza": ["pizza", "margherita", "diavola", "napoletana"],
-    "formaggi": ["formaggi", "formaggio", "pecorino", "parmigiano", "grana", "gorgonzola", "toma", "brie"],
+    "formaggi": ["formaggi", "formaggio", "pecorino", "parmigiano", "grana", "toma", "brie"],
+    "formaggi_stagionati": ["formaggi stagionati", "formaggio stagionato", "stagionati", "stagionato", "pecorino stagionato", "parmigiano", "grana"],
+    "formaggi_erborinati": ["formaggi erborinati", "formaggio erborinato", "erborinati", "erborinato", "gorgonzola", "roquefort", "stilton"],
     "salumi": ["salumi", "prosciutto", "crudo", "cotto", "salame", "mortadella", "speck"],
     "verdure": ["verdure", "vegetariano", "veg", "insalata", "ortaggi", "asparagi", "carciofi", "funghi"],
     "dolci": ["dolce", "dolci", "dessert", "torta", "cioccolato", "pasticceria", "cantucci"],
@@ -355,7 +350,13 @@ def parse_food_request(query: str) -> List[str]:
             if re.search(rf"\b{re.escape(v)}\b", q):
                 found.append(canonical)
                 break
-    return sorted(set(found))
+    found = sorted(set(found))
+
+    # Se c'è una categoria specifica di formaggi, evita di tenere anche il generico "formaggi"
+    if "formaggi_erborinati" in found or "formaggi_stagionati" in found:
+        found = [x for x in found if x != "formaggi"]
+
+    return found
 
 def parse_style_intent(q: str) -> Dict[str, bool]:
     qq = _norm_lc(q)
@@ -1623,15 +1624,16 @@ def _apply_sort(cards: List[Dict[str, Any]], sort: str, value_intent: bool = Fal
     sort = sort or "relevance"
     
     if sort == "match":
-        # match desc, poi score desc, poi price_delta asc (stabile)
+        # match desc, poi food contribution desc (se presente), poi score desc, poi price_delta asc
         return sorted(
             cards,
             key=lambda c: (
                 -float(c.get("__match_score", 0.0)),
+                -float((c.get("match_breakdown", {}) or {}).get("food", 0.0)),
                 -float(c.get("score", 0.0)),
                 float(c.get("__price_delta", 0.0)),
-             ),
-         )
+            ),
+        )
 
     if sort == "price_asc":
         return sorted(cards, key=lambda c: _parse_float_maybe(c.get("price", "")) or float("inf"))
@@ -1800,10 +1802,10 @@ def run_search(
 
     # color filter (bianco/rosso/rosato)
     filtered = _filter_by_color(filtered, color_req)
-    # A/B/D filters
-    filtered = _filter_new_A_B_D(filtered, grapes_req, aromas_req, intensity_req, typology_req)
     timings["filters"] = round(time.perf_counter() - t0, 6)
     t0 = time.perf_counter()
+    # A/B/D filters
+    filtered = _filter_new_A_B_D(filtered, grapes_req, aromas_req, intensity_req, typology_req)
 
     # extreme price within current filters
     if price_info.get("mode") == "extreme":
@@ -1818,6 +1820,9 @@ def run_search(
                 idx = effective.idxmin()
             filtered = filtered.loc[[idx]]
 
+    rows = list(filtered.itertuples(index=False))
+
+    # hide fixture/test wines unless explicitly requested
     rows = list(filtered.itertuples(index=False))
 
     # hide fixture/test wines unless explicitly requested
@@ -1901,6 +1906,7 @@ def run_search(
             card["__final_score"] = card.get("score")  # score used for ordering (avoid double counting)
             card["__semantic_boost"] = round(float(card.get("__semantic_boost", 0.0) or 0.0), 6)
             card["__components"] = dbg_comp if isinstance(dbg_comp, dict) else {}
+            card["__components"] = dbg_comp if isinstance(dbg_comp, dict) else {}
             # card["__match_factor"] = round(float(match_factor), 6)
 
             # include explainability when debugging (già flattenato)
@@ -1954,7 +1960,15 @@ def run_search(
                 },
             }
             
-            dbg["components"] = dbg_comp if isinstance(dbg_comp, dict) else {}
+            dbg["components"] = {
+                "__match_score_ui": round(float(card.get("__match_score", card.get("match_score", 0.0)) or 0.0), 6),
+                "__quality_score": round(float(card.get("__quality_score", 0.0) or 0.0), 6),
+                "__value_score": round(float(card.get("__value_score", 0.0) or 0.0), 6),
+                "__food_score": round(float((dbg_comp or {}).get("__food_score", 0.0) or 0.0), 6),
+                "__other_score": round(float((dbg_comp or {}).get("__other_score", 0.0) or 0.0), 6),
+                "__intensity_score": round(float((dbg_comp or {}).get("__intensity_score", 0.0) or 0.0), 6),
+                "__semantic_boost": round(float((dbg_comp or {}).get("__semantic_boost", 0.0) or 0.0), 6),
+            }
 
             if sort == "relevance_v2":
                 # composite components if available
@@ -2209,7 +2223,6 @@ def post_search(payload: Dict[str, Any] = Body(...)) -> JSONResponse:
     if not debug:
         cache_key = _cache_key({
             "build": BUILD_ID,
-            "csv_mtime": CSV_CACHE.mtime,
             "ep": "search",
             "query": query,
             "sort": sort,
@@ -2247,7 +2260,6 @@ def get_search_stream(
     if not debug:
         cache_key = _cache_key({
             "build": BUILD_ID,
-            "csv_mtime": CSV_CACHE.mtime,
             "ep": "search_stream",
             "query": query,
             "sort": sort,
