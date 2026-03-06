@@ -330,7 +330,9 @@ FOOD_KEYWORDS = {
     "carne": ["carne", "bistecca", "manzo", "vitello", "filetto", "tagliata", "grigliata", "bbq", "arrosto", "brasato", "maiale", "agnello", "cacciagione"],
     "pasta": ["pasta", "spaghetti", "tagliatelle", "lasagne", "risotto"],
     "pizza": ["pizza", "margherita", "diavola", "napoletana"],
-    "formaggi": ["formaggi", "formaggio", "pecorino", "parmigiano", "grana", "gorgonzola", "toma", "brie"],
+    "formaggi": ["formaggi", "formaggio", "pecorino", "parmigiano", "grana", "toma", "brie"],
+    "formaggi_stagionati": ["formaggi stagionati", "formaggio stagionato", "stagionati", "stagionato", "pecorino stagionato", "parmigiano", "grana"],
+    "formaggi_erborinati": ["formaggi erborinati", "formaggio erborinato", "erborinati", "erborinato", "gorgonzola", "roquefort", "stilton"],
     "salumi": ["salumi", "prosciutto", "crudo", "cotto", "salame", "mortadella", "speck"],
     "verdure": ["verdure", "vegetariano", "veg", "insalata", "ortaggi", "asparagi", "carciofi", "funghi"],
     "dolci": ["dolce", "dolci", "dessert", "torta", "cioccolato", "pasticceria", "cantucci"],
@@ -348,7 +350,13 @@ def parse_food_request(query: str) -> List[str]:
             if re.search(rf"\b{re.escape(v)}\b", q):
                 found.append(canonical)
                 break
-    return sorted(set(found))
+    found = sorted(set(found))
+
+    # Se c'è una categoria specifica di formaggi, evita di tenere anche il generico "formaggi"
+    if "formaggi_erborinati" in found or "formaggi_stagionati" in found:
+        found = [x for x in found if x != "formaggi"]
+
+    return found
 
 def parse_style_intent(q: str) -> Dict[str, bool]:
     qq = _norm_lc(q)
@@ -1344,9 +1352,6 @@ def _match_score_row_explain(
         except Exception:
             food_score = 0.0
         food_score = max(0.0, min(1.0, food_score))
-        # tiny floor so "food requested" is still visible in UI even when no pairing is found
-        if food_score <= 0.0:
-            food_score = 0.05
 
     struct_score = 0.0
     if comps_struct:
@@ -1619,15 +1624,16 @@ def _apply_sort(cards: List[Dict[str, Any]], sort: str, value_intent: bool = Fal
     sort = sort or "relevance"
     
     if sort == "match":
-        # match desc, poi score desc, poi price_delta asc (stabile)
+        # match desc, poi food contribution desc (se presente), poi score desc, poi price_delta asc
         return sorted(
             cards,
             key=lambda c: (
                 -float(c.get("__match_score", 0.0)),
+                -float((c.get("match_breakdown", {}) or {}).get("food", 0.0)),
                 -float(c.get("score", 0.0)),
                 float(c.get("__price_delta", 0.0)),
-             ),
-         )
+            ),
+        )
 
     if sort == "price_asc":
         return sorted(cards, key=lambda c: _parse_float_maybe(c.get("price", "")) or float("inf"))
@@ -1900,6 +1906,7 @@ def run_search(
             card["__final_score"] = card.get("score")  # score used for ordering (avoid double counting)
             card["__semantic_boost"] = round(float(card.get("__semantic_boost", 0.0) or 0.0), 6)
             card["__components"] = dbg_comp if isinstance(dbg_comp, dict) else {}
+            card["__components"] = dbg_comp if isinstance(dbg_comp, dict) else {}
             # card["__match_factor"] = round(float(match_factor), 6)
 
             # include explainability when debugging (già flattenato)
@@ -1916,7 +1923,7 @@ def run_search(
         # ✅ Explain Mode B: solo se richiesto (default OFF)
         if explain:
             try:
-                card["explain"] = list(_explain_mode_b(card, locals().get("dbg_comp", None), mexpl))                
+                card["explain"] = list(_explain_mode_b(card, dbg_comp, mexpl))                
             except Exception:
                 card["explain"] = []
 
@@ -1984,12 +1991,6 @@ def run_search(
     t0 = time.perf_counter()
     for i, c in enumerate(sorted_cards, start=1):
         c["rank"] = i
-    # UX: se name è generico, rendilo univoco con producer (solo se serve)
-    for c in sorted_cards:
-        p = (c.get("producer") or "").strip()
-        n = (c.get("name") or "").strip()
-        if p and n and p.lower() not in n.lower():
-            c["name"] = f"{n} — {p}"
 
     meta = {
         "build_id": BUILD_ID,
