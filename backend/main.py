@@ -1838,6 +1838,8 @@ def run_search(
     debug_map: Dict[str, Any] = {}
 
     for r in rows:
+        dbg_comp: Dict[str, Any] = {}
+
         boosts = {
             "grape_match": bool(grapes_req),
             "aroma_match": bool(aromas_req),
@@ -1868,7 +1870,6 @@ def run_search(
         elif sort == "relevance_a9v2":
             s, pdlt = _score_row_a9v1(r, price_info, boosts, style_intent=style_intent)
         elif sort == "relevance_v2":
-            dbg_comp: Dict[str, Any] = {}
             # Always compute composite components (for UI highlights). Debugger may also reuse them.
             s, pdlt = _score_row_a9v2_composite(r, price_info, boosts, style_intent=style_intent, debug_out=dbg_comp)
 
@@ -1893,10 +1894,13 @@ def run_search(
                 q_for_value_dbg = qv_dbg if qv_dbg is not None else q_raw_dbg
                 v_raw_dbg = (q_for_value_dbg + 0.75) / math.log(pr_dbg + 2.0)
                 V_dbg = _clamp01(v_raw_dbg / 2.0)
-
+            
             card["__quality_score"] = round(float(Q_dbg), 6)
             card["__value_score"] = round(float(V_dbg), 6)
             card["__final_score"] = card.get("score")  # score used for ordering (avoid double counting)
+            card["__semantic_boost"] = round(float(card.get("__semantic_boost", 0.0) or 0.0), 6)
+            card["__components"] = dbg_comp if isinstance(dbg_comp, dict) else {}
+            # card["__match_factor"] = round(float(match_factor), 6)
 
             # include explainability when debugging (già flattenato)
             card["match_explanation"] = mexpl
@@ -1949,7 +1953,15 @@ def run_search(
                 },
             }
             
-            dbg["components"] = locals().get("dbg_comp", {})
+            dbg["components"] = {
+                "__match_score_ui": round(float(card.get("__match_score", card.get("match_score", 0.0)) or 0.0), 6),
+                "__quality_score": round(float(card.get("__quality_score", 0.0) or 0.0), 6),
+                "__value_score": round(float(card.get("__value_score", 0.0) or 0.0), 6),
+                "__food_score": round(float((dbg_comp or {}).get("__food_score", 0.0) or 0.0), 6),
+                "__other_score": round(float((dbg_comp or {}).get("__other_score", 0.0) or 0.0), 6),
+                "__intensity_score": round(float((dbg_comp or {}).get("__intensity_score", 0.0) or 0.0), 6),
+                "__semantic_boost": round(float((dbg_comp or {}).get("__semantic_boost", 0.0) or 0.0), 6),
+            }
 
             if sort == "relevance_v2":
                 # composite components if available
