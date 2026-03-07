@@ -1410,9 +1410,11 @@ def _match_score_row_explain(
     w_kw = 0.15
     w_occ = 0.0
     w_prestige = 0.0
+    w_eleg = 0.0
 
     comps_struct = _structured_match_components(row, region, grapes_req, color_req, intensity_req, typology_req)
     kw = _keyword_match_score(row, query)
+    elegant_intent = bool(re.search(r"\b(elegante|elegant|finezza|raffinato|raffinata)\b", _norm_lc(query)))
 
     food_present = bool(foods_req)
     food_score = 0.0
@@ -1437,6 +1439,21 @@ def _match_score_row_explain(
                 occasion_score = 1.0
 
     prestige_score = _prestige_match_score(row) if prestige_intent else 0.0
+
+    elegant_score = 0.0
+    if elegant_intent:
+        tags_raw = _norm_lc(getattr(row, "style_tags", ""))
+        tags = set([t.strip() for t in re.split(r"[;|,]", tags_raw) if t.strip()])
+        body_row = _norm_lc(getattr(row, "body", ""))
+        tan_row = _norm_lc(getattr(row, "tannins", ""))
+        acid_row = _norm_lc(getattr(row, "acidity", ""))
+
+        if "elegante" in tags:
+            elegant_score = 1.0
+        elif any(tok in tags for tok in ["finezza", "raffinato", "raffinata", "minerale", "fresco", "teso", "equilibrato", "salino", "agrumi"]):
+            elegant_score = 0.75
+        elif body_row in ("medium", "medio", "media") and tan_row in ("low", "medium", "basso", "bassa", "medio", "media") and acid_row in ("medium", "high", "media", "alta", "alto"):
+            elegant_score = 0.45
 
     struct_score = 0.0
     if comps_struct:
@@ -1477,6 +1494,15 @@ def _match_score_row_explain(
         w_kw = 0.15
         w_food = 0.0
         w_prestige = 0.0
+        w_eleg = 0.0
+    elif elegant_intent:
+        # Elegant should not be read only as generic structure.
+        w_eleg = 0.35
+        w_struct = 0.40
+        w_kw = 0.25
+        w_food = 0.0
+        w_occ = 0.0
+        w_prestige = 0.0
     else:
         # redistribute food weight
         extra = w_food
@@ -1486,13 +1512,14 @@ def _match_score_row_explain(
         w_food = 0.0
         w_occ = 0.0
         w_prestige = 0.0
+        w_eleg = 0.0
 
     if not comps_struct:
         w_kw += w_struct
         w_struct = 0.0
 
-    total = (w_food * food_score) + (w_struct * struct_score) + (w_kw * kw) + (w_occ * occasion_score) + (w_prestige * prestige_score)
-    wsum = w_food + w_struct + w_kw + w_occ + w_prestige
+    total = (w_food * food_score) + (w_struct * struct_score) + (w_kw * kw) + (w_occ * occasion_score) + (w_prestige * prestige_score) + (w_eleg * elegant_score)
+    wsum = w_food + w_struct + w_kw + w_occ + w_prestige + w_eleg
     if wsum <= 0:
         score = 0.5
     else:
@@ -1504,6 +1531,7 @@ def _match_score_row_explain(
     w_kw_n = (w_kw / wsum) if wsum > 0 else 0.0
     w_occ_n = (w_occ / wsum) if wsum > 0 else 0.0
     w_prestige_n = (w_prestige / wsum) if wsum > 0 else 0.0
+    w_eleg_n = (w_eleg / wsum) if wsum > 0 else 0.0
 
     breakdown: Dict[str, Any] = {
         "food": {"w": round(w_food_n, 4), "s": round(food_score, 4), "c": round(w_food_n * food_score, 4)},
@@ -1511,6 +1539,7 @@ def _match_score_row_explain(
         "keyword": {"w": round(w_kw_n, 4), "s": round(kw, 4), "c": round(w_kw_n * kw, 4)},
         "occasion": {"w": round(w_occ_n, 4), "s": round(occasion_score, 4), "c": round(w_occ_n * occasion_score, 4)},
         "prestige": {"w": round(w_prestige_n, 4), "s": round(prestige_score, 4), "c": round(w_prestige_n * prestige_score, 4)},
+        "elegance": {"w": round(w_eleg_n, 4), "s": round(elegant_score, 4), "c": round(w_eleg_n * elegant_score, 4)},
         "structured_components": comps_struct or {},
         "foods_req": foods_req or [],
         "occasion_req": occasion_intent or None,
@@ -1532,6 +1561,14 @@ def _match_score_row_explain(
             expl.append("👑 Profilo premium coerente")
         else:
             expl.append("👑 Intent premium richiesto")
+
+    if elegant_intent:
+        if elegant_score >= 0.95:
+            expl.append("🪶 Profilo elegante esplicito")
+        elif elegant_score >= 0.7:
+            expl.append("🪶 Profilo di finezza coerente")
+        elif elegant_score > 0.0:
+            expl.append("🪶 Eleganza derivata dal profilo")
 
     if food_present:
         if food_score >= 0.95:
