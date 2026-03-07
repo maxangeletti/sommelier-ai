@@ -337,9 +337,7 @@ FOOD_KEYWORDS = {
     "carne": ["carne", "bistecca", "manzo", "vitello", "filetto", "tagliata", "grigliata", "bbq", "arrosto", "brasato", "maiale", "agnello", "cacciagione"],
     "pasta": ["pasta", "spaghetti", "tagliatelle", "lasagne", "risotto"],
     "pizza": ["pizza", "margherita", "diavola", "napoletana"],
-    "formaggi": ["formaggi", "formaggio", "pecorino", "parmigiano", "grana", "toma", "brie"],
-    "formaggi_stagionati": ["formaggi stagionati", "formaggio stagionato", "stagionati", "stagionato", "pecorino stagionato", "parmigiano", "grana"],
-    "formaggi_erborinati": ["formaggi erborinati", "formaggio erborinato", "erborinati", "erborinato", "gorgonzola", "roquefort", "stilton"],
+    "formaggi": ["formaggi", "formaggio", "pecorino", "parmigiano", "grana", "gorgonzola", "toma", "brie"],
     "salumi": ["salumi", "prosciutto", "crudo", "cotto", "salame", "mortadella", "speck"],
     "verdure": ["verdure", "vegetariano", "veg", "insalata", "ortaggi", "asparagi", "carciofi", "funghi"],
     "dolci": ["dolce", "dolci", "dessert", "torta", "cioccolato", "pasticceria", "cantucci"],
@@ -357,13 +355,7 @@ def parse_food_request(query: str) -> List[str]:
             if re.search(rf"\b{re.escape(v)}\b", q):
                 found.append(canonical)
                 break
-    found = sorted(set(found))
-
-    # Se c'è una categoria specifica di formaggi, evita di tenere anche il generico "formaggi"
-    if "formaggi_erborinati" in found or "formaggi_stagionati" in found:
-        found = [x for x in found if x != "formaggi"]
-
-    return found
+    return sorted(set(found))
 
 def parse_style_intent(q: str) -> Dict[str, bool]:
     qq = _norm_lc(q)
@@ -402,6 +394,73 @@ def parse_occasion_intent(query: str) -> Optional[str]:
         return "quotidiano"
 
     return None
+
+
+def parse_prestige_intent(query: str) -> bool:
+    q = _norm_lc(query)
+    patterns = [
+        r"\bvino\s+importante\b",
+        r"\bbottiglia\s+importante\b",
+        r"\bfa(re)?\s+figura\b",
+        r"\bdi\s+livello\b",
+        r"\bprestigios[oa]\b",
+        r"\bpremium\b",
+    ]
+    return any(re.search(pat, q) for pat in patterns)
+
+
+def _prestige_match_score(row: Any) -> float:
+    score = 0.0
+
+    qv = _parse_float_maybe(getattr(row, "quality", "")) or _score_quality(row)
+    pr = _price_effective(row) or 0.0
+    denom = _norm_lc(getattr(row, "denomination", ""))
+    name = _norm_lc(getattr(row, "name", ""))
+    occ = _norm_lc(getattr(row, "occasion", ""))
+    tags_raw = _norm_lc(getattr(row, "style_tags", ""))
+    sparkling = derive_sparkling(
+        _norm(getattr(row, "denomination", "")),
+        _norm(getattr(row, "style_tags", "")),
+        _norm(getattr(row, "name", "")),
+        _norm(getattr(row, "description", "")),
+    )
+    hay = " ".join([denom, name, tags_raw])
+
+    if qv >= 4.8:
+        score += 0.35
+    elif qv >= 4.6:
+        score += 0.27
+    elif qv >= 4.4:
+        score += 0.18
+
+    if pr >= 120:
+        score += 0.30
+    elif pr >= 80:
+        score += 0.24
+    elif pr >= 50:
+        score += 0.18
+    elif pr >= 30:
+        score += 0.10
+
+    prestige_tokens = [
+        "barolo", "brunello", "barbaresco", "amarone", "taurasi",
+        "champagne", "franciacorta", "pauillac", "gevrey-chambertin",
+        "habemus", "lynch-bages", "bollinger", "roederer", "armand rousseau",
+        "prum", "trimbach", "franz haas", "edi simcic", "edi simčič",
+    ]
+    if any(tok in hay for tok in prestige_tokens):
+        score += 0.12
+
+    if sparkling == "spumante" and ("champagne" in hay or "franciacorta" in hay):
+        score += 0.08
+
+    if "cena importante" in occ or "meditazione" in occ:
+        score += 0.08
+
+    if "elegante" in tags_raw or "longevo" in tags_raw:
+        score += 0.05
+
+    return _clamp01(score)
 
 def food_match(row: Any, foods_req: List[str]) -> bool:
     if not foods_req:
@@ -1339,6 +1398,7 @@ def _match_score_row_explain(
     typology_req: Dict[str, Optional[str]],
     foods_req: List[str],
     occasion_intent: Optional[str] = None,
+    prestige_intent: bool = False,
 ) -> Tuple[float, Dict[str, Any], List[str]]:
     """Compute match score (0..1) + breakdown + short explanation (deterministico).
 
@@ -1349,6 +1409,7 @@ def _match_score_row_explain(
     w_struct = 0.35
     w_kw = 0.15
     w_occ = 0.0
+    w_prestige = 0.0
 
     comps_struct = _structured_match_components(row, region, grapes_req, color_req, intensity_req, typology_req)
     kw = _keyword_match_score(row, query)
@@ -1375,23 +1436,47 @@ def _match_score_row_explain(
             elif occ_req == "cena" and "cena importante" in occ_row:
                 occasion_score = 1.0
 
+    prestige_score = _prestige_match_score(row) if prestige_intent else 0.0
+
     struct_score = 0.0
     if comps_struct:
         struct_score = sum(comps_struct.values()) / float(len(comps_struct))
 
     # dynamic redistribution
-    if food_present:
+    if food_present and prestige_intent:
+        # premium bottle within the right family
+        w_food = 0.55
+        w_prestige = 0.30
+        w_struct = 0.10
+        w_kw = 0.05
+        w_occ = 0.0
+    elif prestige_intent and occasion_intent:
+        w_prestige = 0.50
+        w_occ = 0.25
+        w_struct = 0.15
+        w_kw = 0.10
+        w_food = 0.0
+    elif prestige_intent:
+        # default fast path for "vino importante"
+        w_prestige = 0.70
+        w_struct = 0.15
+        w_kw = 0.15
+        w_food = 0.0
+        w_occ = 0.0
+    elif food_present:
         # Food becomes dominant when explicitly requested
         w_food = 0.70
         w_struct = 0.20
         w_kw = 0.10
         w_occ = 0.0
+        w_prestige = 0.0
     elif occasion_intent:
         # Occasion becomes a primary driver when explicitly requested and no food is present
         w_occ = 0.65
         w_struct = 0.20
         w_kw = 0.15
         w_food = 0.0
+        w_prestige = 0.0
     else:
         # redistribute food weight
         extra = w_food
@@ -1399,13 +1484,15 @@ def _match_score_row_explain(
         w_struct = w_struct + extra * (w_struct / denom)
         w_kw = w_kw + extra * (w_kw / denom)
         w_food = 0.0
+        w_occ = 0.0
+        w_prestige = 0.0
 
     if not comps_struct:
         w_kw += w_struct
         w_struct = 0.0
 
-    total = (w_food * food_score) + (w_struct * struct_score) + (w_kw * kw) + (w_occ * occasion_score)
-    wsum = w_food + w_struct + w_kw + w_occ
+    total = (w_food * food_score) + (w_struct * struct_score) + (w_kw * kw) + (w_occ * occasion_score) + (w_prestige * prestige_score)
+    wsum = w_food + w_struct + w_kw + w_occ + w_prestige
     if wsum <= 0:
         score = 0.5
     else:
@@ -1416,15 +1503,18 @@ def _match_score_row_explain(
     w_struct_n = (w_struct / wsum) if wsum > 0 else 0.0
     w_kw_n = (w_kw / wsum) if wsum > 0 else 0.0
     w_occ_n = (w_occ / wsum) if wsum > 0 else 0.0
+    w_prestige_n = (w_prestige / wsum) if wsum > 0 else 0.0
 
     breakdown: Dict[str, Any] = {
         "food": {"w": round(w_food_n, 4), "s": round(food_score, 4), "c": round(w_food_n * food_score, 4)},
         "structured": {"w": round(w_struct_n, 4), "s": round(struct_score, 4), "c": round(w_struct_n * struct_score, 4)},
         "keyword": {"w": round(w_kw_n, 4), "s": round(kw, 4), "c": round(w_kw_n * kw, 4)},
         "occasion": {"w": round(w_occ_n, 4), "s": round(occasion_score, 4), "c": round(w_occ_n * occasion_score, 4)},
+        "prestige": {"w": round(w_prestige_n, 4), "s": round(prestige_score, 4), "c": round(w_prestige_n * prestige_score, 4)},
         "structured_components": comps_struct or {},
         "foods_req": foods_req or [],
         "occasion_req": occasion_intent or None,
+        "prestige_req": prestige_intent,
         "region_req": region or None,
         "grapes_req": grapes_req or [],
         "color_req": color_req or None,
@@ -1434,6 +1524,14 @@ def _match_score_row_explain(
 
     # ---- short explanation (max 3 bullets) ----
     expl: List[str] = []
+
+    if prestige_intent:
+        if prestige_score >= 0.85:
+            expl.append("👑 Bottiglia di rilievo / premium")
+        elif prestige_score >= 0.55:
+            expl.append("👑 Profilo premium coerente")
+        else:
+            expl.append("👑 Intent premium richiesto")
 
     if food_present:
         if food_score >= 0.95:
@@ -1464,7 +1562,8 @@ def _match_score_row_explain(
     expl = expl[:3]
 
     return score, breakdown, expl
-   
+
+
 def _ui_highlights_for_relevance_v2(components: Dict[str, Any]) -> List[str]:
     """
     Explainability light (UI): massimo 3 badge, deterministico. Solo per relevance_v2.
@@ -1561,8 +1660,9 @@ def _match_score_row(
     typology_req: Dict[str, Optional[str]],
     foods_req: List[str],
     occasion_intent: Optional[str] = None,
+    prestige_intent: bool = False,
 ) -> float:
-    score, _, _ = _match_score_row_explain(row, query, region, grapes_req, color_req, intensity_req, typology_req, foods_req, occasion_intent)
+    score, _, _ = _match_score_row_explain(row, query, region, grapes_req, color_req, intensity_req, typology_req, foods_req, occasion_intent, prestige_intent)
     return score
 
 
@@ -1663,12 +1763,13 @@ def _apply_sort(cards: List[Dict[str, Any]], sort: str, value_intent: bool = Fal
     sort = sort or "relevance"
     
     if sort == "match":
-        # match desc, poi food contribution desc (se presente), poi score desc, poi price_delta asc
+        # match desc, poi food/prestige contribution, poi score desc, poi price_delta asc
         return sorted(
             cards,
             key=lambda c: (
                 -float(c.get("__match_score", 0.0)),
                 -float((c.get("match_breakdown", {}) or {}).get("food", 0.0)),
+                -float((c.get("match_breakdown", {}) or {}).get("prestige", 0.0)),
                 -float(c.get("score", 0.0)),
                 float(c.get("__price_delta", 0.0)),
             ),
@@ -1828,6 +1929,7 @@ def run_search(
 
     style_intent = parse_style_intent(q)
     occasion_intent = parse_occasion_intent(q)
+    prestige_intent = parse_prestige_intent(q)
 
     filtered = df
 
@@ -1895,7 +1997,7 @@ def run_search(
         }
 
         # ✅ UI match score (0..1) + available to relevance_v2 composite as M
-        mscore, mbd, mexpl = _match_score_row_explain(r, q, region, grapes_req, color_req, intensity_req, typology_req, foods_req, occasion_intent)
+        mscore, mbd, mexpl = _match_score_row_explain(r, q, region, grapes_req, color_req, intensity_req, typology_req, foods_req, occasion_intent, prestige_intent)
         boosts["__match_score_ui"] = mscore
         
         # ✅ Flatten match_breakdown per iOS (converte i dict in valori numerici)
@@ -1942,7 +2044,6 @@ def run_search(
             card["__final_score"] = card.get("score")  # score used for ordering (avoid double counting)
             card["__semantic_boost"] = round(float(card.get("__semantic_boost", 0.0) or 0.0), 6)
             card["__components"] = dbg_comp if isinstance(dbg_comp, dict) else {}
-            card["__components"] = dbg_comp if isinstance(dbg_comp, dict) else {}
             # card["__match_factor"] = round(float(match_factor), 6)
 
             # include explainability when debugging (già flattenato)
@@ -1977,6 +2078,7 @@ def run_search(
                 "__price_delta": card.get("__price_delta"),
                 "filters": {
                     "foods_req": foods_req,
+                    "prestige_req": prestige_intent,
                     "region_req": region or None,
                     "grapes_req": grapes_req,
                     "color_req": color_req,
@@ -1996,15 +2098,7 @@ def run_search(
                 },
             }
             
-            dbg["components"] = {
-                "__match_score_ui": round(float(card.get("__match_score", card.get("match_score", 0.0)) or 0.0), 6),
-                "__quality_score": round(float(card.get("__quality_score", 0.0) or 0.0), 6),
-                "__value_score": round(float(card.get("__value_score", 0.0) or 0.0), 6),
-                "__food_score": round(float((dbg_comp or {}).get("__food_score", 0.0) or 0.0), 6),
-                "__other_score": round(float((dbg_comp or {}).get("__other_score", 0.0) or 0.0), 6),
-                "__intensity_score": round(float((dbg_comp or {}).get("__intensity_score", 0.0) or 0.0), 6),
-                "__semantic_boost": round(float((dbg_comp or {}).get("__semantic_boost", 0.0) or 0.0), 6),
-            }
+            dbg["components"] = dbg_comp if isinstance(dbg_comp, dict) else {}
 
             if sort == "relevance_v2":
                 # composite components if available
@@ -2042,6 +2136,7 @@ def run_search(
             "intensity": intensity_req,
             "typology": typology_req,
             "foods": foods_req,
+            "prestige_intent": prestige_intent,
             "value_intent": value_intent,
         },
         "count": len(sorted_cards),
