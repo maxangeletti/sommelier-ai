@@ -154,6 +154,8 @@ def get_wines_df() -> pd.DataFrame:
         CSV_CACHE.mtime = mtime
         CSV_CACHE.rows = int(len(df))
         CSV_CACHE.last_load_ts = _now()
+        # Invalidate search cache immediately when dataset changes
+        SEARCH_CACHE.clear()
 
     return CSV_CACHE.df
 
@@ -199,6 +201,11 @@ def _cache_get(key: str) -> Optional[Any]:
 def _cache_set(key: str, value: Any) -> None:
     if DISABLE_CACHE:
         return
+    # opportunistic prune of expired entries before enforcing cap
+    now = _now()
+    expired = [k for k, ent in SEARCH_CACHE.items() if now - ent.ts > SEARCH_CACHE_TTL_SEC]
+    for k in expired:
+        SEARCH_CACHE.pop(k, None)
     if len(SEARCH_CACHE) >= SEARCH_CACHE_CAP:
         oldest_key = None
         oldest_ts = float("inf")
@@ -1805,10 +1812,10 @@ def run_search(
 
     # color filter (bianco/rosso/rosato)
     filtered = _filter_by_color(filtered, color_req)
-    timings["filters"] = round(time.perf_counter() - t0, 6)
-    t0 = time.perf_counter()
     # A/B/D filters
     filtered = _filter_new_A_B_D(filtered, grapes_req, aromas_req, intensity_req, typology_req)
+    timings["filters"] = round(time.perf_counter() - t0, 6)
+    t0 = time.perf_counter()
 
     # extreme price within current filters
     if price_info.get("mode") == "extreme":
@@ -1823,9 +1830,6 @@ def run_search(
                 idx = effective.idxmin()
             filtered = filtered.loc[[idx]]
 
-    rows = list(filtered.itertuples(index=False))
-
-    # hide fixture/test wines unless explicitly requested
     rows = list(filtered.itertuples(index=False))
 
     # hide fixture/test wines unless explicitly requested
@@ -2226,6 +2230,7 @@ def post_search(payload: Dict[str, Any] = Body(...)) -> JSONResponse:
     if not debug:
         cache_key = _cache_key({
             "build": BUILD_ID,
+            "csv_mtime": CSV_CACHE.mtime,
             "ep": "search",
             "query": query,
             "sort": sort,
@@ -2263,6 +2268,7 @@ def get_search_stream(
     if not debug:
         cache_key = _cache_key({
             "build": BUILD_ID,
+            "csv_mtime": CSV_CACHE.mtime,
             "ep": "search_stream",
             "query": query,
             "sort": sort,
