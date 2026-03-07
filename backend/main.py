@@ -401,7 +401,7 @@ def parse_prestige_intent(query: str) -> bool:
     patterns = [
         r"\bvino\s+importante\b",
         r"\bbottiglia\s+importante\b",
-        r"\bfa(re)?\s+figura\b",
+        r"\b(fa(re)?|faccia)(\s+bella)?\s+figura\b",
         r"\bdi\s+livello\b",
         r"\bprestigios[oa]\b",
         r"\bpremium\b",
