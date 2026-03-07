@@ -1338,6 +1338,7 @@ def _match_score_row_explain(
     intensity_req: Optional[str],
     typology_req: Dict[str, Optional[str]],
     foods_req: List[str],
+    occasion_intent: Optional[str] = None,
 ) -> Tuple[float, Dict[str, Any], List[str]]:
     """Compute match score (0..1) + breakdown + short explanation (deterministico).
 
@@ -1347,6 +1348,7 @@ def _match_score_row_explain(
     w_food = 0.50
     w_struct = 0.35
     w_kw = 0.15
+    w_occ = 0.0
 
     comps_struct = _structured_match_components(row, region, grapes_req, color_req, intensity_req, typology_req)
     kw = _keyword_match_score(row, query)
@@ -1363,6 +1365,16 @@ def _match_score_row_explain(
         if food_score <= 0.0:
             food_score = 0.05
 
+    occasion_score = 0.0
+    if occasion_intent:
+        occ_row = _norm_lc(getattr(row, "occasion", ""))
+        occ_req = _norm_lc(occasion_intent)
+        if occ_row and occ_req:
+            if occ_req in occ_row:
+                occasion_score = 1.0
+            elif occ_req == "cena" and "cena importante" in occ_row:
+                occasion_score = 1.0
+
     struct_score = 0.0
     if comps_struct:
         struct_score = sum(comps_struct.values()) / float(len(comps_struct))
@@ -1373,6 +1385,13 @@ def _match_score_row_explain(
         w_food = 0.70
         w_struct = 0.20
         w_kw = 0.10
+        w_occ = 0.0
+    elif occasion_intent:
+        # Occasion becomes a primary driver when explicitly requested and no food is present
+        w_occ = 0.65
+        w_struct = 0.20
+        w_kw = 0.15
+        w_food = 0.0
     else:
         # redistribute food weight
         extra = w_food
@@ -1385,8 +1404,8 @@ def _match_score_row_explain(
         w_kw += w_struct
         w_struct = 0.0
 
-    total = (w_food * food_score) + (w_struct * struct_score) + (w_kw * kw)
-    wsum = w_food + w_struct + w_kw
+    total = (w_food * food_score) + (w_struct * struct_score) + (w_kw * kw) + (w_occ * occasion_score)
+    wsum = w_food + w_struct + w_kw + w_occ
     if wsum <= 0:
         score = 0.5
     else:
@@ -1396,13 +1415,16 @@ def _match_score_row_explain(
     w_food_n = (w_food / wsum) if wsum > 0 else 0.0
     w_struct_n = (w_struct / wsum) if wsum > 0 else 0.0
     w_kw_n = (w_kw / wsum) if wsum > 0 else 0.0
+    w_occ_n = (w_occ / wsum) if wsum > 0 else 0.0
 
     breakdown: Dict[str, Any] = {
         "food": {"w": round(w_food_n, 4), "s": round(food_score, 4), "c": round(w_food_n * food_score, 4)},
         "structured": {"w": round(w_struct_n, 4), "s": round(struct_score, 4), "c": round(w_struct_n * struct_score, 4)},
         "keyword": {"w": round(w_kw_n, 4), "s": round(kw, 4), "c": round(w_kw_n * kw, 4)},
+        "occasion": {"w": round(w_occ_n, 4), "s": round(occasion_score, 4), "c": round(w_occ_n * occasion_score, 4)},
         "structured_components": comps_struct or {},
         "foods_req": foods_req or [],
+        "occasion_req": occasion_intent or None,
         "region_req": region or None,
         "grapes_req": grapes_req or [],
         "color_req": color_req or None,
@@ -1420,6 +1442,12 @@ def _match_score_row_explain(
             expl.append("🍽 Abbinamento: match parziale (pairing non perfetto)")
         else:
             expl.append("🍽 Abbinamento: richiesto ma non trovato nei pairing (fallback)")
+
+    if occasion_intent:
+        if occasion_score >= 0.95:
+            expl.append("🎯 Occasione: centrato per l'occasione richiesta")
+        else:
+            expl.append("🎯 Occasione: richiesta ma non centrale nei metadati")
 
     if comps_struct:
         hits = [k for k, v in comps_struct.items() if float(v) >= 0.95]
@@ -1532,8 +1560,9 @@ def _match_score_row(
     intensity_req: Optional[str],
     typology_req: Dict[str, Optional[str]],
     foods_req: List[str],
+    occasion_intent: Optional[str] = None,
 ) -> float:
-    score, _, _ = _match_score_row_explain(row, query, region, grapes_req, color_req, intensity_req, typology_req, foods_req)
+    score, _, _ = _match_score_row_explain(row, query, region, grapes_req, color_req, intensity_req, typology_req, foods_req, occasion_intent)
     return score
 
 
@@ -1866,7 +1895,7 @@ def run_search(
         }
 
         # ✅ UI match score (0..1) + available to relevance_v2 composite as M
-        mscore, mbd, mexpl = _match_score_row_explain(r, q, region, grapes_req, color_req, intensity_req, typology_req, foods_req)
+        mscore, mbd, mexpl = _match_score_row_explain(r, q, region, grapes_req, color_req, intensity_req, typology_req, foods_req, occasion_intent)
         boosts["__match_score_ui"] = mscore
         
         # ✅ Flatten match_breakdown per iOS (converte i dict in valori numerici)
