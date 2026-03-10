@@ -1,0 +1,286 @@
+SOMMELIERAI — RELEASE NOTES INCREMENTALE
+Data: 2026-03-09
+Baseline di riferimento documentale: handoff completo 2026-03-07 + release notes 2026-03-06
+Sessione: consolidamento Task 2 / Task 3 + fix puntuali regressioni GT
+
+====================================================================
+REGOLA DI CLASSIFICAZIONE
+====================================================================
+A) Freeze / Foundation
+B) Accepted tuning
+C) Experimental
+D) Rejected / Superseded
+
+Regola invariata:
+- pesi, fallback e bonus non si modificano senza tracciamento
+- ogni modifica ranking/tuning si legge contro i Golden Tests ufficiali
+
+====================================================================
+A — FREEZE / FOUNDATION
+====================================================================
+
+[2026-03-09-A1]
+Titolo:
+Chiusura operativa Task 2 — Dataset cleanup critico
+
+Stato:
+Chiuso operativamente in questa sessione
+
+Contenuto:
+- confermato dataset attivo: data/wines.normalized.csv
+- confermate 53 righe attese
+- chiusa normalizzazione dei campi categorici residui
+- chiusi missing deterministici su color_detail e tannins
+- rimossi producer generici/farlocchi residui senza invenzione dati
+- mantenuto il principio: nessun merge aggressivo dei duplicati dubbi
+
+Vincoli rispettati:
+- nessun tocco a ranking/pesi/fallback/bonus
+- nessun cambiamento semantico fuori perimetro dataset cleanup
+
+Note:
+Task 2 da considerare chiuso operativamente, ma da leggere sempre insieme ai GT.
+
+====================================================================
+B — ACCEPTED TUNING
+====================================================================
+
+[2026-03-09-B1]
+Titolo:
+Fix chirurgico regressione filtro colore su dataset normalizzato EN
+
+Stato:
+Accettato
+
+Problema osservato:
+- dopo il replace del CSV, query come "rosso elegante" andavano a results=[]
+- il filtro colore non intercettava correttamente valori EN come red / ruby_red / white / straw_yellow
+
+Patch:
+- allineato il filtro colore ai valori dataset normalizzati EN
+- coperti esplicitamente:
+  - rosso ↔ red / ruby_red
+  - bianco ↔ white / straw_yellow / golden_yellow
+  - rosato ↔ rose / rosé / pink / salmon
+
+Effetto verificato:
+- GT-05, GT-06, GT-07, GT-08, GT-09 tornati a rispondere
+- nessuna rottura dei GT già stabili lato prestige/important
+
+GT di riferimento:
+- GT-05 rosso strutturato
+- GT-06 bianco fresco
+- GT-07 rosso elegante
+- GT-08 rosso elegante per cena importante
+- GT-09 bianco fresco per cena importante di pesce
+
+
+[2026-03-09-B2]
+Titolo:
+Ripristino match combinato occasion + elegance
+
+Stato:
+Accettato
+
+Problema osservato:
+- nella query "rosso elegante per cena importante" i risultati erano vuoti o mal combinati
+- successivamente, dopo merge intermedi, la query tornava a funzionare ma con ordinamento subottimale
+
+Patch:
+- ripristinata la mappatura occasione IT → valori dataset EN:
+  - cena importante ↔ important_dinner
+  - aperitivo ↔ aperitif
+  - meditazione ↔ meditation
+  - cena ↔ dinner / important_dinner
+- ripristinata la coesistenza dei segnali occasion + elegance nel match
+- corretto il caso in cui un vino non coerente con important_dinner finiva sopra top result più adatti
+
+Effetto verificato:
+- "rosso elegante per cena importante" non va più a vuoto
+- top-3 coerente:
+  - Gevrey-Chambertin AOC
+  - Brunello di Montalcino DOCG
+  - Habemus Lazio IGP
+- Nebbiolo Langhe DOC non resta più primo in modo improprio
+
+GT di riferimento:
+- GT-07 rosso elegante
+- GT-08 rosso elegante per cena importante
+- GT-04 vino per cena importante
+
+
+[2026-03-09-B3]
+Titolo:
+Output data quality — normalizzazione color_detail e tags
+
+Stato:
+Accettato
+
+Problema osservato:
+- color_detail usciva in modo incoerente in alcuni casi:
+  - sweet al posto di colore reale
+  - sparkling al posto di colore reale
+- i tags ereditavano la stessa incoerenza
+
+Patch:
+- normalizzato color_detail solo in output API
+- riallineati i tags al color_detail normalizzato
+- mapping consolidato:
+  - red
+  - ruby_red
+  - white
+  - straw_yellow
+  - rose
+
+Effetto verificato:
+- Passito di Pantelleria DOC: color_detail=white
+- Franciacorta DOCG Brut / Prosecco DOC Extra Dry: color_detail=white
+- Champagne: color_detail=straw_yellow
+- tags coerenti con il nuovo color_detail
+
+GT di riferimento:
+- GT-02 formaggi erborinati
+- GT-03 franciacorta brut
+
+
+[2026-03-09-B4]
+Titolo:
+Output data quality — diagnostica filters / match_breakdown
+
+Stato:
+Accettato
+
+Patch:
+- aggiunti in meta.filters:
+  - occasion_intent
+  - elegance_intent
+  - prestige_intent
+  - value_intent
+- resi coerenti in match_breakdown:
+  - occasion_req
+  - prestige_req
+  - elegance_req
+
+Effetto verificato:
+- query "rosso elegante per cena importante" mostra ora:
+  - occasion_intent=true
+  - elegance_intent=true
+  - occasion_req=1.0
+  - elegance_req=1.0
+
+Note:
+Modifica solo diagnostica/output quality. Nessun tocco a pesi o fallback.
+
+
+[2026-03-09-B5]
+Titolo:
+Food specificity output — canonical specifico nei filters
+
+Stato:
+Accettato
+
+Patch:
+- quando è presente uno specifico, meta.filters.foods non lascia il generico sovrapposto
+- casi coperti:
+  - formaggi_erborinati esclude formaggi
+  - pesce_crudo esclude pesce
+
+Effetto verificato:
+- query "formaggi erborinati" → foods=["formaggi_erborinati"]
+- top result coerente: Passito di Pantelleria DOC
+- floor food residuale mantenuto sui non pertinenti (es. Gevrey-Chambertin 0.035)
+
+GT di riferimento:
+- GT-02 formaggi erborinati
+
+====================================================================
+C — EXPERIMENTAL
+====================================================================
+
+Nessun nuovo elemento promosso in C in questa sessione.
+
+Osservazione aperta (non cambiata ora):
+- il contributo "structured" continua a comparire anche in query dove il focus utente è elegance/occasion o tipologia (es. franciacorta brut)
+- questo punto è da considerare tuning successivo, non output quality
+
+====================================================================
+D — REJECTED / SUPERSEDED
+====================================================================
+
+[2026-03-09-D1]
+Titolo:
+Merge intermedi che reintroducevano regressioni già corrette
+
+Stato:
+Superati
+
+Casi osservati e poi corretti:
+- reintroduzione del vuoto su "rosso elegante per cena importante"
+- perdita del fix color_detail dopo patch food specificity
+- NameError su elegant_intent/elegance_intent nei meta.filters
+
+Regola ribadita:
+- i merge vanno sempre validati contro i GT mirati prima di considerarli stabili
+
+====================================================================
+VERIFICA GT SESSIONE 2026-03-09
+====================================================================
+
+GT verificati con esito positivo nel perimetro toccato:
+- GT-01 barolo serralunga
+- GT-02 formaggi erborinati
+- GT-03 franciacorta brut
+- GT-04 vino per cena importante
+- GT-05 rosso strutturato
+- GT-06 bianco fresco
+- GT-07 rosso elegante
+- GT-08 rosso elegante per cena importante
+- GT-09 bianco fresco per cena importante di pesce
+- GT-10 vino importante
+- GT-11 vino importante di pesce
+- GT-12 bottiglia importante
+- GT-13 vino che faccia figura
+
+Nota critica:
+- il perimetro toccato in questa sessione è da considerare stabile solo insieme ai fix di merge finali applicati al main.py corrente
+
+====================================================================
+STATO TASK / PROGRESS AGGIORNATO
+====================================================================
+
+2. Dataset cleanup critico
+Stato: 100%
+Classe: A
+
+3. Output data quality
+Stato: 100% sul perimetro lavorato in questa sessione
+Classe: B per i fix di comportamento/output, A per la chiusura dataset già recepita
+Nota:
+restano possibili ulteriori miglioramenti non bloccanti fuori dal perimetro appena chiuso
+
+5. Match refinement occasion/style/prestige/elegance
+Stato: avanzato e migliorato su ramo elegance+occasion
+Classe: B
+Nota:
+chiuso il fix puntuale bloccante sulla query combinata GT-08; non considerare però chiuso l'intero task 5
+
+8. Golden tests / query baseline
+Stato: di fatto rialzato
+Classe: C/D di controllo
+Nota:
+la baseline GT è stata rieseguita con esito coerente nel perimetro toccato
+
+9. Release notes incrementale + handoff strutturato
+Stato: aggiornato in questa sessione
+Classe: D
+
+====================================================================
+NOTA RAPIDA (NON CAMBIO ORA)
+====================================================================
+- structured continua a contribuire in query di eleganza/occasion e tipologia in misura forse eccessiva
+- il floor food residuale su query food specifiche è coerente con la baseline attuale e non va ritoccato senza decisione esplicita
+- la source strategy vini resta blocco fondamentale ancora aperto
+
+====================================================================
+END
+====================================================================

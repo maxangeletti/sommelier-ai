@@ -1,0 +1,146 @@
+SOMMELIERAI — PRICING MODEL OPTIONS V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: definire le principali opzioni di modello pricing per SommelierAI prima della scelta finale.
+
+PRINCIPIO GUIDA
+- Il modello pricing deve essere semplice da capire.
+- Deve riflettere il valore reale del prodotto.
+- Deve essere compatibile con una fase iniziale di apprendimento e validazione.
+
+1) OPZIONE A — FREEMIUM + SINGLE PREMIUM TIER
+Struttura:
+- Free
+- Premium
+
+Vantaggi:
+- semplice
+- facile da comunicare
+- ottima per fase iniziale
+- riduce complessità decisionale
+
+Svantaggi:
+- meno flessibile
+- rischia di comprimere utenti molto diversi nello stesso premium
+
+Valutazione:
+- opzione più naturale per v1
+
+2) OPZIONE B — FREEMIUM + PREMIUM + PREMIUM PLUS
+Struttura:
+- Free
+- Premium
+- Premium Plus
+
+Vantaggi:
+- maggiore segmentazione
+- spazio per utenti heavy-use o funzionalità avanzate
+
+Svantaggi:
+- più complessità
+- richiede differenze di valore molto chiare
+- rischia di essere prematura
+
+Valutazione:
+- non prioritaria per v1
+- possibile evoluzione futura
+
+3) OPZIONE C — FREE TRIAL + PAID ONLY
+Struttura:
+- trial temporaneo
+- poi accesso solo a pagamento
+
+Vantaggi:
+- più diretto lato monetizzazione
+- evita free permanente debole
+
+Svantaggi:
+- più duro in acquisizione
+- meno adatto a validare fiducia e abitudine iniziale
+- rischia di rallentare la scoperta del valore
+
+Valutazione:
+- non consigliata come modello iniziale
+
+4) OPZIONE D — USAGE-BASED / CREDIT MODEL
+Struttura:
+- crediti / query / pacchetti d’uso
+
+Vantaggi:
+- collega costo a consumo
+- utile in certi prodotti AI ad alto costo variabile
+
+Svantaggi:
+- percezione meno elegante per un prodotto consumer di scelta vino
+- può rendere l’esperienza meno rilassata
+- introduce più attrito
+
+Valutazione:
+- non consigliata come modello principale v1
+
+5) OPZIONE E — AFFILIATE-LED MODEL
+Struttura:
+- accesso gratuito o quasi gratuito
+- monetizzazione tramite referral / commerce
+
+Vantaggi:
+- bassa barriera utente
+- potenziale sinergia con layer commerce
+
+Svantaggi:
+- rischio di compromettere fiducia nel ranking
+- dipendenza da commerce e inventory
+- fragile nella fase iniziale
+
+Valutazione:
+- utile come leva futura, non come fondazione iniziale
+
+6) OPZIONE F — HYBRID SUBSCRIPTION + AFFILIATE
+Struttura:
+- free + premium subscription
+- monetizzazione aggiuntiva non invasiva da commerce layer
+
+Vantaggi:
+- più robusto del solo affiliate
+- mantiene il subscription model come base
+
+Svantaggi:
+- richiede attenzione forte a trust e separazione layer
+
+Valutazione:
+- buona direzione futura
+- non da mettere al centro del messaging iniziale
+
+7) RACCOMANDAZIONE UFFICIALE V1
+Ordine consigliato delle opzioni:
+1. Freemium + single premium tier
+2. In futuro: possibile hybrid subscription + affiliate separato
+3. Più avanti: eventuale premium plus solo se emerge bisogno reale
+
+8) CRITERI DI SCELTA FINALE
+Scegliere il modello finale in base a:
+- chiarezza percepita
+- facilità di comunicazione
+- sostenibilità operativa
+- coerenza col prodotto reale
+- qualità del free
+- differenza percepita del premium
+
+9) COSA EVITARE
+- troppi tier troppo presto
+- pricing “da prodotto AI” ma non da prodotto vino consumer
+- modelli che rompono fiducia nel ranking
+- modelli complicati da spiegare
+
+10) DECISIONE OPERATIVA
+Per SommelierAI v1, il modello più sensato resta:
+- free utile
+- un premium chiaro
+- eventuali layer futuri aggiuntivi solo dopo validazione reale
+
+NOTA RAPIDA (NON CAMBIO ORA)
+Questo documento non definisce ancora:
+- prezzi numerici
+- limiti numerici esatti
+- struttura mensile vs annuale
+- paywall copy

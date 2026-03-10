@@ -1,0 +1,117 @@
+SOMMELIERAI — LLM EVALUATION CRITERIA V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: definire i criteri ufficiali con cui valutare il layer LLM di SommelierAI prima e durante il rollout.
+
+PRINCIPIO GUIDA
+- L’LLM non va giudicato perché “suona intelligente”.
+- Va giudicato perché migliora chiarezza, utilità e qualità percepita senza rompere coerenza e affidabilità.
+- La coerenza col ranking engine resta criterio primario.
+
+1) OBIETTIVO DELLA VALUTAZIONE
+Misurare se il layer LLM:
+- spiega meglio i risultati
+- guida meglio l’utente
+- resta coerente col motore
+- evita hallucination
+- aumenta la qualità percepita del prodotto
+
+2) CRITERI PRINCIPALI
+
+A) Coerenza col ranking
+Domanda:
+- il testo LLM riflette davvero il rank e i risultati mostrati?
+
+Esito atteso:
+- sempre coerente
+
+B) Chiarezza spiegativa
+Domanda:
+- l’utente capisce meglio perché vede quei vini?
+
+Esito atteso:
+- spiegazioni più leggibili e meno tecniche
+
+C) Utilità dei follow-up
+Domanda:
+- i suggerimenti successivi aiutano davvero a procedere?
+
+Esito atteso:
+- follow-up pratici, non ornamentali
+
+D) Aderenza ai dati
+Domanda:
+- il layer LLM resta dentro i dati disponibili?
+
+Esito atteso:
+- nessuna invenzione rilevante
+
+E) Linguaggio user-friendly
+Domanda:
+- l’output evita canonical interni e formule tecniche poco leggibili?
+
+Esito atteso:
+- sì, sempre
+
+3) CRITERI SECONDARI
+- tono coerente col prodotto
+- sintesi adeguata
+- confronto top-2 / top-3 utile
+- assenza di verbosità inutile
+- buona gestione di query ambigue
+
+4) FAILURE MODES DA MISURARE
+- contraddizioni col rank
+- hallucination
+- suggerimenti inutili
+- tono troppo generico
+- testo troppo lungo
+- esposizione di canonical interni
+- apparente re-ranking non autorizzato
+
+5) METRICHE QUALITATIVE CONSIGLIATE
+Valutare su scala 1–5:
+- coerenza col ranking
+- chiarezza
+- utilità
+- fedeltà ai dati
+- qualità percepita
+- tone fit
+- concisezza
+
+6) DECISIONI POSSIBILI
+APPROVED
+- il layer è pronto per la fase corrente
+
+APPROVED WITH NOTE
+- utile ma con piccoli problemi da recuperare
+
+HOLD
+- non ancora sufficientemente solido
+
+REJECTED / ROLLBACK
+- incoerente o peggiorativo
+
+7) GATING MINIMO
+Un incremento del layer LLM non deve andare avanti se:
+- rompe la coerenza col ranking
+- introduce hallucination rilevante
+- peggiora la leggibilità
+- genera follow-up percepiti come inutili
+- espone canonical tecnici all’utente
+
+8) RACCOMANDAZIONE OPERATIVA V1
+Valutare il layer in quest’ordine:
+1. coerenza
+2. fedeltà ai dati
+3. chiarezza
+4. utilità
+5. qualità percepita
+
+9) NOTA RAPIDA (NON CAMBIO ORA)
+I criteri di valutazione LLM non sostituiscono:
+- GT del motore
+- regression testing backend
+- controllo qualità del catalogo
+
+Servono a valutare il layer sopra il motore, non il motore stesso.

@@ -1,0 +1,203 @@
+SOMMELIERAI — LLM USE CASES & BOUNDARIES V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: definire in modo esplicito i casi d’uso ammessi del layer LLM e i suoi confini operativi dentro SommelierAI.
+
+PRINCIPIO GUIDA
+- L’LLM aumenta chiarezza, esperienza e qualità percepita.
+- L’LLM non sostituisce il ranking engine.
+- L’LLM non sostituisce il catalogo.
+- L’LLM non deve “coprire” problemi strutturali del motore con linguaggio convincente.
+
+1) USE CASES APPROVATI V1
+
+A) Spiegazione del risultato
+Esempi:
+- “Perché questo vino è primo?”
+- “Perché mi proponi questo?”
+- “Che significa match?”
+
+Obiettivo:
+- trasformare segnali tecnici in spiegazioni chiare e user-friendly
+
+Stato:
+- APPROVED
+
+B) Confronto breve tra vini
+Esempi:
+- “Meglio questo o quello?”
+- “Qual è la differenza tra i primi due?”
+- “Perché uno costa di più?”
+
+Obiettivo:
+- aiutare l’utente a scegliere tra opzioni già ritornate dal motore
+
+Stato:
+- APPROVED
+
+C) Follow-up suggestions
+Esempi:
+- “Vuoi qualcosa di più elegante?”
+- “Posso restringere per prezzo o occasione”
+- “Ti mostro alternative più strutturate o più fresche”
+
+Obiettivo:
+- guidare la conversazione senza forzare il ranking
+
+Stato:
+- APPROVED
+
+D) Query refinement
+Esempi:
+- trasformare query verbose/ambigue in richieste più leggibili
+- aiutare l’utente a chiarire un bisogno
+
+Obiettivo:
+- migliorare la qualità dell’interazione
+
+Stato:
+- APPROVED WITH CONTROL
+
+E) Shortlist summary
+Esempi:
+- “Ecco i tre più adatti per cena importante”
+- “Questi sono i migliori se vuoi fare figura ma restare su un certo budget”
+
+Obiettivo:
+- sintetizzare in modo leggibile il top set del motore
+
+Stato:
+- APPROVED
+
+2) USE CASES NON APPROVATI V1
+
+A) Re-ranking autonomo dei risultati
+Descrizione:
+- l’LLM cambia l’ordine del motore in autonomia
+
+Stato:
+- NOT APPROVED
+
+Motivo:
+- rompe la coerenza con il ranking engine
+- riduce controllabilità e testabilità
+
+B) Invenzione di vini o facts non presenti
+Descrizione:
+- l’LLM suggerisce bottiglie non nel catalogo
+- l’LLM aggiunge dettagli non supportati
+
+Stato:
+- NOT APPROVED
+
+C) Correzione “creativa” di mismatch del motore
+Descrizione:
+- l’LLM presenta come ottimo un risultato mediocre solo per far sembrare il prodotto più intelligente
+
+Stato:
+- NOT APPROVED
+
+D) Sostituzione del parser con freeform reasoning opaco
+Descrizione:
+- l’interpretazione della query dipende solo dal testo generato dall’LLM senza controlli strutturati
+
+Stato:
+- NOT APPROVED V1
+
+3) BOUNDARIES OPERATIVI
+
+Boundary 1 — Fonte dati
+- il catalogo ufficiale resta la fonte dati
+- il runtime dataset resta la base del retrieval/ranking
+
+Boundary 2 — Rank authority
+- il rank mostrato all’utente viene dal motore
+- l’LLM non lo modifica
+
+Boundary 3 — UI language
+- l’LLM traduce canonical tecnici in linguaggio user-friendly
+- non deve esporre underscore o chiavi tecniche all’utente finale
+
+Boundary 4 — Explainability truthfulness
+- l’LLM spiega ciò che il motore ha fatto
+- non deve raccontare un’altra logica
+
+Boundary 5 — Safety against hallucination
+- in dubbio, l’LLM resta aderente ai dati disponibili
+- meglio una spiegazione semplice ma vera che una raffinata ma falsa
+
+4) INPUT PERMESSI ALL’LLM
+Permessi:
+- query utente
+- top risultati
+- reason
+- filtri estratti
+- match score
+- breakdown semplificato
+- contesto conversazionale limitato
+- eventuale preferenza utente nota
+
+Non permessi come base autonoma:
+- inferenze scollegate dal catalogo
+- knowledge esterna non controllata per cambiare il rank
+- scorciatoie che saltano il motore
+
+5) OUTPUT PERMESSI
+Permessi:
+- spiegazione top result
+- confronto top-2 / top-3
+- shortlist summary
+- next-step suggestions
+- interpretazione user-friendly della richiesta
+
+Non permessi:
+- cambiare rank
+- introdurre facts non supportati
+- mostrare canonical interni come output finale
+
+6) LIVELLI DI AUTONOMIA
+LOW AUTONOMY
+- solo explainability e suggestions
+- nessun impatto sul motore
+Stato:
+- target iniziale v1
+
+MEDIUM AUTONOMY
+- query refinement controllato
+- confronto ragionato
+- migliore gestione multi-turn
+Stato:
+- fase successiva
+
+HIGH AUTONOMY
+- reasoning più esteso
+- personalizzazione profonda
+- orchestrazione di più layer
+Stato:
+- non target immediato
+
+7) METRICHE DI ACCETTAZIONE
+Un use case LLM è accettabile se:
+- aumenta chiarezza
+- non rompe coerenza col ranking
+- non introduce hallucination
+- migliora l’esperienza percepita
+- è testabile
+
+8) DECISIONE UFFICIALE V1
+SommelierAI adotta l’LLM come:
+- explanation layer
+- conversational refinement layer
+- suggestion layer
+
+SommelierAI non adotta l’LLM come:
+- ranking engine principale
+- fonte dati primaria
+- correttore opaco del motore
+
+9) NOTA RAPIDA (NON CAMBIO ORA)
+Residui qualitativi aperti del motore:
+- GT-07 `rosso elegante`
+- GT-09 `bianco fresco per cena importante di pesce`
+
+Questi rafforzano la regola: l’LLM non deve mascherare difetti del motore facendo sembrare “giusto” ciò che il motore non ha ancora ottimizzato bene.

@@ -1,0 +1,129 @@
+SOMMELIERAI — LLM ROLLOUT PLAN V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: definire il piano di rollout del layer LLM di SommelierAI in modo progressivo, controllato e coerente con la baseline del motore ranking.
+
+PRINCIPIO GUIDA
+- L’LLM non entra “tutto insieme”.
+- Ogni fase deve essere piccola, misurabile e reversibile.
+- Il motore ranking resta l’autorità primaria.
+- Il rollout deve aumentare chiarezza ed esperienza percepita senza introdurre incoerenze.
+
+1) OBIETTIVO DEL ROLLOUT
+Rilasciare il layer LLM in più fasi:
+- prima explainability semplice
+- poi suggestions/refinement
+- solo dopo use case più ricchi
+
+2) FASE 0 — PRECONDITION
+Prima del rollout LLM devono essere veri:
+- catalog governance definita
+- source strategy definita
+- baseline runtime stabile
+- GT principali sotto controllo
+- I/O contract definito
+- use cases e boundaries definiti
+
+Stato attuale:
+- condizione sostanzialmente raggiunta per iniziare la pianificazione
+- residui motore aperti: GT-07, GT-09
+
+3) FASE 1 — EXPLANATION LAYER
+Scope:
+- spiegazione breve del top result
+- spiegazione sintetica della shortlist
+- nessun potere sul rank
+
+Capacità:
+- intro_summary
+- top_result_explanation
+- 2–3 next-step suggestions semplici
+
+Vincoli:
+- no re-ranking
+- no facts esterni
+- no inventare vini
+
+Decisione:
+- fase iniziale consigliata
+
+4) FASE 2 — CONVERSATIONAL REFINEMENT
+Scope:
+- suggestions più intelligenti
+- riformulazione user-friendly della query
+- miglior uso del contesto del turno
+
+Capacità:
+- follow-up mirati
+- interpretazione della richiesta
+- confronto breve top-2 / top-3
+
+Vincoli:
+- ranking sempre esterno al layer LLM
+
+5) FASE 3 — CONTROLLED QUERY REWRITING
+Scope:
+- riscrittura controllata della query lato esperienza
+- supporto alle richieste verbose o ambigue
+
+Capacità:
+- proporre una lettura più pulita della query
+- aiutare il parser/utente senza opacità eccessiva
+
+Vincoli:
+- rewriting tracciabile
+- niente sostituzione opaca del parser
+
+6) FASE 4 — ADVANCED PERSONALIZATION
+Scope:
+- personalizzazione più ricca
+- multi-turn refinement
+- shortlist più “assistita”
+
+Capacità:
+- tenere memoria di preferenze recenti
+- generare spiegazioni più su misura
+
+Vincoli:
+- solo dopo stabilizzazione forte delle fasi precedenti
+
+7) GATING TRA LE FASI
+Per passare da una fase alla successiva, devono risultare accettabili:
+- coerenza con ranking
+- chiarezza percepita
+- assenza di hallucination rilevante
+- utilità reale dei follow-up
+- nessuna regressione UX evidente
+
+8) METRICHE DI ROLLOUT
+Valutare:
+- chiarezza percepita delle spiegazioni
+- utilità dei suggerimenti
+- coerenza con il rank
+- frequenza di incoerenze
+- tasso di output inutili/generici
+- percezione di “intelligenza utile” del prodotto
+
+9) FAILURE MODES DA BLOCCARE
+- l’LLM parla bene ma spiega male
+- l’LLM introduce contraddizioni con il ranking
+- l’LLM usa linguaggio tecnico interno in output
+- l’LLM sembra scegliere lui il vino
+- l’LLM copre mismatch del motore con storytelling
+
+10) DECISIONE UFFICIALE V1
+Ordine di rollout consigliato:
+1. explanation layer
+2. suggestion / refinement layer
+3. controlled query rewriting
+4. personalization avanzata
+
+11) RACCOMANDAZIONE OPERATIVA
+Per SommelierAI:
+- non partire dall’LLM “onnipotente”
+- partire dall’LLM “utile e disciplinato”
+- trattare ogni fase come un layer additivo, non sostitutivo
+
+NOTA RAPIDA (NON CAMBIO ORA)
+I residui GT-07 e GT-09 restano aperti lato motore.
+Questo non blocca la pianificazione del rollout LLM, ma rafforza il principio che il layer LLM non deve mai mascherare problemi del ranking.

@@ -1,0 +1,108 @@
+SOMMELIERAI — BATCH UPDATE NOTE TEMPLATE V1
+Data: 2026-03-09
+Stato: template operativo
+Scopo: tracciare in modo sintetico ma completo un update batch del catalogo o di un layer collegato.
+
+USO
+Compilare questo template ogni volta che:
+- entra un nuovo batch di vini
+- si aggiorna un batch da fonte già approvata
+- si fa un cleanup batch significativo
+- si aggiorna un layer commerce o ratings con impatto tracciabile
+
+TEMPLATE
+
+Titolo batch:
+Data:
+Owner:
+Fonte:
+Tipo batch:
+- new records
+- update existing records
+- cleanup
+- commerce layer
+- ratings layer
+- mixed
+
+1) SCOPO DEL BATCH
+Descrivere in 2–4 righe:
+- cosa entra
+- da dove arriva
+- perché viene fatto ora
+
+2) SCOPE NUMERICO
+- record raw ricevuti:
+- record validati:
+- record approvati:
+- record scartati:
+- record aggiornati:
+- record nuovi:
+- record con review manuale:
+
+3) DOCUMENTI / ARTEFATTI COLLEGATI
+- source evaluation checklist:
+- decision note:
+- mapping sheet:
+- validation log:
+- master catalog update:
+- runtime export:
+- post-export checks:
+
+4) IMPATTO ATTESO
+Classificazione:
+- LOW
+- MEDIUM
+- HIGH
+
+Aree impattate:
+- catalog core
+- commerce
+- ratings
+- output quality
+- runtime dataset
+- GT / query baseline
+
+5) VALIDAZIONE
+Esito sintetico:
+- PASS
+- PASS WITH NOTE
+- HOLD
+- FAIL
+
+Problemi principali emersi:
+- ...
+- ...
+- ...
+
+6) EXPORT RUNTIME
+- export `wines.normalized.csv` rigenerato: yes/no
+- backend smoke check: pass/fail
+- GT subset eseguito: yes/no
+- GT full eseguito: yes/no
+
+7) DECISIONE OPERATIVA
+- GO
+- GO WITH NOTE
+- HOLD
+- STOP
+
+8) NOTE RAPIDE
+- ...
+- ...
+- ...
+
+9) FOLLOW-UP
+Azioni aperte:
+- ...
+- ...
+- ...
+
+10) CLASSIFICAZIONE FINALE
+- A Freeze/Foundation
+- B Accepted tuning
+- C Experimental
+- D Rejected/Rollbacked
+
+NOTA RAPIDA (NON CAMBIO ORA)
+Gli underscore restano interni/tecnici.
+L’output utente finale deve restare user-friendly.

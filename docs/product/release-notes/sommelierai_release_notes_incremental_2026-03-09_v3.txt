@@ -1,0 +1,63 @@
+SOMMELIERAI — RELEASE NOTES INCREMENTALE UFFICIALE
+Versione documento: 2026-03-09 v3
+Stato: aggiornato dopo estensione ciclo su performance/cache
+Metodo: classificazione A/B/C/D attiva; no modifiche non tracciate a pesi/fallback/bonus
+
+BASELINE STABILE ATTUALE
+- File backend attivo: baseline stabile post-rollback GT-07 / GT-09 + patch performance/cache.
+- Dataset attivo: data/wines.normalized.csv (53 righe attese e confermate nel ciclo precedente).
+- Stato GT finali del ciclo tecnico: GT-01..GT-13 rispondono; residui qualitativi aperti su GT-07 e GT-09.
+
+MODIFICHE DEL CICLO 2026-03-09
+
+[A] TASK 2 — DATASET CLEANUP CRITICO — CHIUSO
+- Normalizzazione campi categorici residui.
+- Pulizia missing deterministici.
+- Nessun intervento su ranking/pesi/fallback/bonus.
+- Dataset confermato a 53 righe.
+
+[A/B] TASK 3 — OUTPUT DATA QUALITY — CHIUSO SUL PERIMETRO LAVORATO
+- Correzione output color_detail incoerente.
+- Correzione tags coerenti con color_detail.
+- Correzione meta.filters diagnostici: occasion_intent / elegance_intent / prestige_intent / value_intent.
+- Correzione match_breakdown diagnostico: occasion_req / prestige_req / elegance_req.
+- Correzione specificità foods in meta.filters per canonical specifici (es. formaggi_erborinati).
+- Verifiche riuscite su formaggi erborinati e franciacorta brut.
+
+[B] TASK 5 — MATCH REFINEMENT OCCASION / STYLE / ELEGANCE — AVANZATO
+- Fix riuscito su regressione query combinata: "rosso elegante per cena importante".
+- Ripristinati filtro colore robusto per dataset EN e match combinato occasion + elegance.
+- Query combinata riportata a risultati coerenti con important_dinner + elegance.
+
+[B] TASK 5 — RESIDUI APERTI
+1. GT-07 "rosso elegante"
+- Tentativo di tuning qualitativo effettuato.
+- Esito non affidabile.
+- Rollback eseguito.
+- Stato: OPEN ISSUE / tuning qualitativo futuro.
+
+2. GT-09 "bianco fresco per cena importante di pesce"
+- Più tentativi puntuali sul ramo occasion effettuati.
+- Nessun miglioramento reale sul match occasion effettivo.
+- Stato: OPEN ISSUE / tuning qualitativo futuro.
+
+[D] PERFORMANCE + CACHE CONSOLIDATION — APPLICATA
+- Prune cache reso periodico invece che eseguito a ogni set.
+- Reset stato prune quando cambia il dataset.
+- Warmup get_wines_df() anticipato prima della cache key su /search e /search_stream.
+- Validazione minima eseguita su query baseline "barolo serralunga": backend operativo, risposta coerente, nessuna regressione evidente.
+
+VERIFICHE DI CICLO
+- GT-01..GT-13 rieseguiti con esito complessivamente stabile.
+- Nessun caso vuoto nei GT finali del ciclo stabile.
+- Residui qualitativi non bloccanti ma aperti: GT-07, GT-09.
+
+CLASSIFICAZIONE FINALE DEL CICLO
+- Task 2: CLOSED
+- Task 3: CLOSED sul perimetro lavorato
+- Task 5: ADVANCED con residui aperti su GT-07 e GT-09
+- Performance/cache: APPLIED / STABLE
+
+NOTA RAPIDA (NON CAMBIO ORA)
+- structured continua a contribuire in query elegance/occasion più di quanto idealmente desiderato.
+- GT-07 e GT-09 richiedono tuning qualitativo dedicato, non ulteriori merge larghi.

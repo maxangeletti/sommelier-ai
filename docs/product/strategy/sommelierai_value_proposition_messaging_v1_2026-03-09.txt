@@ -1,0 +1,121 @@
+SOMMELIERAI — VALUE PROPOSITION & MESSAGING V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: definire la value proposition ufficiale di SommelierAI e il primo impianto di messaging per il go-to-market.
+
+PRINCIPIO GUIDA
+- Il messaggio non deve vendere “AI” in astratto.
+- Deve vendere un risultato utile, credibile e comprensibile.
+- Il linguaggio deve restare semplice, concreto e coerente col prodotto reale.
+
+1) VALUE PROPOSITION CORE
+SommelierAI aiuta a trovare il vino giusto per il contesto giusto, con ranking coerente e spiegazioni chiare.
+
+Formula sintetica:
+- trovare più facilmente
+- scegliere con più fiducia
+- capire il perché della scelta
+
+2) VALUE PROPOSITION ESTESA
+Per utenti che non vogliono perdersi tra troppe bottiglie o descrizioni confuse, SommelierAI offre una selezione guidata di vini coerenti con occasione, stile, piatto e budget, accompagnata da spiegazioni leggibili e confronto utile.
+
+3) PUNTI DI VALORE PRINCIPALI
+A) Riduzione del rumore
+- meno liste casuali
+- più risultati sensati
+
+B) Scelta guidata dal contesto
+- vino per cena importante
+- vino per pesce
+- vino per fare figura
+- vino elegante / strutturato / fresco
+
+C) Explainability
+- non solo suggerimento
+- ma anche spiegazione del perché
+
+D) Fiducia nella scelta
+- utile per utenti non esperti
+- utile anche per appassionati medi
+
+4) MESSAGGI PRINCIPALI
+Messaggio 1:
+“Trova il vino giusto per il momento giusto.”
+
+Messaggio 2:
+“Scopri cosa scegliere e perché.”
+
+Messaggio 3:
+“Meno rumore, più scelta giusta.”
+
+Messaggio 4:
+“Un ranking guidato, non una lista casuale.”
+
+5) MESSAGGI PER USE CASE
+Cena importante:
+- “Trova una bottiglia all’altezza del contesto.”
+- “Scegli con più sicurezza per una cena importante.”
+
+Regalo / figura:
+- “Porta una bottiglia che faccia figura, senza scegliere a caso.”
+
+Abbinamento:
+- “Parti dal piatto e arriva alla bottiglia più coerente.”
+
+Value-for-money:
+- “Trova opzioni sensate senza spendere male.”
+
+6) MESSAGGI PER PERSONA
+Occasional chooser:
+- “Ti aiuto a scegliere bene senza perderti.”
+
+Guided improver:
+- “Capisci meglio le opzioni senza dover studiare tutto.”
+
+Context-driven buyer:
+- “Dimmi il contesto, ti porto alle bottiglie più adatte.”
+
+Gift buyer:
+- “Scegli una bottiglia che faccia figura con più fiducia.”
+
+7) COSA EVITARE NEL MESSAGING
+- “Il sommelier perfetto definitivo”
+- “L’AI che sa tutto del vino”
+- “La piattaforma totale del vino”
+- claim troppo larghi rispetto al prodotto reale
+- linguaggio troppo tecnico
+- linguaggio troppo hype
+
+8) TONO CONSIGLIATO
+- chiaro
+- concreto
+- utile
+- rassicurante
+- non snob
+- non iper-tecnico
+- non gimmick AI
+
+9) TAGLINE CANDIDATE V1
+- Il vino giusto, per il momento giusto.
+- Scegli meglio. Capisci perché.
+- Meno rumore, più vino giusto.
+- Trova la bottiglia più coerente con il tuo contesto.
+
+10) DECISIONE UFFICIALE V1
+SommelierAI va raccontato come:
+- motore guidato di scelta vino
+- ranking + spiegazione
+- assistente pratico per decidere meglio
+
+Non va raccontato come:
+- enciclopedia totale del vino
+- AI onnisciente
+- marketplace puro
+
+NOTA RAPIDA (NON CAMBIO ORA)
+Questo documento definisce il messaging foundation.
+Non sostituisce ancora:
+- landing copy
+- App Store copy
+- pitch breve / pitch lungo
+- channel-specific messaging

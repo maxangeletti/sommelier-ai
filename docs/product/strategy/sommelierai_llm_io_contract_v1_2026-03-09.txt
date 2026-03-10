@@ -1,0 +1,200 @@
+SOMMELIERAI — LLM I/O CONTRACT V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: definire il contratto minimo di input/output tra ranking engine e layer LLM in SommelierAI.
+
+PRINCIPIO GUIDA
+- Il motore ranking resta la fonte primaria della decisione.
+- L’LLM riceve dati già strutturati.
+- L’LLM restituisce testo e suggerimenti coerenti col ranking.
+- Nessuna dipendenza da campi opachi o non tracciabili.
+
+1) INPUT MINIMO VERSO L’LLM
+Campo: user_query
+Tipo: string
+Scopo: query originale dell’utente
+
+Campo: normalized_filters
+Tipo: object
+Scopo: filtri estratti dal motore/parser
+Esempi:
+- color
+- foods
+- occasion_intent
+- prestige_intent
+- elegance_intent
+- value_intent
+- typology
+- grapes
+- intensity
+
+Campo: sort_mode
+Tipo: string
+Valori tipici:
+- relevance
+- match
+- price
+- rating
+
+Campo: top_results
+Tipo: array
+Scopo: risultati già ordinati dal motore
+
+Per ogni elemento di top_results:
+- rank
+- id
+- name
+- producer
+- price
+- reason
+- match_score
+- quality
+- balance
+- persistence
+- country
+- region
+- zone
+- denomination
+- vintage
+- color_detail
+- grapes
+- intensity
+- sparkling
+- sweetness
+- occasion
+- safe_tags_user_friendly
+
+Campo opzionale: result_count
+Tipo: integer
+
+Campo opzionale: explain_mode
+Tipo: boolean
+
+Campo opzionale: debug_summary
+Tipo: object
+Scopo: sintesi sicura dei segnali di match, non verbosa
+Esempi:
+- top_result_drivers
+- occasion_active
+- elegance_active
+- prestige_active
+- food_active
+
+Campo opzionale: conversation_context
+Tipo: object
+Scopo: contesto minimo multi-turn
+
+2) INPUT NON CONSIGLIATI V1
+- canonical tecnici grezzi esposti senza mediazione
+- payload backend troppo verboso o instabile
+- interi dataframe / dump runtime
+- breakdown completo se non serve davvero all’LLM
+
+3) OUTPUT MINIMO DELL’LLM
+Campo: intro_summary
+Tipo: string
+Scopo: frase breve di apertura coerente con i risultati
+
+Campo: top_result_explanation
+Tipo: string
+Scopo: spiegazione user-friendly del primo risultato
+
+Campo opzionale: comparison_summary
+Tipo: string
+Scopo: confronto breve tra i primi risultati
+
+Campo opzionale: next_step_suggestions
+Tipo: array[string]
+Scopo: 2–4 suggerimenti utili di follow-up
+
+Campo opzionale: user_friendly_query_interpretation
+Tipo: string
+Scopo: traduzione leggibile di come la richiesta è stata capita
+
+4) OUTPUT NON AMMESSI
+- cambio del rank
+- nuovi vini non presenti nel payload
+- facts non supportati
+- canonical tecnici con underscore esposti all’utente
+- spiegazioni in contrasto con `reason` e col ranking
+
+5) CONTRACT DI COERENZA
+L’output LLM deve sempre rispettare:
+- rank del motore invariato
+- risultati nominati presenti nel payload
+- tono user-friendly
+- nessuna invenzione
+- coerenza con filtri attivi e query
+
+6) ESEMPIO INPUT SEMPLIFICATO
+{
+  "user_query": "rosso elegante per cena importante",
+  "normalized_filters": {
+    "color": "rosso",
+    "foods": [],
+    "occasion_intent": true,
+    "prestige_intent": false,
+    "elegance_intent": true,
+    "value_intent": false
+  },
+  "sort_mode": "match",
+  "top_results": [
+    {
+      "rank": 1,
+      "name": "Gevrey-Chambertin AOC",
+      "producer": "Domaine Armand Rousseau",
+      "price": "210.00",
+      "reason": "Borgogna rosso di grande rilievo...",
+      "match_score": 0.925,
+      "occasion": "important_dinner",
+      "color_detail": "ruby_red"
+    }
+  ]
+}
+
+7) ESEMPIO OUTPUT SEMPLIFICATO
+{
+  "intro_summary": "Ho privilegiato rossi eleganti adatti a una cena importante.",
+  "top_result_explanation": "Gevrey-Chambertin è in cima perché unisce profilo elegante, struttura fine e forte aderenza al contesto di cena importante.",
+  "comparison_summary": "Le alternative subito sotto restano molto coerenti, ma il primo risulta più centrato sul profilo raffinato che stai cercando.",
+  "next_step_suggestions": [
+    "Vuoi alternative più accessibili?",
+    "Posso restringere a Italia soltanto.",
+    "Posso mostrarti opzioni più strutturate."
+  ]
+}
+
+8) POLICY USER-FRIENDLY
+Internamente:
+- important_dinner
+- formaggi_erborinati
+- ruby_red
+
+Verso l’utente:
+- cena importante
+- formaggi erborinati
+- rosso rubino
+
+9) IMPLEMENTAZIONE CONSIGLIATA V1
+Fase iniziale:
+- usare solo top 3–5 risultati
+- usare payload piccolo e stabile
+- usare spiegazioni brevi
+- usare suggerimenti semplici
+
+10) DECISIONE UFFICIALE V1
+Il contratto LLM v1 deve essere:
+- piccolo
+- stabile
+- leggibile
+- coerente col motore
+- privo di libertà implicite sul ranking
+
+NOTA RAPIDA (NON CAMBIO ORA)
+Questo contratto non definisce ancora:
+- prompt design definitivo
+- prompt routing
+- A/B testing del layer LLM
+- caching del layer LLM
+
+Questi sono step successivi.

@@ -1,0 +1,53 @@
+SOMMELIERAI — LLM RISK REGISTER V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: tracciare i principali rischi del layer LLM con impatto, probabilità e mitigazione.
+
+1) RISCHIO: CONTRADDIZIONE COL RANKING
+Impatto: alto
+Probabilità: media
+Mitigazione:
+- rank authority sempre al motore
+- prompt con vincolo duro
+- evaluation su coerenza
+
+2) RISCHIO: HALLUCINATION
+Impatto: alto
+Probabilità: media
+Mitigazione:
+- payload ridotto e strutturato
+- no facts esterni non controllati
+
+3) RISCHIO: MASCHERARE DIFETTI DEL MOTORE
+Impatto: alto
+Probabilità: media
+Mitigazione:
+- LLM non usato per coprire mismatch ranking
+- residui GT-07 e GT-09 restano tracciati come problemi motore
+
+4) RISCHIO: OUTPUT TROPPO GENERICO
+Impatto: medio
+Probabilità: alta
+Mitigazione:
+- prompt design disciplinato
+- metriche su utilità e chiarezza
+
+5) RISCHIO: ESPOSIZIONE DI CANONICAL INTERNI
+Impatto: medio
+Probabilità: media
+Mitigazione:
+- regola hard user-friendly
+- check dedicato nel rollout gate
+
+6) RISCHIO: SOVRA-VERBOSITÀ
+Impatto: medio
+Probabilità: alta
+Mitigazione:
+- prompt breve
+- output contract piccolo
+
+DECISIONE OPERATIVA
+I rischi più critici sono:
+- contraddizione col ranking
+- hallucination
+- mascheramento dei difetti del motore

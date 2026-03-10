@@ -1,0 +1,86 @@
+SOMMELIERAI — LLM PROMPT DESIGN PRINCIPLES V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: definire i principi ufficiali di prompt design del layer LLM di SommelierAI.
+
+PRINCIPIO GUIDA
+- Il prompt deve rafforzare la coerenza col motore.
+- Il prompt non deve concedere libertà implicite di re-ranking.
+- Il prompt deve privilegiare chiarezza, aderenza ai dati e linguaggio user-friendly.
+
+1) OBIETTIVO DEL PROMPT
+Il prompt deve portare l’LLM a:
+- spiegare i risultati del motore
+- sintetizzare una shortlist
+- proporre next steps utili
+- mantenere coerenza con ranking, query e filtri
+
+2) COSA DEVE SAPERE L’LLM
+- query utente
+- filtri normalizzati
+- top risultati già ordinati
+- reason per risultato
+- eventuale sintesi del breakdown
+- eventuale contesto conversazionale minimo
+
+3) COSA NON DEVE FARE IL PROMPT
+- chiedere all’LLM di “scegliere il vino migliore” ignorando il rank
+- chiedere di inventare dettagli mancanti
+- chiedere di coprire mismatch del motore con linguaggio persuasivo
+- esporre canonical interni all’utente finale
+
+4) TONO E STILE
+- chiaro
+- breve
+- leggibile
+- concreto
+- aderente ai risultati
+- user-friendly
+
+5) REGOLE DI FEDELTÀ
+Il prompt deve ribadire che:
+- il ranking è già deciso dal motore
+- i risultati citati devono essere nel payload
+- nessun vino esterno va introdotto
+- nessun fatto non supportato va aggiunto
+
+6) STRUTTURA CONSIGLIATA DEL PROMPT
+Blocco 1:
+- ruolo dell’LLM (explainability / refinement / suggestions)
+
+Blocco 2:
+- vincoli duri
+  - non cambiare rank
+  - non inventare facts
+  - non esporre underscore/canonical tecnici
+  - restare coerente con query e filtri
+
+Blocco 3:
+- dati in input
+
+Blocco 4:
+- formato output desiderato
+  - intro_summary
+  - top_result_explanation
+  - optional_comparison
+  - next_step_suggestions
+
+7) FAILURE MODES DA EVITARE
+- sovra-spiegazione
+- tono troppo generico
+- spiegazioni “belle” ma scollegate dai dati
+- contraddizioni tra rank e testo
+- uso di linguaggio tecnico interno in output finale
+
+8) DECISIONE UFFICIALE V1
+Il prompt design SommelierAI deve:
+- proteggere la coerenza del motore
+- massimizzare explainability leggibile
+- minimizzare hallucination
+- mantenere separati ranking e narrazione
+
+NOTA RAPIDA (NON CAMBIO ORA)
+Il prompt design non sostituisce:
+- il contratto I/O
+- i confini d’uso del layer LLM
+- il tuning qualitativo ancora aperto sul motore

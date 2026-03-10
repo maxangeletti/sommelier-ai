@@ -1,0 +1,291 @@
+SOMMELIERAI — COMPLETE SESSION HANDOFF + ROADMAP + RELEASE NOTES + GOLDEN TESTS
+Data: 2026-03-07
+Baseline corrente: freeze-v1.0.8-importante-premium-clean + patch successive committate in sessione
+Stato progetto: blocco ranking/data/match molto avanzato, ma il progetto completo include anche source strategy vini e lancio prodotto
+
+====================================================================
+0. GROUND RULES OPERATIVE (VINCOLANTI)
+====================================================================
+
+Metodo di lavoro:
+- Utente = mente / direzione
+- Assistente = braccio / esecuzione
+- Le priorità e la direzione le decide l’utente
+- L’assistente deve leggere i file reali disponibili prima di dare indicazioni operative se non è sicuro
+- Non si fanno più modifiche “a intuito” su ranking/score/fallback/bonus
+- Ogni modifica va classificata esplicitamente come:
+  A) Freeze/Foundation
+  B) Accepted tuning
+  C) Experimental
+  D) Rejected/Superseded
+- Niente cambi a pesi, fallback o bonus senza tracciamento decisionale minimo
+- Va mantenuta una release notes incrementale ufficiale
+- Negli handoff futuri va inclusa anche la release notes incrementale ufficiale
+- A fine sessione: documento completo + handoff + stato roadmap + GT
+- I Golden Tests (GT) sono baseline di riferimento: ogni modifica ranking/tuning va letta contro di essi
+
+====================================================================
+1. LETTURA CORRETTA DELLO STATO PROGETTO
+====================================================================
+
+SommelierAI NON è solo il blocco tecnico ranking/data/match.
+
+Blocchi progetto reali:
+1. Motore ranking / matching / dataset / cache
+2. Source strategy vini (catalogo e provenienza dati)
+3. LLM
+4. Go-to-market / lancio prodotto
+
+Conclusione:
+- Il blocco tecnico attuale è molto avanzato
+- Il progetto completo NON è ancora vicino alla chiusura senza:
+  - source strategy vini
+  - blocco LLM
+  - fase di lancio prodotto
+
+====================================================================
+2. ROADMAP UFFICIALE — STATO, PESO, RESIDUO
+====================================================================
+
+TABELLA DI MARCIA (peso in giorni lavorativi)
+
+A — Freeze / Foundation
+1. Ranking Transparency Debugger
+   Stato: 100%
+   Peso: 2–3 giorni
+   Residuo: 0
+
+2. Dataset cleanup critico
+   Stato: 95%
+   Peso: 3–5 giorni
+   Residuo: 0.5–1 giorno
+
+3. Output data quality
+   Stato: 95%
+   Peso: 1–2 giorni
+   Residuo: 0.25–0.5 giorni
+
+B — Accepted tuning
+4. Match refinement food
+   Stato: 90%
+   Peso: 3–4 giorni
+   Residuo: 0.5–1 giorno
+
+5. Match refinement occasion/style/prestige/elegance
+   Stato: 88%
+   Peso: 5–7 giorni
+   Residuo: 1–2 giorni
+
+6. Performance + cache
+   Stato: 75%
+   Peso: 2–3 giorni
+   Residuo: 0.5–1 giorno
+
+C — Experimental / governato
+7. Tuning score/fallback/bonus con tracciamento
+   Stato: 60%
+   Peso: 2–4 giorni
+   Residuo: 1–2 giorni
+
+8. Golden tests / query baseline
+   Stato: 90%
+   Peso: 1–2 giorni
+   Residuo: 0.25–0.5 giorni
+
+D — Chiusura / documentazione del blocco tecnico
+9. Release notes incrementale + handoff strutturato
+   Stato: 90%
+   Peso: 1–2 giorni
+   Residuo: 0.25–0.5 giorni
+
+10. Freeze finale di ciclo + verifica regressioni
+   Stato: 70%
+   Peso: 1 giorno
+   Residuo: 0.25–0.5 giorni
+
+E — Source strategy / catalogo vini
+11. Decisione fonte vini definitiva
+   Stato: 10%
+   Peso: 3–6 giorni
+   Residuo: 3–5 giorni
+   Nota: blocco fondamentale, non accessorio
+
+12. Modello dati catalogo / mapping / qualità fonte
+   Stato: 5%
+   Peso: 2–4 giorni
+   Residuo: 2–4 giorni
+
+F — LLM
+13. Definizione uso LLM (raffinatore, follow-up, reasoning)
+   Stato: 0%
+   Peso: 1–2 giorni
+   Residuo: 1–2 giorni
+
+14. Implementazione LLM v1 utile
+   Stato: 0%
+   Peso: 3–5 giorni
+   Residuo: 3–5 giorni
+
+G — Go-to-market / lancio prodotto
+15. Posizionamento e messaggio prodotto
+   Stato: 10%
+   Peso: 2–3 giorni
+   Residuo: 2–3 giorni
+
+16. Strategia lancio / canali / pricing / alpha-beta
+   Stato: 0%
+   Peso: 3–5 giorni
+   Residuo: 3–5 giorni
+
+Sintesi tempi:
+- Chiusura blocco tecnico attuale: 2–4 giorni (più probabile: 3)
+- Arrivo a LLM v1 utile: +4–7 giorni
+- Source strategy + lancio prodotto: +7–14 giorni
+- Totale progetto in modo credibile: 3–6 settimane
+- Stima più probabile complessiva: ~4 settimane
+
+====================================================================
+3. LETTURA SECCA DEL PROGRESS
+====================================================================
+
+A oggi:
+- Blocco tecnico attuale: ~88%
+- Progetto completo end-to-end: ~55–60%
+
+Traduzione:
+- quasi chiuso il motore
+- non ancora chiuso il prodotto completo
+
+====================================================================
+4. FREEZE / TAG DI RIFERIMENTO
+====================================================================
+
+- freeze-v1.0.2-explain-final
+- freeze-v1.0.3-transparency-stable
+- freeze-v1.0.4-food-dataset-cache
+- freeze-v1.0.5-food-floor-restored
+- freeze-v1.0.6-cache-realigned
+- freeze-v1.0.7-occasion-match
+- freeze-v1.0.8-importante-premium-clean
+- freeze-v1.0.9-elegance-supported
+
+====================================================================
+5. RELEASE NOTES INCREMENTALE UFFICIALE (A/B/C/D)
+====================================================================
+
+A — Freeze / Foundation
+- Transparency debugger stabilizzato
+- Dataset cleanup critico avanzato
+- Separazione name/producer ripulita
+- Food-specific parsing baseline ripristinata
+- Output name non più ricomposto artificialmente con producer
+
+B — Accepted tuning
+- food_score floor = 0.05 ripristinato
+- Occasion intent nel sort=match
+- Prestige intent (“vino importante”, “bottiglia importante”, “vino che faccia figura”)
+- Elegance intent supportato con:
+  - tag eleganti controllati nel dataset
+  - bonus matching dedicato
+- Cache realigned sulla baseline corretta
+- Producer generici/farlocchi rimossi dal dataset premium
+
+C — Experimental
+- Segnali esterni autorevoli (AIS ecc.) a supporto del ramo “Importante”
+- Semantica LLM-guided su eleganza / classico vs emergente
+
+D — Rejected / Superseded
+- Varianti che rompevano il parser food specifico
+- Varianti che riaggiungevano producer al name
+- Varianti intermedie che creavano entropia tra baseline diverse
+
+====================================================================
+6. GOLDEN TESTS UFFICIALI (GT)
+====================================================================
+
+GT-01 — barolo serralunga
+GT-02 — formaggi erborinati
+GT-03 — franciacorta brut
+GT-04 — vino per cena importante
+GT-05 — rosso strutturato
+GT-06 — bianco fresco
+GT-07 — rosso elegante
+GT-08 — rosso elegante per cena importante
+GT-09 — bianco fresco per cena importante di pesce
+GT-10 — vino importante
+GT-11 — vino importante di pesce
+GT-12 — bottiglia importante
+GT-13 — vino che faccia figura
+
+Regola:
+- ogni modifica ranking/tuning si legge contro questi GT
+
+====================================================================
+7. RAMI PRODOTTO FORMALIZZATI
+====================================================================
+
+7.1 Ramo “Importante”
+Definizione:
+- bottiglia che ha peso, contesto e percezione
+Comportamento:
+- default fast path
+- shortlist premium mista
+- follow-up solo se l’utente approfondisce:
+  - classico
+  - emergente
+  - budget
+  - contesto
+
+7.2 Concetto “Elegante”
+Direzione:
+- tag esplicito nel dataset
+- segnale derivato leggero
+- LLM futuro potrà raffinare, non sostituire la base
+
+====================================================================
+8. DATASET — STATO ATTUALE
+====================================================================
+
+Dataset attivo:
+- data/wines.normalized.csv
+
+Rows attese:
+- 53
+
+Interventi fatti:
+- normalizzazione EN campi chiave
+- rimozione righe test/fake
+- pulizia Example/Esempio
+- ampliamento premium con etichette di rilievo
+- rimozione producer generici/farlocchi
+- tag “elegante” aggiunto in modo controllato
+
+Nota critica:
+- la scelta definitiva della fonte/catalogo vini è ancora aperta
+- questo è un blocco fondamentale da chiudere prima del prodotto finale
+
+====================================================================
+9. PRIORITÀ PROSSIME
+====================================================================
+
+Ordine corretto da qui:
+1. chiudere bene il blocco tecnico residuo
+2. formalizzare e decidere la source strategy vini
+3. avviare il blocco LLM
+4. impostare go-to-market / lancio prodotto
+
+====================================================================
+10. OBIETTIVO DEL PROSSIMO CICLO
+====================================================================
+
+Obiettivo:
+- non perdere nulla
+- chiudere il residuo tecnico
+- aprire in modo strutturato:
+  - source strategy
+  - LLM
+  - lancio prodotto
+
+====================================================================
+END
+====================================================================

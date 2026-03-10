@@ -1,0 +1,2 @@
+id,name,producer,country,region,zone,denomination,vintage,color_detail,grapes,intensity,sparkling,sweetness,food_pairings,occasion,quality,balance,persistence,reason,tags,price,purchase_url,popularity,rating_overall
+wine_0001,Gevrey-Chambertin AOC,Domaine Armand Rousseau,France,Bourgogne,Gevrey-Chambertin,Gevrey-Chambertin,2021,ruby_red,pinot noir,medium,fermo,secco,anatra|funghi_tartufo|carne_bianca,important_dinner,4.9,4.8,4.8,"Borgogna rosso di grande rilievo, floreale e profondo, con trama finissima.",elegante;finezza;longevo;prestigioso,210.00,,,

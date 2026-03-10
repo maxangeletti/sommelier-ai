@@ -1,0 +1,59 @@
+SOMMELIERAI — SOURCE STRATEGY DECISION NOTE
+Data: 2026-03-09
+Stato: operativo
+Classificazione: A/B decisionale (no code change)
+
+Obiettivo
+Definire una source strategy vini praticabile, coerente con il progetto, senza bloccare sviluppo prodotto e senza dipendere da sorgenti poco controllabili.
+
+Decisione operativa consigliata
+1. NON usare come fonte primaria una sorgente esterna non contrattualizzata o non chiaramente permissioned.
+2. Usare come baseline un catalogo proprietario/curato da SommelierAI.
+3. Strutturare il catalogo con campi stabili e normalizzati, mantenendo il controllo editoriale sui dati che impattano ranking/match/UI.
+4. Separare nettamente:
+   - catalogo base vino
+   - metadata commerciali dinamici (prezzo, disponibilita, link acquisto)
+   - ratings esterni / expert sources
+5. Trattare ratings esterni e retailer links come layer successivi, non come fondazione del motore.
+
+Raccomandazione architetturale
+FASE 1 — baseline immediata
+- catalogo proprietario curato
+- ingest manuale/semi-manuale
+- schema stabile e controllato
+- QA interna su campi che impattano ranking
+
+FASE 2 — enrichment controllato
+- eventuale partner / feed permissioned
+- mapping SKU / denominazione / produttore / annata
+- layer prezzi e disponibilita separato dal core ranking
+
+FASE 3 — expert ratings opzionali
+- mediazione separata da quality interna
+- nessuna sostituzione della quality proprietaria
+
+Cosa evitare
+- scraping come dipendenza fondativa
+- sorgenti community / wiki come fonte primaria di produzione
+- fusione disordinata tra catalogo, prezzi e recensioni
+- dipendenza da API non formalizzate
+
+Perche questa scelta
+- riduce rischio legale e operativo
+- evita rotture continue del motore dovute a feed esterni instabili
+- preserva controllo su naming, tags, pairings, occasion, explainability
+- permette di far evolvere pricing / retailer / expert ratings come moduli separati
+
+Output richiesti per il prossimo step
+1. schema minimo ufficiale catalogo v1
+2. policy di sourcing v1 (consentito / non consentito / da validare)
+3. pipeline ingest v1 (manuale o semi-manuale)
+4. roadmap integrazione partner/feed permissioned
+
+Stato roadmap collegato
+- source strategy vini: ancora aperta
+- decisione consigliata: baseline proprietaria + enrichment permissioned successivo
+- non richiede modifiche immediate al ranking engine
+
+Nota rapida (non cambio ora)
+- GT-07 e GT-09 restano residui aperti del Task 5 e non vanno mescolati con la source strategy.

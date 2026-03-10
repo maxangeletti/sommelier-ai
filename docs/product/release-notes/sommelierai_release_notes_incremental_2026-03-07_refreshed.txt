@@ -1,0 +1,181 @@
+SOMMELIERAI — RELEASE NOTES INCREMENTALE
+Data: 2026-03-06
+Stato corrente: freeze-v1.0.5-food-floor-restored
+Baseline precedente rilevante: freeze-v1.0.4-food-dataset-cache
+
+====================================================================
+REGOLA DI CLASSIFICAZIONE
+====================================================================
+A) Freeze / Foundation
+B) Accepted tuning
+C) Experimental
+D) Rejected / Superseded
+
+Da ora in poi, pesi, fallback e bonus non si modificano senza tracciamento.
+
+====================================================================
+A — FREEZE / FOUNDATION
+====================================================================
+
+[freeze-v1.0.3-transparency-stable]
+Titolo:
+Stabilizzazione Ranking Transparency Debugger
+
+Stato:
+Completato e congelato
+
+Contenuto:
+- dbg_comp inizializzato per riga e non più in modo fragile/condizionale
+- debug backend stabile anche fuori da relevance_v2
+- __components esposti in modo coerente per il debugger
+- rimosso il rischio di crash su sort non relevance_v2
+
+Note:
+Questa parte è fondazionale. Non va ritoccata salvo bug reale.
+
+
+[freeze-v1.0.4-food-dataset-cache]
+Titolo:
+Dataset cleanup + food specificity + cache hardening
+
+Stato:
+Completato e congelato come baseline strutturale
+
+Contenuto dataset:
+- normalizzazione campi categorici in inglese (body / tannins / acidity / availability)
+- gestione missing critici su color_detail e tannins
+- rimozione righe test / fixture dal dataset reale
+- pulizia producer placeholder senza invenzione di dati
+- pulizia output name / producer e rimozione reiniezione UX del producer nel name
+- dataset operativo portato a 42 righe
+
+Contenuto matching:
+- introduzione categorie specifiche:
+  - formaggi_stagionati
+  - formaggi_erborinati
+- parse_food_request non mantiene più il generico "formaggi" quando è presente uno specifico
+- output corretto su query del tipo "formaggi erborinati"
+
+Contenuto cache/performance:
+- hardening della search cache
+- invalidazione più corretta su cambio dataset CSV
+- comportamento cache più prevedibile lato sviluppo/test
+
+Note:
+Questa baseline è la base attuale di lavoro. Non va smontata senza motivo forte.
+
+====================================================================
+B — ACCEPTED TUNING
+====================================================================
+
+[35848b1]
+Titolo:
+Ripristino floor food_score = 0.05
+
+Stato:
+Accettato
+
+Decisione:
+Ripristinata la regola:
+- if food_score <= 0.0: food_score = 0.05
+
+Motivazione:
+Scelta intenzionale di tuning già voluta in precedenza per mantenere visibile in UI il fatto che l'utente abbia espresso una richiesta food, anche quando il pairing non è perfetto.
+
+Effetto atteso:
+- query food specifiche restano correttamente parse-ate
+- i vini non pertinenti non vanno tutti a match_score 0.0 assoluto nel path voluto
+- baseline attuale confermata su test "formaggi erborinati"
+
+Classificazione:
+Accepted tuning, non Foundation.
+
+Query di riferimento osservata:
+- query: formaggi erborinati
+- foods: ["formaggi_erborinati"]
+- top result coerente: Passito di Pantelleria DOC
+- altri risultati: match_score 0.035
+
+Freeze associato:
+- freeze-v1.0.5-food-floor-restored
+
+====================================================================
+C — EXPERIMENTAL
+====================================================================
+
+Al momento da considerare sperimentali / non congelati:
+- ogni modifica futura a fallback tipo M = 0.5 in relevance_v2
+- ogni modifica futura a pesi del composite ranking
+- ogni micro-bonus aggiuntivo su food / occasion / style
+- ogni cambio ai tie-break del sort match non accompagnato da query test
+
+Regola:
+Non si porta nulla da C a B senza:
+1. problema osservato
+2. comportamento desiderato
+3. query test di riferimento
+4. patch esplicita
+5. verifica regressione minima
+
+====================================================================
+D — REJECTED / SUPERSEDED
+====================================================================
+
+Scelte esplicitamente da NON riproporre come stato finale:
+- reintroduzione del blocco UX che concatena automaticamente "name — producer"
+- uso di locals().get("dbg_comp", ...) come soluzione standard del debugger
+- ritorno al parsing food solo generico per "formaggi" nei casi in cui sia presente una categoria specifica
+- utilizzo di dataset con righe test/fake nel flusso principale di produzione
+
+====================================================================
+STATO CORRENTE DI PROGETTO
+====================================================================
+
+Baseline corrente sicura:
+- freeze-v1.0.5-food-floor-restored
+
+Commit recenti rilevanti:
+- 93e46a3  fix(debug): stabilize ranking transparency components across sort modes
+- 2790646  refine(food): specific cheese matching + dataset cleanup + clean name/producer output
+- 0ef54ac  perf(cache): invalidate search cache on csv changes and tighten cache handling
+- 56148b9  restore(food): reinstate specific cheese matching baseline from 2790646
+- 35848b1  tune(food): restore 0.05 floor on requested food with no pairing
+
+Nota importante:
+Il commit 0ef54ac conteneva hardening cache/perf ma non includeva le regole food-specifiche del commit 2790646. Per questo la baseline di lavoro è stata riallineata su 2790646 e poi completata con il restore del floor 0.05.
+
+====================================================================
+ROADMAP — STATO SINTETICO
+====================================================================
+
+1. Ranking Transparency Debugger
+Stato: chiuso
+Classe: A
+
+2. Dataset cleanup
+Stato: avanzato forte / parte critica chiusa
+Classe: A
+
+3. Match boost refinement
+Stato: avviato, primo blocco chiuso
+Classe: B
+
+4. Performance + cache
+Stato: avviato ma da consolidare rispetto alla baseline attuale
+Classe: tra A e C a seconda del singolo intervento
+Nota:
+va riallineato con attenzione alla baseline food-specific attuale prima di ulteriori modifiche.
+
+====================================================================
+PROSSIMA REGOLA OPERATIVA
+====================================================================
+
+Prima di ogni modifica futura:
+- classificare la modifica in A/B/C/D
+- scrivere se tocca o no pesi / fallback / bonus
+- indicare query test di riferimento
+- evitare cambi simultanei non tracciati
+
+====================================================================
+END
+====================================================================

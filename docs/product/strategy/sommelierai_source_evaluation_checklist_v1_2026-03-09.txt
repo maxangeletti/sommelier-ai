@@ -1,0 +1,211 @@
+SOMMELIERAI — SOURCE EVALUATION CHECKLIST V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: fornire una checklist concreta per valutare una fonte candidata prima che entri nel workflow ufficiale del catalogo.
+
+PRINCIPIO GUIDA
+- La fonte non entra perché “sembra utile”.
+- Entra solo se supera un filtro minimo su qualità, mappabilità, rischio e utilità reale.
+- La base del catalogo resta proprietaria/curata.
+- Le fonti esterne possono essere enrichment o input controllato, non dataset madre automatico.
+
+USO DELLA CHECKLIST
+La checklist va compilata per ogni nuova fonte candidata.
+Esiti possibili:
+- APPROVED CORE
+- APPROVED ENRICHMENT
+- EXPERIMENTAL
+- REJECTED
+
+1) IDENTIFICAZIONE FONTE
+- Nome fonte:
+- Tipo fonte: core / enrichment / commerce / ratings / reference
+- Owner/responsabile:
+- URL / origine:
+- Data valutazione:
+- Valutatore:
+
+2) SCOPO REALE DELLA FONTE
+Selezionare una o più finalità:
+- catalogo vini
+- arricchimento descrittivo
+- prezzi / disponibilità
+- ratings esperti
+- verifica / confronto
+- scouting
+
+Domanda chiave:
+- questa fonte serve davvero a un blocco della roadmap oppure è solo “potenzialmente interessante”?
+
+3) PERMESSI / RISCHIO D’USO
+Verificare:
+- licenza chiara
+- autorizzazione esplicita
+- uso interno consentito
+- uso prodotto consentito
+- redistribuzione consentita
+- rischio alto / medio / basso
+
+Esito:
+- PASS
+- DUBBIO
+- FAIL
+
+Regola:
+- se il rischio è alto o il perimetro d’uso è ambiguo, la fonte non può essere APPROVED CORE
+
+4) STRUTTURA DATI
+Controllare se la fonte fornisce dati mappabili verso il catalog master v1.
+
+Campi utili:
+- name
+- producer
+- country
+- region
+- zone
+- denomination
+- vintage
+- color
+- grapes
+- style / descriptors
+- food_pairings
+- occasion
+- price
+- availability
+- rating
+- source identifiers
+
+Valutazione:
+- copertura alta
+- copertura media
+- copertura bassa
+
+5) QUALITÀ DEL DATO
+Valutare:
+- completezza
+- coerenza
+- presenza di duplicati
+- rumorosità
+- standardizzazione
+- affidabilità percepita
+- frequenza di aggiornamento
+- stabilità nel tempo
+
+Esito:
+- HIGH
+- MEDIUM
+- LOW
+
+6) MAPPABILITÀ VERSO IL MASTER
+Domande:
+- i campi sono mappabili in modo deterministico?
+- servono troppe interpretazioni manuali?
+- ci sono canonical ricostruibili?
+- i valori sono abbastanza puliti per entrare nel workflow?
+
+Esito:
+- facile
+- gestibile
+- costoso
+- non pratico
+
+7) IMPATTO ATTESO SUL PROGETTO
+Questa fonte migliorerebbe:
+- qualità del catalogo
+- profondità descrittiva
+- copertura geografica
+- copertura denominazioni
+- prezzi/disponibilità
+- expert ratings
+- credibilità del prodotto
+- niente di sostanziale
+
+Valutazione sintetica:
+- impatto alto
+- impatto medio
+- impatto basso
+
+8) COSTO OPERATIVO
+Stimare:
+- costo integrazione
+- costo manutenzione
+- costo aggiornamento
+- costo quality control
+
+Valutazione:
+- basso
+- medio
+- alto
+
+9) FIT CON LA SOURCE STRATEGY UFFICIALE
+Verificare coerenza con:
+- base catalogo proprietaria/curata
+- enrichment esterno solo permissioned
+- commerce layer separato
+- ratings layer separato
+
+Esito:
+- coerente
+- parzialmente coerente
+- incoerente
+
+10) DECISIONE FINALE
+APPROVED CORE
+Usare solo se:
+- rischio basso
+- alta qualità
+- alta mappabilità
+- forte valore per il catalogo
+
+APPROVED ENRICHMENT
+Usare se:
+- utile ma non adatta come base
+- valore su prezzi, ratings, descrizioni o coverage
+
+EXPERIMENTAL
+Usare se:
+- promettente ma non ancora sufficientemente solida
+- staging/test soltanto
+
+REJECTED
+Usare se:
+- rischio troppo alto
+- qualità troppo bassa
+- costo sproporzionato
+- scarso fit con roadmap/source strategy
+
+11) PUNTEGGIO RAPIDO CONSIGLIATO
+Assegna 1–5 a:
+- Permessi / rischio
+- Qualità dati
+- Mappabilità
+- Impatto
+- Costo operativo inverso
+- Fit strategico
+
+Totale:
+- 24–30: forte candidata
+- 18–23: enrichment plausibile / da studiare
+- 12–17: experimental o dubbia
+- <12: reject
+
+12) TEMPLATE COMPILAZIONE RAPIDA
+Fonte:
+Tipo:
+Scopo:
+Permessi/rischio:
+Qualità:
+Mappabilità:
+Impatto:
+Costo operativo:
+Fit strategico:
+Decisione:
+Note:
+
+NOTA RAPIDA (NON CAMBIO ORA)
+Questa checklist serve a valutare la fonte.
+Non sostituisce:
+- sourcing policy v1
+- ingestion workflow
+- update process
+- decisione editoriale finale

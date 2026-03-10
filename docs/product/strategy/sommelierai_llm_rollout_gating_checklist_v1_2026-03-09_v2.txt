@@ -1,0 +1,48 @@
+SOMMELIERAI — LLM ROLLOUT GATING CHECKLIST V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: definire la checklist di gate da superare prima di passare da una fase del rollout LLM alla successiva.
+
+CHECKLIST DI GATE
+
+1) COERENZA COL MOTORE
+- Il layer LLM non cambia il rank
+- I vini citati sono presenti nei risultati
+- Le spiegazioni non contraddicono il ranking
+Esito:
+- PASS / FAIL
+
+2) FEDELTÀ AI DATI
+- Nessuna hallucination rilevante
+- Nessun fatto non supportato
+Esito:
+- PASS / FAIL
+
+3) OUTPUT USER-FRIENDLY
+- Nessun underscore esposto all’utente
+- Nessun canonical tecnico grezzo in output finale
+Esito:
+- PASS / FAIL
+
+4) UTILITÀ
+- Le spiegazioni aiutano davvero a capire
+- I follow-up sono utili
+Esito:
+- PASS / FAIL
+
+5) STABILITÀ OPERATIVA
+- Prompt stabile
+- I/O contract stabile
+- Nessuna regressione UX evidente
+Esito:
+- PASS / FAIL
+
+6) DECISIONE DI GATE
+- GO
+- GO WITH NOTE
+- HOLD
+- STOP
+
+REGOLE
+- Un FAIL su coerenza o fedeltà ai dati blocca il passaggio di fase
+- Un FAIL su user-friendliness o utilità porta almeno a HOLD

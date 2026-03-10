@@ -1,0 +1,122 @@
+SOMMELIERAI — CHANNEL STRATEGY V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: definire la strategia canali iniziale di SommelierAI per il pre-launch e il soft launch.
+
+PRINCIPIO GUIDA
+- Non presidiare troppi canali insieme.
+- Partire da pochi canali coerenti con il prodotto reale, con il target e con le risorse disponibili.
+- Ogni canale deve avere un ruolo chiaro.
+
+1) OBIETTIVO DELLA FASE INIZIALE
+Nella fase iniziale i canali devono servire a:
+- validare il messaggio
+- mostrare use case forti
+- raccogliere feedback reale
+- capire quali scenari generano più interesse
+- costruire credibilità iniziale
+
+2) CANALI PRIORITARI V1
+
+A) Demo dirette / test guidati
+Ruolo:
+- validazione qualitativa veloce
+Perché:
+- permettono di vedere subito se ranking + explainability convincono
+Priorità:
+- altissima
+
+B) Landing page semplice
+Ruolo:
+- pagina di presentazione / raccolta interesse
+Perché:
+- serve a spiegare il prodotto in modo chiaro
+Priorità:
+- alta
+
+C) TestFlight / accesso controllato
+Ruolo:
+- soft launch ristretto
+Perché:
+- consente feedback realistico senza esposizione troppo ampia
+Priorità:
+- alta se il build è abbastanza ordinato
+
+D) Community / contatti caldi / cerchia qualificata
+Ruolo:
+- primo bacino di utenti utili
+Perché:
+- feedback più ricco e più onesto
+Priorità:
+- alta
+
+3) CANALI SECONDARI
+A) Content demo breve
+- piccoli casi d’uso, screenshot, mini walkthrough
+
+B) Referral / passaparola guidato
+- utile solo dopo che l’esperienza convince davvero
+
+C) Newsletter / waitlist
+- utile come contenitore, non come motore principale all’inizio
+
+4) CANALI NON PRIORITARI NELLA FASE 1
+- campagne ads ampie
+- troppi social in parallelo
+- PR dispersiva
+- influencer marketing generico
+- marketplace positioning prematuro
+
+5) MESSAGGIO PER CANALE
+Demo:
+- focus su use case e differenza percepita
+
+Landing:
+- focus su promessa chiara + call to action semplice
+
+TestFlight:
+- focus su feedback, query reali, casi d’uso principali
+
+Community / contatti:
+- focus su utilità pratica e confronto franco
+
+6) OBIETTIVI PER CANALE
+Demo:
+- capire se il prodotto “si capisce” in pochi minuti
+
+Landing:
+- verificare se il messaggio converte in interesse
+
+TestFlight:
+- verificare tenuta d’uso e qualità percepita
+
+Community:
+- raccogliere feedback qualitativo ricco
+
+7) ORDINE CONSIGLIATO
+1. demo dirette
+2. landing semplice
+3. accesso controllato / TestFlight
+4. piccoli contenuti demo
+5. eventuale espansione progressiva
+
+8) RISCHI DA EVITARE
+- lanciare con messaggio troppo largo
+- aprire troppi canali senza focus
+- attirare utenti prima che il percorso base sia credibile
+- fare marketing di “AI vino” generico invece di casi d’uso concreti
+
+9) DECISIONE UFFICIALE V1
+La channel strategy iniziale di SommelierAI deve essere:
+- stretta
+- controllata
+- use-case driven
+- orientata a feedback reale
+
+10) NOTA RAPIDA (NON CAMBIO ORA)
+Questa strategia canali non sostituisce ancora:
+- piano contenuti
+- piano acquisizione
+- funnel dettagliato
+- budget media
+- calendario di lancio

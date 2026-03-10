@@ -1,0 +1,110 @@
+SOMMELIERAI — POST-EXPORT CHECKS TEMPLATE V1
+Data: 2026-03-09
+Stato: template operativo
+Scopo: definire il controllo minimo ufficiale da eseguire dopo ogni rigenerazione di `wines.normalized.csv` o dopo update rilevanti del catalogo/runtime.
+
+USO
+Compilare questo template dopo:
+- export di `wines.normalized.csv`
+- update batch significativo
+- fix catalog/data quality
+- fix backend che può toccare ranking, match o output quality
+
+TEMPLATE
+
+Titolo controllo:
+Data:
+Owner:
+Trigger:
+- catalog update
+- batch import
+- cleanup
+- backend fix
+- runtime export
+- mixed
+
+1) PRE-CHECK
+- export file generato: yes/no
+- path runtime corretto: yes/no
+- backend riavviato: yes/no
+- dataset caricato correttamente: yes/no
+
+2) SMOKE CHECK BACKEND
+- /search operativo: pass/fail
+- query smoke usata:
+- esito:
+- note:
+
+3) OUTPUT QUALITY CHECK
+Verificare:
+- color_detail coerente
+- tags coerenti
+- canonical interni non esposti all’utente
+- fields runtime popolati correttamente
+- meta.filters coerenti
+- match_breakdown coerente dove previsto
+
+Esito:
+- PASS
+- PASS WITH NOTE
+- FAIL
+
+4) GT / QUERY BASELINE
+Indicare cosa è stato eseguito:
+- none
+- GT subset
+- GT 01–13 full
+
+Se subset:
+- query eseguite:
+- motivo della selezione:
+
+Se full:
+- esito generale:
+- GT critici degradati:
+- GT critici invariati:
+- GT migliorati:
+
+5) REGRESSION CHECK
+- regressioni bloccanti: yes/no
+- regressioni non bloccanti: yes/no
+- query a rischio:
+- note:
+
+6) DECISIONE OPERATIVA
+- GO
+- GO WITH NOTE
+- HOLD
+- STOP
+
+7) NOTE RAPIDE
+- ...
+- ...
+- ...
+
+8) FOLLOW-UP
+Azioni aperte:
+- ...
+- ...
+- ...
+
+CHECKLIST RAPIDA
+Prima di dichiarare GO, devono essere veri:
+- backend operativo
+- runtime caricato
+- smoke check ok
+- nessuna regressione bloccante
+- output quality accettabile
+- note tracciate
+
+CLASSIFICAZIONE CONSIGLIATA
+- LOW impact: smoke check + 1–3 query mirate
+- MEDIUM impact: smoke check + subset GT + output quality check
+- HIGH impact: smoke check + GT 01–13 + output quality check + regression note
+
+NOTA RAPIDA (NON CAMBIO ORA)
+Residui qualitativi oggi aperti del motore:
+- GT-07 `rosso elegante`
+- GT-09 `bianco fresco per cena importante di pesce`
+
+Questi non devono essere spacciati per “risolti” in un post-export check se non c’è evidenza reale.

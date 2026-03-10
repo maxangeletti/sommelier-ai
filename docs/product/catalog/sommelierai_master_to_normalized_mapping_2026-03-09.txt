@@ -1,0 +1,160 @@
+SOMMELIERAI — MAPPING UFFICIALE
+CATALOG MASTER V1 -> wines.normalized.csv
+Data: 2026-03-09
+
+Scopo
+Definire la trasformazione ufficiale dal master catalogo editoriale al dataset runtime del backend.
+
+Principio chiave
+- catalog master = fonte editoriale / sorgente di verità
+- wines.normalized.csv = export tecnico derivato per il motore
+- gli underscore restano interni
+- qualsiasi output utente finale deve essere user-friendly
+
+1) CHIAVI E IDENTITÀ
+catalog_master_v1 -> wines.normalized.csv
+
+master_wine_id -> id
+display_name -> name
+producer_display -> producer
+country -> country
+region_display -> region
+zone_display -> zone
+denomination_display -> denomination
+vintage_display -> vintage
+
+Regola:
+- id deve essere stabile e univoco
+- name è il nome runtime mostrato nel backend/UI
+- eventuali chiavi tecniche esterne NON entrano nel normalized CSV se non servono al motore
+
+2) PREZZO / COMMERCE
+price_reference_eur -> price_avg
+price_floor_eur -> price_min
+availability_status -> availability
+purchase_url_primary -> purchase_url
+
+Regola:
+- il motore usa campi piatti e semplici
+- se non esiste price_floor_eur, price_min può coincidere con price_reference_eur
+- purchase_url può restare vuoto
+
+3) PROFILO VINO
+grapes_canonical -> grape_varieties
+color_family -> color
+color_detail_canonical -> color_detail
+intensity_canonical -> intensity
+sparkling_canonical -> sparkling
+sweetness_canonical -> sweetness
+
+Canonical runtime interni attesi:
+- color: rosso | bianco | rosato
+- color_detail: red | ruby_red | white | straw_yellow | rose
+- intensity: low | medium | high
+- sparkling: fermo | spumante
+- sweetness: secco | dolce
+
+Nota:
+- questi canonical sono interni/runtime
+- in UI vanno tradotti in etichette user-friendly
+
+4) MATCHING / SEMANTICA
+food_pairings_canonical -> food_pairings
+occasion_canonical -> occasion
+style_tags_canonical -> style_tags
+
+Formato runtime:
+- valori separati da pipe nei campi pairing/multi-value quando richiesto dal backend
+- valori semantici canonical con underscore ammessi solo internamente
+
+Esempi:
+- formaggi_erborinati
+- important_dinner
+- aperitif
+- meditation
+- ruby_red
+
+5) DESCRIZIONE / EXPLAINABILITY
+short_reason_it -> description
+
+Regola:
+- description nel normalized CSV deve essere pronta per uso ranking/explain
+- deve essere sintetica, leggibile, coerente con il vino
+- niente strutture complesse o multilayer nel runtime CSV
+
+6) CAMPI CHE RESTANO NEL MASTER E NON PASSANO DIRETTAMENTE
+Questi campi restano nel master catalogo o in layer separati:
+- source_name
+- source_url
+- source_license
+- ingestion_batch_id
+- editor_notes
+- validation_status
+- expert_rating_avg
+- expert_rating_sources
+- merchant_name
+- merchant_sku
+- stock_status_raw
+- ui_label_* friendly
+- eventuali alias di ricerca
+
+Motivo:
+- non servono direttamente al motore runtime
+- appartengono a sourcing, governance, QA, commerce o UI layer
+
+7) NORMALIZZAZIONE OBBLIGATORIA PRIMA DELL'EXPORT
+Prima di generare wines.normalized.csv:
+- trim stringhe
+- uniformare maiuscole/minuscole
+- deduplicare separatori
+- validare enum canonical
+- rimuovere placeholder falsi
+- non inventare producer mancanti
+- garantire coerenza tra color e color_detail
+- garantire coerenza tra sparkling e stile
+- garantire coerenza tra sweetness e descrizione
+
+8) REGOLE DI OUTPUT USER-FRIENDLY
+Gli interni possono usare:
+- important_dinner
+- formaggi_erborinati
+- ruby_red
+
+Lato utente finale devono diventare:
+- cena importante
+- formaggi erborinati
+- rosso rubino
+
+Questa regola vale per:
+- UI
+- explain
+- badge
+- label
+- eventuale LLM response layer
+
+9) MAPPING MINIMO OBBLIGATORIO
+Per ogni riga master esportabile nel normalized CSV devono esistere almeno:
+- master_wine_id
+- display_name
+- country
+- region_display
+- denomination_display
+- grapes_canonical
+- color_family
+- color_detail_canonical
+- intensity_canonical
+- sparkling_canonical
+- sweetness_canonical
+- food_pairings_canonical
+- occasion_canonical
+- style_tags_canonical
+- short_reason_it
+- price_reference_eur
+
+10) STATO OPERATIVO
+Ad oggi:
+- wines.normalized.csv resta il file runtime attivo del backend
+- catalog_master_v1 è il livello superiore corretto da adottare per il futuro
+- il passo successivo, dopo questo mapping, è definire la policy di sourcing v1
+
+Fine documento.

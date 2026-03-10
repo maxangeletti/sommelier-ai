@@ -1,0 +1,76 @@
+SOMMELIERAI — PRICING RECOMMENDATION V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: formalizzare la raccomandazione ufficiale di pricing per SommelierAI sulla base dello stato reale del prodotto e della strategia definita.
+
+PRINCIPIO GUIDA
+- Il pricing deve essere semplice, credibile e coerente col valore percepito.
+- Nella fase attuale conta più la chiarezza del modello che l’ottimizzazione fine del prezzo.
+- La monetizzazione deve rafforzare la fiducia nel prodotto, non indebolirla.
+
+1) RACCOMANDAZIONE PRINCIPALE
+Raccomandazione v1:
+- modello **freemium + single premium tier**
+
+Motivo:
+- è il modello più leggibile
+- è coerente con una fase pre-launch / soft launch
+- consente di far capire il valore del prodotto prima di chiedere pagamento
+- evita complessità prematura
+
+2) STRUTTURA CONSIGLIATA
+Free:
+- utile e credibile
+- permette di testare i casi d’uso principali
+- fa capire ranking + explainability
+
+Premium:
+- più continuità
+- più profondità
+- più comfort d’uso
+- esperienza chiaramente superiore
+
+3) COSA DEVE ESSERE VERO PERCHÉ FUNZIONI
+- il free deve essere abbastanza buono da far capire il valore
+- il premium deve essere abbastanza forte da sembrare un vero upgrade
+- il confine tra i due tier deve essere leggibile
+- la promessa prodotto deve essere coerente con ciò che il premium realmente sblocca
+
+4) COSA NON RACCOMANDARE ORA
+Non raccomandato come modello iniziale:
+- paid-only
+- credit model / usage-based principale
+- affiliate-led model come base
+- troppi tier contemporaneamente
+
+5) RAZIONALE DI BUSINESS
+Questo modello:
+- abbassa attrito iniziale
+- favorisce discovery del prodotto
+- aiuta a validare retention e percezione di valore
+- lascia spazio futuro a ottimizzazione pricing e tiering
+
+6) EVOLUZIONE FUTURA CONSIGLIATA
+Fase 1:
+- free + premium
+
+Fase 2:
+- eventuale hybrid subscription + affiliate separato e non invasivo
+
+Fase 3:
+- eventuale premium plus solo se emerge una reale differenza di valore
+
+7) DECISIONE OPERATIVA V1
+SommelierAI dovrebbe:
+- lanciare con free utile
+- avere un solo premium chiaro
+- evitare complessità di monetizzazione nella fase iniziale
+- proteggere la fiducia nel ranking come asset principale
+
+8) NOTA RAPIDA (NON CAMBIO ORA)
+Questa recommendation non definisce ancora:
+- prezzo numerico finale
+- limiti numerici finali
+- mensile vs annuale
+- paywall copy
+- pricing page copy

@@ -1,0 +1,109 @@
+SOMMELIERAI — FREE VS PREMIUM BOUNDARIES V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: definire il confine ufficiale tra esperienza free e premium di SommelierAI.
+
+PRINCIPIO GUIDA
+- Il free deve essere davvero utile.
+- Il premium deve essere chiaramente migliore, non solo più “chiuso dietro un paywall”.
+- Il confine tra i tier deve essere comprensibile, coerente e percepibile.
+
+1) OBIETTIVO DEL TIER FREE
+Il free deve permettere all’utente di:
+- capire il valore del prodotto
+- fare alcune ricerche reali
+- vedere ranking e spiegazioni di base
+- provare i casi d’uso principali
+
+Il free non deve:
+- rendere il prodotto frustrante troppo presto
+- sembrare una demo finta
+- bloccare la comprensione del valore
+
+2) OBIETTIVO DEL TIER PREMIUM
+Il premium deve offrire:
+- maggiore continuità d’uso
+- maggiore profondità di supporto decisionale
+- maggiore comodità e ricchezza d’esperienza
+- funzioni che aumentano chiaramente il valore percepito
+
+3) FREE — CANDIDATI PRINCIPALI
+Nel free possono stare:
+- query limitate ma utili
+- accesso ai casi d’uso flagship
+- ranking base
+- shortlist essenziale
+- spiegazione base del top result
+- discovery iniziale del prodotto
+
+4) PREMIUM — CANDIDATI PRINCIPALI
+Nel premium possono stare:
+- più query / uso continuativo
+- shortlist più ampie
+- confronti più ricchi
+- refinement più avanzato
+- spiegazioni più profonde
+- salvataggio preferenze / esperienza più personale
+- future LLM features più evolute, quando stabili
+- comfort d’uso superiore
+
+5) COSA NON FARE
+- mettere a pagamento la semplice capacità di usare il prodotto
+- fare un free troppo debole
+- rendere premium solo dettagli cosmetici
+- mettere nel premium funzionalità immature o poco capibili
+
+6) CONFINE UFFICIALE CONSIGLIATO
+Free:
+- utilità iniziale
+- comprensione del valore
+- casi principali accessibili
+- esperienza limitata ma sensata
+
+Premium:
+- continuità
+- profondità
+- personalizzazione
+- supporto più ricco e più comodo
+
+7) CRITERI DI DECISIONE
+Una feature dovrebbe stare nel premium se:
+- aumenta davvero il valore percepito
+- è rilevante per utenti che tornano spesso
+- rende il prodotto significativamente più utile
+- è abbastanza stabile da sostenere un paywall
+
+Una feature dovrebbe stare nel free se:
+- serve a capire il valore
+- è parte del cuore minimo del prodotto
+- senza di essa il prodotto sembrerebbe arbitrariamente limitato
+
+8) ESEMPI DI CONFINE
+Free:
+- “Vino per cena importante”
+- “Rosso elegante”
+- “Bianco fresco per pesce”
+- top recommendation con spiegazione base
+
+Premium:
+- più sessioni/query
+- shortlist estese
+- confronto top-3 più ricco
+- experience refinement
+- preferenze persistenti
+- LLM refinement più avanzato, quando pronto
+
+9) DECISIONE UFFICIALE V1
+SommelierAI deve impostare:
+- free utile e credibile
+- premium nettamente migliore
+- paywall basato su profondità e continuità
+- non paywall basato su frustrazione artificiale
+
+10) NOTA RAPIDA (NON CAMBIO ORA)
+Questo documento definisce i boundaries.
+Non definisce ancora:
+- limiti numerici finali
+- pricing numerico finale
+- paywall copy
+- offer structure mensile/annuale

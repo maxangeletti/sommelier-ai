@@ -1,0 +1,130 @@
+SOMMELIERAI — CANDIDATE SOURCES SHORTLIST V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: restringere l’universo delle possibili fonti a un set iniziale pratico e coerente con la source strategy ufficiale.
+
+DECISIONE GUIDA
+- Base catalogo: proprietaria/curata
+- Fonti esterne: solo enrichment o input controllato
+- Commerce layer e ratings layer: separati dal core
+- Nessuna fonte consumer/community diventa dataset madre automatico
+
+SHORTLIST V1
+
+A) CANDIDATI FORTI PER IL CORE / SEMI-CORE
+1. Catalogo proprietario/curato interno
+Ruolo:
+- base del catalogo v1
+Perché:
+- massimo controllo
+- qualità governabile
+- allineamento pieno con il motore
+Decisione:
+- APPROVED CORE
+
+2. Fonti ufficiali di denominazione / consorzi / disciplinari
+Ruolo:
+- verifica di denominazione, area, classificazione, uve ammesse, naming
+Perché:
+- fonte ufficiale e stabile per campi identitari
+Limiti:
+- non basta da sola come catalogo prodotto completo
+Decisione:
+- APPROVED ENRICHMENT / REFERENCE
+
+3. Siti ufficiali delle cantine / produttori
+Ruolo:
+- verifica nome vino, produttore, annata, uvaggio, note descrittive, schede tecniche
+Perché:
+- buona qualità per identità prodotto
+Limiti:
+- struttura non uniforme, costo operativo alto
+Decisione:
+- APPROVED ENRICHMENT
+
+B) CANDIDATI UTILI PER COMMERCE LAYER
+4. Retailer / merchant feed con permesso esplicito
+Ruolo:
+- prezzo, disponibilità, URL acquisto
+Perché:
+- utile ma volatile
+Regola:
+- separato dal core catalog
+Decisione:
+- APPROVED ENRICHMENT se permissioned
+
+5. Marketplace / aggregatori commerciali consumer
+Ruolo:
+- scouting e confronto
+Perché:
+- possono dare segnali utili su coverage e prezzi
+Limiti:
+- non adatti come fondazione del core dataset
+Decisione:
+- EXPERIMENTAL / REFERENCE ONLY
+
+C) CANDIDATI UTILI PER RATINGS LAYER
+6. Provider / pubblicazioni con expert ratings gestibili legalmente
+Ruolo:
+- layer ratings separato
+Perché:
+- aumenta credibilità prodotto
+Regola:
+- mai sostitutivo della qualità interna
+Decisione:
+- APPROVED ENRICHMENT solo se permissioned
+
+D) CANDIDATI DA TRATTARE CON MOLTA CAUTELA
+7. Vivino
+Osservazione:
+- è una piattaforma consumer con marketplace e community, non una base tecnica chiara da adottare come catalogo madre. Le sue Terms e il posizionamento di prodotto non suggeriscono di usarla come fondazione del core dataset; inoltre la piattaforma si presenta come marketplace e discovery layer rivolto all’utente finale. 
+Decisione:
+- REJECTED AS CORE
+- eventuale REFERENCE / scouting solo con estrema cautela e senza dipendenza strutturale
+
+8. Open Food Facts / wiki/community wine data
+Osservazione:
+- modello community/wiki utile per esplorazione, ma non ideale come source-of-truth del catalogo vino v1
+Decisione:
+- REJECTED AS CORE
+- al massimo REFERENCE / experimental
+
+9. Wine-searcher
+Osservazione:
+- interessante per price/disponibilità e identificazione commerciale; utile come riferimento mercato, non come base catalogo editoriale
+Decisione:
+- EXPERIMENTAL / COMMERCE-ONLY CANDIDATE
+
+RACCOMANDAZIONE OPERATIVA V1
+Set iniziale consigliato:
+1. Core catalog proprietario/curato interno
+2. Consorzi / disciplinari / fonti ufficiali di denominazione come supporto identitario
+3. Cantine / schede tecniche ufficiali come enrichment mirato
+4. Merchant feed permissioned per prezzi/disponibilità
+5. Ratings provider permissioned in un layer separato, solo dopo
+
+COSA NON FARE
+- non scegliere una singola piattaforma consumer come “fonte magica”
+- non usare un sito community come dataset madre del motore
+- non mischiare core, commerce e ratings in un unico layer
+- non far dipendere il ranking da dati esterni non controllati
+
+PRIMO PIANO ESECUTIVO CONSIGLIATO
+Fase 1
+- confermare il master catalog proprietario
+- definire 1–2 fonti ufficiali di supporto identitario
+- definire 1 merchant feed candidato solo per commerce layer
+
+Fase 2
+- valutare 1 fonte ratings candidate con checklist ufficiale
+- decidere se aprire il layer ratings
+
+Fase 3
+- automatizzare ingestion/update solo dopo che il processo manuale controllato è stabile
+
+NOTA RAPIDA (NON CAMBIO ORA)
+Questa shortlist non sostituisce la valutazione puntuale.
+Ogni fonte concreta deve comunque passare per:
+- source evaluation checklist v1
+- sourcing policy v1
+- ingestion/update workflow ufficiale

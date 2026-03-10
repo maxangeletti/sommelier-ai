@@ -1,0 +1,197 @@
+SOMMELIERAI — CATALOG UPDATE PROCESS V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: definire il processo ufficiale con cui il catalogo SommelierAI viene aggiornato nel tempo senza perdere controllo, qualità e coerenza tra master catalog e dataset runtime.
+
+PRINCIPIO GUIDA
+- Il catalogo master è la fonte editoriale/operativa.
+- `wines.normalized.csv` è un artefatto runtime derivato.
+- Nessun aggiornamento entra in produzione senza passare da validazione e export controllato.
+- Gli underscore restano interni/tecnici.
+- L’output utente finale deve restare user-friendly.
+
+1) TIPI DI UPDATE
+A) Nuovo vino
+- inserimento di un record non ancora presente nel catalogo master
+
+B) Update descrittivo
+- correzione o arricchimento di campi editoriali/tecnici
+- es: description, style_tags, food_pairings, occasion, color_detail
+
+C) Update commerciale
+- prezzo, disponibilità, seller link, source commerciale
+
+D) Update ratings
+- expert rating, source, data rilevazione, eventuale aggregazione
+
+E) Cleanup / correzione qualità
+- normalizzazione, fix incoerenze, dedup, correzione placeholder, miglioramenti di qualità dati
+
+2) LIVELLI DI IMPATTO
+LOW
+- non tocca ranking/match
+- non cambia canonical
+- non cambia export logic
+
+MEDIUM
+- può modificare query outcome in casi limitati
+- può toccare food_pairings / occasion / style_tags / color_detail
+
+HIGH
+- può toccare molte query o degradare la baseline
+- richiede GT più ampio
+- include aggiornamenti strutturali o massivi
+
+3) FLUSSO UFFICIALE
+STEP 1 — RACCOLTA MODIFICA
+Ogni modifica deve avere almeno:
+- tipo update
+- fonte / origine
+- data
+- owner
+- motivo
+- impatto stimato
+
+STEP 2 — APPLICAZIONE SUL MASTER
+La modifica si applica prima al catalog master, non al runtime file.
+
+Regole:
+- niente edit “definitivo” solo su `wines.normalized.csv`
+- se serve una patch urgente sul runtime, va poi riallineata sul master
+
+STEP 3 — VALIDAZIONE
+Controlli minimi:
+- schema valido
+- campi obbligatori intatti
+- canonical coerenti
+- nessun placeholder improprio
+- nessuna incoerenza interna evidente
+
+STEP 4 — CLASSIFICAZIONE IMPATTO
+Classifica l’update come:
+- LOW
+- MEDIUM
+- HIGH
+
+STEP 5 — EXPORT
+Dal master si rigenera `wines.normalized.csv`.
+
+STEP 6 — VERIFICA POST-EXPORT
+LOW:
+- smoke test backend
+- 1–3 query campione
+
+MEDIUM:
+- smoke test backend
+- subset GT mirato
+- controllo output quality
+
+HIGH:
+- smoke test backend
+- GT 01–13
+- controllo regressioni più ampio
+
+STEP 7 — GO / STOP
+GO:
+- export valido
+- backend operativo
+- test coerenti col livello di impatto
+
+STOP:
+- regressione bloccante
+- incoerenza runtime
+- risultato peggiore non accettabile su GT critici
+
+4) PRIORITÀ DI ALLINEAMENTO
+In caso di divergenza tra master e runtime:
+1. il master va corretto per primo se il problema è editoriale/strutturale
+2. il runtime può ricevere fix tattico solo se serve sbloccare il prodotto
+3. ogni fix tattico va riportato nel master appena possibile
+
+5) POLICY SUI FIX URGENTI
+Fix urgente ammesso se:
+- c’è una regressione bloccante
+- c’è un dato incoerente che rovina l’output utente
+- c’è una rottura tecnica del backend
+
+Regola:
+- il fix urgente deve essere minimo, tracciato e poi consolidato nel master
+
+6) FREQUENZE OPERATIVE CONSIGLIATE
+A) Catalogo core
+- update batch controllato
+- frequenza: settimanale o quindicinale
+
+B) Prezzi/disponibilità
+- frequenza più alta se la fonte lo consente
+- separato dal core
+
+C) Ratings
+- update quando la fonte è disponibile e verificata
+- non obbligatorio a ogni ciclo
+
+7) DEDUP E IDENTITÀ
+Ogni update deve rispettare l’identità del vino.
+Campi guida per dedup:
+- name
+- producer
+- vintage
+- denomination
+- zone
+- country/region
+
+Regole:
+- niente merge aggressivo senza certezza
+- doppioni plausibili restano separati finché non c’è evidenza sufficiente
+
+8) OUTPUT USER-FRIENDLY
+Layer tecnico:
+- formaggi_erborinati
+- important_dinner
+- ruby_red
+
+Layer utente:
+- formaggi erborinati
+- cena importante
+- rosso rubino
+
+Regola:
+- il processo di update può usare canonical interni
+- la UI non deve esporli in forma tecnica
+
+9) TRACCIAMENTO MINIMO
+Ogni update approvato deve lasciare:
+- data
+- owner
+- tipo update
+- file toccati
+- impatto
+- esito test
+- note rapide
+
+10) DECISIONI POSSIBILI
+APPROVED
+- update valido e pronto per export/runtime
+
+APPROVED WITH NOTE
+- update valido ma con osservazioni da recuperare
+
+EXPERIMENTAL
+- resta fuori dalla baseline stabile
+
+REJECTED / ROLLBACKED
+- update non affidabile o peggiorativo
+
+11) RACCOMANDAZIONE OPERATIVA V1
+Per SommelierAI:
+- il catalogo non va gestito come un CSV runtime “vivo”
+- va gestito come master + export
+- ogni update rilevante deve essere classificato, testato e tracciato
+- i fix urgenti sono ammessi, ma non devono diventare il metodo ordinario
+
+NOTA RAPIDA (NON CAMBIO ORA)
+Residui qualitativi aperti del motore:
+- GT-07 `rosso elegante`
+- GT-09 `bianco fresco per cena importante di pesce`
+
+Questi restano tuning qualitativo e non cambiano il processo di update del catalogo.

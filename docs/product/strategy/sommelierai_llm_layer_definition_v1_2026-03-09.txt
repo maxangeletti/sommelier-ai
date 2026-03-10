@@ -1,0 +1,175 @@
+SOMMELIERAI — LLM LAYER DEFINITION V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: definire il ruolo ufficiale del layer LLM dentro SommelierAI, in modo compatibile con il motore ranking attuale e con la roadmap del prodotto.
+
+PRINCIPIO GUIDA
+- Il ranking engine resta il motore decisionale primario.
+- L’LLM non deve sostituire la logica di retrieval/ranking già stabilizzata.
+- L’LLM deve aumentare qualità percepita, explainability e flessibilità conversazionale.
+- Il catalogo e il runtime dataset restano la base dati del sistema.
+- L’LLM lavora sopra il motore, non al posto del motore.
+
+1) COSA DEVE FARE L’LLM
+A) Query rewriting / normalization
+- aiutare a interpretare query utente ambigue o lunghe
+- ricondurre formulazioni naturali a segnali compatibili col motore
+- proporre chiarificazioni implicite senza rompere il flusso
+
+B) Explainability layer
+- trasformare segnali tecnici del ranking in spiegazioni user-friendly
+- spiegare perché un vino è sopra un altro
+- rendere leggibile il significato di match / quality / value dove opportuno
+
+C) Suggestion layer
+- generare suggerimenti successivi intelligenti
+- proporre follow-up utili
+- aiutare l’utente a restringere o ampliare la ricerca
+
+D) Conversational refinement
+- mantenere il contesto conversazionale
+- interpretare preferenze espresse nel turno corrente
+- aiutare nella riformulazione della richiesta
+
+E) Optional reasoning assist
+- aiutare a sintetizzare scenari complessi
+- proporre shortlist commentate
+- supportare casi come “voglio fare bella figura ma senza spendere troppo”
+
+2) COSA NON DEVE FARE L’LLM
+- non deve inventare vini non presenti nel catalogo
+- non deve diventare il ranking engine principale
+- non deve bypassare il dataset/runtime ufficiale
+- non deve generare output in contrasto con i risultati del motore
+- non deve usare canonical tecnici come output utente finale
+- non deve introdurre incoerenze tra query, risultati e spiegazione
+
+3) POSIZIONAMENTO NELL’ARCHITETTURA
+Flusso corretto:
+1. input utente
+2. parser / query handling
+3. ranking engine + runtime dataset
+4. risultati strutturati
+5. LLM layer sopra i risultati
+6. output conversazionale user-friendly
+
+Tradotto:
+- il motore decide il set dei risultati
+- l’LLM interpreta, spiega, rifinisce, accompagna
+
+4) INPUT UFFICIALI DELL’LLM
+Input minimi consigliati:
+- query utente originale
+- filtri estratti
+- top risultati del motore
+- reason per risultato
+- match breakdown dove disponibile
+- metadati runtime essenziali
+- contesto conversazionale minimo
+
+Input opzionali:
+- profilo preferenze utente
+- storico query recente
+- sort mode attivo
+- explain mode / debug mode
+
+5) OUTPUT UFFICIALI DELL’LLM
+Output possibili:
+- spiegazione breve del top result
+- confronto breve tra top result
+- suggerimenti successivi
+- riformulazione user-friendly della richiesta
+- sintesi motivata della shortlist
+
+Regole output:
+- tono chiaro e leggibile
+- no underscore esposti all’utente
+- nessuna invenzione di facts non supportati dal dataset
+- coerenza piena con il ranking mostrato
+
+6) CASI D’USO PRIORITARI V1
+Priorità 1
+- explanation del risultato
+- suggestion / follow-up
+- conversational refinement
+
+Priorità 2
+- query rewriting lato utente
+- descrizione comparativa breve
+- motivazione del ranking top-3
+
+Priorità 3
+- personalizzazione più profonda
+- multi-turn preference memory
+- reasoning più ricco su budget/occasione/stile
+
+7) INTERFACCIA MINIMA CONSIGLIATA
+Payload ideale verso LLM:
+- user_query
+- normalized_filters
+- sort_mode
+- top_results[]
+  - name
+  - producer
+  - price
+  - reason
+  - match_score
+  - quality
+  - value
+  - occasion
+  - color
+  - grapes
+  - ui-safe explanation fields
+- optional: match_breakdown summarized
+
+Risposta ideale dell’LLM:
+- intro_summary
+- top_result_explanation
+- optional_comparison
+- followup_suggestions[]
+
+8) POLICY DI SICUREZZA / AFFIDABILITÀ
+- l’LLM non promuove risultati fuori catalogo
+- l’LLM non altera score o rank
+- l’LLM non trasforma una weak match in perfect match solo perché il linguaggio “suona bene”
+- le spiegazioni devono riflettere i dati reali disponibili
+- in caso di incertezza, l’LLM deve restare aderente al risultato del motore
+
+9) METRICHE DI SUCCESSO
+Valutare il layer LLM su:
+- chiarezza percepita delle spiegazioni
+- utilità dei follow-up
+- coerenza con il ranking
+- riduzione della confusione utente
+- aumento della qualità percepita del prodotto
+- nessun aumento di hallucination o incoerenza
+
+10) IMPLEMENTAZIONE CONSIGLIATA V1
+Step 1
+- explanation layer semplice
+- follow-up suggestions semplici
+- nessun potere sul ranking
+
+Step 2
+- query rewriting controllato
+- confronto top-3
+- miglior contextual handling
+
+Step 3
+- personalization più ricca
+- refinement multi-turn
+- reasoning assist più avanzato
+
+11) DECISIONE UFFICIALE V1
+Per SommelierAI:
+- L’LLM è un layer di spiegazione, raffinazione e conversazione
+- Il ranking engine resta la fonte primaria della decisione
+- Il catalogo resta la base dati ufficiale
+- L’LLM entra solo dopo che catalogo e source strategy hanno fondamenta stabili
+
+NOTA RAPIDA (NON CAMBIO ORA)
+Residui qualitativi aperti del motore:
+- GT-07 `rosso elegante`
+- GT-09 `bianco fresco per cena importante di pesce`
+
+Questi non bloccano la definizione del layer LLM, ma ricordano che il motore sottostante va mantenuto come fonte primaria e non “coperto” dall’LLM.

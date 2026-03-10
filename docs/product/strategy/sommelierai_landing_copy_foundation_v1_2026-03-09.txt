@@ -1,0 +1,111 @@
+SOMMELIERAI — LANDING COPY FOUNDATION V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: definire l’impianto base della copy della landing di SommelierAI per pre-launch / soft launch.
+
+PRINCIPIO GUIDA
+- La landing non deve spiegare tutto.
+- Deve far capire velocemente:
+  - cosa fa il prodotto
+  - per chi è utile
+  - perché è diverso
+  - qual è il passo successivo richiesto all’utente
+
+1) OBIETTIVO DELLA LANDING
+La landing deve:
+- rendere comprensibile il prodotto in pochi secondi
+- mostrare use case concreti
+- trasmettere fiducia nel ranking e nella spiegazione
+- raccogliere interesse / accesso / test utenti
+
+2) STRUTTURA CONSIGLIATA
+A) Hero section
+Contenuto minimo:
+- headline
+- subheadline
+- CTA primaria
+- supporting proof line breve
+
+B) Use cases section
+Contenuto minimo:
+- 3–4 use case immediati
+
+C) How it works
+Contenuto minimo:
+- query
+- ranking
+- spiegazione
+
+D) Why different
+Contenuto minimo:
+- non lista casuale
+- ranking guidato
+- spiegazione chiara
+
+E) FAQ breve
+Contenuto minimo:
+- come funziona
+- per chi è
+- cosa lo rende utile
+
+3) HEADLINE CANDIDATE
+- Il vino giusto, per il momento giusto.
+- Trova il vino giusto e capisci perché.
+- Meno rumore, più scelta giusta.
+- Scegli il vino con più fiducia.
+
+4) SUBHEADLINE CANDIDATA
+SommelierAI ti aiuta a trovare bottiglie coerenti con occasione, stile, piatto e budget, con ranking leggibile e spiegazioni chiare.
+
+5) CTA CANDIDATE
+Primarie:
+- Provalo
+- Richiedi accesso
+- Scopri come funziona
+- Entra nella lista d’attesa
+
+Secondarie:
+- Guarda una demo
+- Vedi i casi d’uso
+- Scopri perché è diverso
+
+6) USE CASES DA METTERE IN LANDING
+- Vino per cena importante
+- Bottiglia che faccia figura
+- Vino per pesce
+- Rosso elegante
+
+7) MESSAGGI CHIAVE DELLA LANDING
+- parti dal contesto, non dal caos
+- ottieni risultati più sensati
+- capisci perché un vino è adatto
+- scegli con più fiducia
+
+8) COSA EVITARE
+- troppo testo sopra la piega
+- claim troppo generici su AI
+- linguaggio snob
+- troppi use case insieme
+- promesse enciclopediche o totalizzanti
+
+9) TONO CONSIGLIATO
+- chiaro
+- concreto
+- affidabile
+- non tecnico
+- non eccessivamente promozionale
+
+10) DECISIONE UFFICIALE V1
+La landing di SommelierAI deve essere costruita su:
+- promessa semplice
+- use case forti
+- differenza chiara rispetto a liste casuali
+- CTA coerente con fase pre-launch / soft launch
+
+NOTA RAPIDA (NON CAMBIO ORA)
+Questo documento definisce la foundation della landing copy.
+Non definisce ancora:
+- copy finale sezione per sezione
+- wireframe finale
+- asset visuali finali
+- CTA definitiva

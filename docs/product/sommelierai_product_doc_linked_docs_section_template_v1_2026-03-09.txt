@@ -1,0 +1,126 @@
+SOMMELIERAI — PRODUCT DOC LINKED-DOCS SECTION TEMPLATE V1
+Data: 2026-03-09
+Stato: template operativo
+Scopo: fornire una sezione standard da inserire e mantenere nella product doc principale per collegare tutta la documentazione ufficiale del progetto.
+
+USO
+- Inserire questa sezione nella product doc principale.
+- Aggiornarla ogni volta che nasce un nuovo documento ufficiale.
+- Usarla come indice “vivo” della documentazione prodotto.
+
+TEMPLATE
+
+## Documentazione collegata
+
+### 1) Strategy
+Path:
+`docs/product/strategy/`
+
+Documenti:
+- `sommelierai_source_strategy_decision_YYYY-MM-DD.txt`
+- `sommelierai_source_evaluation_checklist_v1_YYYY-MM-DD.txt`
+- `sommelierai_candidate_sources_shortlist_v1_YYYY-MM-DD.txt`
+- `sommelierai_candidate_sources_evaluation_matrix_v1_YYYY-MM-DD.xlsx`
+- `sommelierai_candidate_sources_first_pass_evaluation_YYYY-MM-DD.xlsx`
+
+Ruolo:
+- decisioni strategiche sulle fonti
+- shortlist e confronto tra fonti candidate
+- strumenti di valutazione
+
+### 2) Catalog
+Path:
+`docs/product/catalog/`
+
+Documenti:
+- `sommelierai_catalog_v1_minimum_schema_YYYY-MM-DD.txt`
+- `sommelierai_catalog_master_v1_template.csv`
+- `sommelierai_catalog_master_v1_template_v2.xlsx`
+- `sommelierai_master_to_normalized_mapping_YYYY-MM-DD.txt`
+- `sommelierai_sourcing_policy_v1_YYYY-MM-DD.txt`
+- `sommelierai_catalog_ingestion_workflow_v1_YYYY-MM-DD.txt`
+- `sommelierai_catalog_update_process_v1_YYYY-MM-DD.txt`
+- `sommelierai_catalog_onboarding_pack_v1_YYYY-MM-DD.txt`
+- `sommelierai_source_specific_mapping_sheet_template_v1_YYYY-MM-DD.xlsx`
+- `sommelierai_validation_log_template_v1_YYYY-MM-DD.xlsx`
+- `sommelierai_post_export_checks_template_v1_YYYY-MM-DD.txt`
+
+Ruolo:
+- governance del catalogo
+- template e processi
+- mapping e validazione
+- export verso `wines.normalized.csv`
+
+### 3) Roadmap / Progress
+Path:
+`docs/product/roadmap/`
+
+Documenti:
+- handoff operativo
+- freeze notes
+- status/progress
+- gantt
+- roadmap ufficiali
+
+Ruolo:
+- stato del progetto
+- priorità
+- tracking del ciclo
+- avanzamento percentuale
+
+### 4) Release Notes
+Path:
+`docs/product/release-notes/`
+
+Documenti:
+- release notes incrementale ufficiale
+- batch update notes
+- note refresh recenti
+
+Ruolo:
+- tracciare cosa è stato fatto
+- cosa è stato accettato
+- cosa è stato rollbackato
+- cosa resta aperto
+
+### 5) Technical Support Docs
+Path:
+`docs/technical/`
+
+Documenti:
+- ranking debugger
+- ranking test matrix
+- documenti tecnici di supporto
+
+Ruolo:
+- supporto tecnico al motore
+- diagnostica
+- test matrix
+
+### 6) Legacy / Historical Docs
+Path:
+`docs/roadmap/`, `docs/archive/`
+
+Ruolo:
+- materiale storico
+- versioni precedenti
+- riferimento retrospettivo
+
+REGOLA OPERATIVA
+Ogni nuovo documento ufficiale deve essere accompagnato da:
+- nome file definitivo
+- path di destinazione
+- ruolo del documento
+- decisione se è additivo o sostitutivo
+- aggiornamento della sezione “Documentazione collegata” nella product doc
+
+CHECK RAPIDO
+Prima di chiudere un ciclo, verificare:
+- i nuovi documenti sono nel path corretto
+- i file non sono rimasti sciolti in `/docs`
+- la product doc principale linka i documenti nuovi
+- roadmap, release notes e catalog docs sono coerenti tra loro
+
+NOTA RAPIDA (NON CAMBIO ORA)
+Gli underscore restano ammessi nei nomi file e nei canonical interni.
+Nell’output utente finale, testi ed etichette devono restare user-friendly.

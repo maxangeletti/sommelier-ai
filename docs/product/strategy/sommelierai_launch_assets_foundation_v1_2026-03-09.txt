@@ -1,0 +1,142 @@
+SOMMELIERAI — LANDING COPY FULL V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: definire una prima versione completa della copy della landing page di SommelierAI per la fase pre-launch / soft launch.
+
+HERO
+
+Headline:
+Il vino giusto, per il momento giusto.
+
+Subheadline:
+SommelierAI ti aiuta a trovare bottiglie coerenti con occasione, stile, piatto e budget, con ranking leggibile e spiegazioni chiare.
+
+CTA primaria:
+Richiedi accesso
+
+CTA secondaria:
+Scopri come funziona
+
+Micro-proof line:
+Non una lista casuale: una scelta guidata, spiegata e più facile da capire.
+
+USE CASES
+
+Titolo sezione:
+Parti dal contesto, non dal caos.
+
+Intro breve:
+SommelierAI è pensato per aiutarti nei momenti in cui scegliere un vino bene è utile, ma scegliere da soli è più difficile del previsto.
+
+Card 1:
+Vino per cena importante
+Trova bottiglie più coerenti con il contesto, senza perderti tra etichette e descrizioni confuse.
+
+Card 2:
+Bottiglia che faccia figura
+Scegli con più fiducia una bottiglia da portare, regalare o stappare quando vuoi lasciare una buona impressione.
+
+Card 3:
+Vino per pesce
+Parti dal piatto e arriva più rapidamente a opzioni sensate, fresche e coerenti.
+
+Card 4:
+Rosso elegante
+Riduci il rumore e concentrati su risultati più centrati rispetto allo stile che stai cercando.
+
+HOW IT WORKS
+
+Titolo sezione:
+Come funziona
+
+Step 1:
+Dimmi il contesto
+Puoi partire da un’esigenza reale: cena importante, regalo, abbinamento, stile, budget o occasione.
+
+Step 2:
+Ottieni un ranking guidato
+SommelierAI seleziona risultati più coerenti invece di lasciarti in mezzo a una lista confusa.
+
+Step 3:
+Capisci perché
+Ogni suggerimento è accompagnato da spiegazioni leggibili, per aiutarti a scegliere con più sicurezza.
+
+WHY DIFFERENT
+
+Titolo sezione:
+Perché è diverso
+
+Punto 1:
+Non è una lista casuale
+L’obiettivo non è mostrarti tante bottiglie, ma portarti più vicino a quelle più sensate per il tuo contesto.
+
+Punto 2:
+Ti aiuta a capire
+Non solo suggerimenti: anche spiegazioni semplici su perché un vino può essere adatto.
+
+Punto 3:
+È pensato per decidere meglio
+SommelierAI punta a ridurre rumore, incertezza e scelte fatte “a sensazione”.
+
+EXAMPLE RESULTS
+
+Titolo sezione:
+Esempi di risultato
+
+Esempio 1:
+Richiesta:
+“Rosso elegante per cena importante”
+
+Output percepito:
+Una shortlist di rossi coerenti con il contesto, accompagnata da una spiegazione semplice del perché i primi risultati sono più adatti.
+
+Esempio 2:
+Richiesta:
+“Vino per pesce”
+
+Output percepito:
+Una selezione più focalizzata su bottiglie fresche e sensate per il piatto, senza dover tradurre da soli il bisogno in etichette.
+
+FAQ
+
+Domanda:
+SommelierAI è per esperti?
+Risposta:
+No. È pensato soprattutto per aiutare chi vuole scegliere meglio senza perdersi, ma può essere utile anche a chi ha già una base.
+
+Domanda:
+Come sceglie i vini?
+Risposta:
+Parte dal contesto espresso nella richiesta e costruisce un ranking più coerente con ciò che stai cercando.
+
+Domanda:
+Perché mostra anche una spiegazione?
+Risposta:
+Perché non basta suggerire una bottiglia: capire il perché aiuta a scegliere con più fiducia.
+
+Domanda:
+Sostituisce un sommelier?
+Risposta:
+No. L’obiettivo è offrire uno strumento pratico e leggibile per decidere meglio in contesti reali.
+
+FINAL CTA
+
+Headline finale:
+Scegli meglio. Capisci perché.
+
+Subheadline finale:
+Prova un modo più guidato e leggibile di cercare il vino giusto per il tuo contesto.
+
+CTA primaria:
+Richiedi accesso
+
+CTA secondaria:
+Guarda i casi d’uso
+
+NOTA RAPIDA (NON CAMBIO ORA)
+Questa è una copy full foundation per landing pre-launch / soft launch.
+Non è ancora:
+- la landing finale pubblicata
+- la versione ottimizzata per conversione
+- la versione definitiva per A/B test
+- la copy App Store

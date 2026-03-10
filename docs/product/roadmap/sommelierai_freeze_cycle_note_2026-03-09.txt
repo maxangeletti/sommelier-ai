@@ -1,0 +1,59 @@
+SOMMELIERAI — FREEZE CYCLE NOTE
+Data: 2026-03-09
+
+Stato ciclo:
+Freeze di ciclo approvabile dopo verifica regressioni GT-01..GT-13 positiva.
+
+Perimetro chiuso in questo ciclo:
+1) Task 2 — Dataset cleanup critico
+- CSV aggiornato e portato a baseline attiva del workset.
+- Normalizzazione campi categorici residui.
+- Missing deterministici corretti.
+- Nessun tocco a ranking / pesi / fallback / bonus.
+
+2) Stabilizzazione regressione post-replace CSV
+- Correzione filtro colore per dataset con valori EN/normalizzati.
+- Ripristino comportamento query su rossi/bianchi dopo normalizzazione CSV.
+
+3) Task 3 — Output data quality (perimetro lavorato)
+- color_detail normalizzato in output API.
+- tags resi coerenti con color_detail.
+- flags diagnostici in meta.filters resi coerenti.
+- occasion_req / prestige_req / elegance_req resi coerenti nel match_breakdown.
+- parsing foods reso più specifico su canonical come formaggi_erborinati.
+
+4) Refinement puntuale ramo combinato occasion + elegance
+- Ripristinato match corretto per query tipo: rosso elegante per cena importante.
+- Ripristinata mappatura occasion IT -> dataset EN:
+  * cena importante -> important_dinner
+  * aperitivo -> aperitif
+  * meditazione -> meditation
+  * cena -> dinner / important_dinner
+
+Verifica regressioni finale:
+- GT-01..GT-13 eseguiti con esito positivo.
+- Nessun caso vuoto.
+- Nessuna regressione bloccante sul perimetro toccato.
+
+Punti osservati ma NON cambiati ora:
+- GT-07: "rosso elegante" ancora con Nebbiolo Langhe DOC primo risultato; non bloccante, ma tuning qualitativo futuro.
+- GT-09: "bianco fresco per cena importante di pesce" ancora non perfettamente allineato sul piano occasion; non bloccante, da tuning successivo.
+- structured continua a contribuire in query dove il focus è elegance/occasion/tipologia; non toccato in questo ciclo.
+
+Classificazione interventi:
+- Task 2: A — Freeze/Foundation
+- Fix regressione post-CSV: A/B mirato, senza alterare pesi o logica globale
+- Output data quality: B mirato sul solo output/diagnostica
+- Ramo combinato occasion/elegance: B mirato
+
+Stato aggiornato:
+- Task 2: 100%
+- Task 3: 100% sul perimetro lavorato
+- Task 5 (occasion/style/prestige/elegance): avanzato e stabilizzato sul ramo occasion/elegance
+- Blocco tecnico complessivo: ~91–92%
+- Progetto complessivo: ~58–60%
+
+Prossimo passo naturale:
+- Freeze finale di ciclo nel repo/tagging se desiderato
+oppure
+- prosecuzione sul residuo Task 5 (tuning qualitativo non bloccante)

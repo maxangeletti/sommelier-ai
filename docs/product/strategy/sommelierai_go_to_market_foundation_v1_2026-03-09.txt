@@ -1,0 +1,129 @@
+SOMMELIERAI — GO-TO-MARKET FOUNDATION V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: definire le fondamenta del go-to-market di SommelierAI, in modo coerente con lo stato reale del prodotto e con la roadmap.
+
+PRINCIPIO GUIDA
+- Il lancio non parte dalla pubblicità.
+- Parte da: prodotto comprensibile, promessa chiara, target definito, motivo d’uso forte.
+- Il go-to-market deve essere allineato al prodotto reale disponibile, non a una visione ancora non implementata.
+
+1) STATO DI PARTENZA
+Situazione attuale:
+- motore ranking proprietario già presente
+- catalog governance e source strategy ora strutturate
+- baseline tecnica discreta ma non completamente chiusa
+- residui aperti del motore: GT-07 e GT-09
+- layer LLM ancora in fase di definizione/fondazione
+- lancio non ancora strutturato operativamente
+
+Conclusione:
+- SommelierAI è in una fase pre-launch strutturabile, non ancora launch-ready pieno.
+
+2) PROBLEMA CHE IL PRODOTTO RISOLVE
+SommelierAI deve aiutare l’utente a:
+- scegliere un vino in modo più semplice
+- trovare bottiglie coerenti con occasione, gusto, piatto e budget
+- capire perché un vino è adatto
+- sentirsi guidato, non sommerso da liste confuse
+
+3) PROMESSA DI PRODOTTO
+Promessa v1 consigliata:
+“SommelierAI ti aiuta a trovare il vino giusto per il contesto giusto, con spiegazioni chiare e ranking coerente.”
+
+Versioni brevi:
+- “Il vino giusto, per il momento giusto.”
+- “Scopri cosa scegliere e perché.”
+- “Meno rumore, più scelta giusta.”
+
+4) TARGET PRIMARI
+A) Appassionato non esperto
+- vuole scegliere bene ma non ha basi forti
+
+B) Utente occasionale con contesto chiaro
+- cerca vino per cena, regalo, figura, abbinamento
+
+C) Appassionato medio
+- conosce qualcosa ma vuole ranking/sintesi migliori
+
+5) TARGET SECONDARI
+- utenti gift-oriented
+- utenti ristorante/cena importante
+- utenti value-for-money
+- utenti exploration per vitigno/zona/stile
+
+6) PILASTRI DEL GO-TO-MARKET V1
+Pilastro 1 — Use case chiari
+- vino per cena importante
+- vino per fare figura
+- vino per regalo
+- vino per pesce/carne/formaggi
+- vino elegante / strutturato / fresco
+- miglior qualità/prezzo
+
+Pilastro 2 — Explainability
+- non solo suggerimento
+- ma anche spiegazione leggibile del perché
+
+Pilastro 3 — Ranking credibile
+- risultati sensati
+- non puro linguaggio marketing
+
+Pilastro 4 — Esperienza semplice
+- pochi percorsi forti
+- evitare complessità superflua
+- massima leggibilità
+
+7) COSA NON VENDERE NELLA FASE 1
+- assistente universale del vino
+- sommelier perfetto digitale
+- piattaforma totale del vino
+- promesse troppo ampie rispetto al catalogo reale e allo stato del motore
+
+8) PREREQUISITI MINIMI PER IL PRE-LAUNCH
+- baseline motore stabile
+- product doc aggiornata
+- source strategy definita
+- catalog governance definita
+- casi d’uso prioritari chiari
+- naming/promise coerenti
+- pacchetto documentale base ordinato
+
+9) PREREQUISITI MINIMI PER IL LAUNCH
+- riduzione residui GT più sensibili
+- set di query flagship affidabile
+- shortlist di vini credibile e spiegabile
+- onboarding utente semplice
+- messaggio prodotto coerente
+- asset base di lancio preparati
+
+10) CANALI INIZIALI CONSIGLIATI
+- contenuti demo
+- landing semplice
+- test utenti mirati
+- community / appassionati / contatti caldi
+- TestFlight / accesso controllato se pertinente
+
+11) POSIZIONAMENTO CONSIGLIATO V1
+SommelierAI come:
+- motore guidato di scelta vino
+- ranking + spiegazione
+- assistente pratico per decidere meglio
+
+12) DECISIONE UFFICIALE V1
+Il go-to-market di SommelierAI deve partire da:
+- use case reali
+- ranking credibile
+- spiegazione user-friendly
+- target chiari
+- promessa compatibile con il prodotto reale
+
+NOTA RAPIDA (NON CAMBIO ORA)
+Questo blocco non sostituisce ancora:
+- pricing strategy
+- channel plan dettagliato
+- launch asset pack
+- subscription model
+- acquisition funnel operativo
+
+Questi sono i prossimi sotto-blocchi naturali.

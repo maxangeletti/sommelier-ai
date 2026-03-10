@@ -1,0 +1,53 @@
+SOMMELIERAI — LLM SUCCESS METRICS & KPIS V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: definire le metriche ufficiali con cui misurare se il layer LLM sta migliorando il prodotto.
+
+PRINCIPIO GUIDA
+- Il successo del layer LLM non si misura sulla brillantezza del testo.
+- Si misura su chiarezza, utilità, coerenza col motore e qualità percepita.
+
+KPI PRIMARI
+1. Ranking coherence rate
+- Percentuale di risposte LLM coerenti con rank e risultati mostrati.
+
+2. Data-faithfulness rate
+- Percentuale di output senza facts inventati o non supportati.
+
+3. Explanation clarity score
+- Valutazione 1–5 della chiarezza della spiegazione.
+
+4. Follow-up usefulness score
+- Valutazione 1–5 dell’utilità dei suggerimenti successivi.
+
+5. User-friendly language score
+- Assenza di canonical interni o formulazioni poco leggibili.
+
+KPI SECONDARI
+- concise response score
+- comparison usefulness score
+- ambiguity handling score
+- tone fit score
+- perceived product intelligence score
+
+FAILURE KPIS
+- hallucination incidence
+- internal canonical exposure rate
+- misleading explanation rate
+- generic response rate
+- useless suggestions rate
+
+DECISION THRESHOLDS
+GO:
+- coerenza alta
+- hallucination bassa o nulla
+- chiarezza buona
+- utilità percepita buona
+
+HOLD:
+- chiarezza discreta ma coerenza non ancora abbastanza forte
+
+STOP / ROLLBACK:
+- contraddizioni col rank
+- fatti inventati
+- output fuorviante

@@ -1,0 +1,131 @@
+SOMMELIERAI — CATALOG ONBOARDING PACK V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: definire il set minimo ufficiale di documenti e artefatti richiesti ogni volta che entra una nuova fonte o un nuovo batch di vini nel catalogo SommelierAI.
+
+PRINCIPIO GUIDA
+- Nessuna nuova fonte o batch entra in modo informale.
+- Ogni onboarding deve lasciare una traccia minima chiara, ripetibile e verificabile.
+- Il catalogo master è la base editoriale/operativa.
+- `wines.normalized.csv` resta un artefatto derivato runtime.
+
+QUANDO SI USA
+Usare l’onboarding pack v1 quando:
+- entra una nuova fonte
+- entra un nuovo batch di vini da una fonte già nota
+- si fa un’importazione significativa nel catalogo
+- si introduce un nuovo layer dati (commerce / ratings / enrichment)
+
+SET MINIMO UFFICIALE
+1. Source evaluation checklist compilata
+2. Decision note sintetica
+3. Mapping sheet fonte → master catalog
+4. Staging batch file
+5. Validation log
+6. Master catalog update
+7. Export runtime
+8. Post-export checks
+9. Release note / update note
+
+PACCHETTO MINIMO PER TIPO DI ONBOARDING
+
+A) Nuova fonte
+Richiesto:
+- source evaluation checklist
+- decision note
+- mapping sheet
+- validation log
+- master update
+- runtime export
+- post-export checks
+- release/update note
+
+B) Nuovo batch da fonte già approvata
+Richiesto:
+- staging batch file
+- validation log
+- master update
+- runtime export
+- post-export checks
+- release/update note
+
+C) Solo update commerce layer
+Richiesto:
+- source note
+- validation log leggero
+- layer update
+- smoke check
+
+D) Solo update ratings layer
+Richiesto:
+- source note
+- ratings provenance
+- validation log leggero
+- release/update note
+
+CHECKLIST RAPIDA DI COMPLETEZZA
+Prima di considerare chiuso un onboarding, devono esistere almeno:
+- fonte identificata
+- decisione scritta
+- mapping disponibile
+- validation log
+- update del master
+- export runtime
+- controllo post-export
+- nota di tracciamento
+
+PATH CONSIGLIATI
+docs/product/strategy/
+- checklist
+- decision note
+- shortlist / evaluation files
+
+docs/product/catalog/
+- schema
+- template master
+- mapping master → normalized
+- ingestion workflow
+- update process
+- onboarding pack
+- source-specific mapping sheets
+- validation logs
+
+docs/product/release-notes/
+- release notes incrementale
+- batch update notes
+
+docs/product/roadmap/
+- stato/progress se l’onboarding cambia milestone o priorità
+
+NOMENCLATURA CONSIGLIATA
+Per nuova fonte:
+- sommelierai_source_<source_name>_evaluation_<date>.txt
+- sommelierai_source_<source_name>_decision_<date>.txt
+- sommelierai_source_<source_name>_mapping_<date>.xlsx
+- sommelierai_source_<source_name>_validation_log_<date>.txt
+
+Per batch:
+- sommelierai_batch_<source_name>_<date>.csv
+- sommelierai_batch_<source_name>_validation_log_<date>.txt
+- sommelierai_batch_<source_name>_update_note_<date>.txt
+
+STOP / GO
+GO se:
+- la fonte o batch supera la validazione minima
+- il master viene aggiornato correttamente
+- il runtime export è coerente
+- i controlli post-export sono accettabili
+
+STOP se:
+- manca la decisione
+- manca il mapping
+- manca il validation log
+- il runtime rompe il backend
+- i GT mostrano regressioni bloccanti
+
+NOTA RAPIDA (NON CAMBIO ORA)
+Residui qualitativi aperti del motore:
+- GT-07 `rosso elegante`
+- GT-09 `bianco fresco per cena importante di pesce`
+
+Questi non bloccano la definizione dell’onboarding pack, ma restano aperti come tuning qualitativo separato.

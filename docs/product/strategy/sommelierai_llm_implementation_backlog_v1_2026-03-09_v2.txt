@@ -1,0 +1,54 @@
+SOMMELIERAI — LLM IMPLEMENTATION BACKLOG V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: definire il backlog implementativo minimo del layer LLM in ordine sensato rispetto alla roadmap.
+
+BACKLOG ORDINATO
+
+1) Explanation layer payload builder
+Priorità: alta
+
+2) User-friendly canonical translation layer
+Priorità: alta
+
+3) LLM response schema validator
+Priorità: alta
+
+4) Prompt v1 explanation layer
+Priorità: alta
+
+5) Next-step suggestions v1
+Priorità: media-alta
+
+6) Comparison summary v1
+Priorità: media
+
+7) LLM evaluation harness
+Priorità: alta
+
+8) Rollout gating checklist execution
+Priorità: alta
+
+9) Controlled query rewriting prototype
+Priorità: media
+
+10) Personalization / multi-turn refinement
+Priorità: bassa iniziale
+
+RACCOMANDAZIONE OPERATIVA
+Ordine di esecuzione consigliato:
+1. payload builder
+2. canonical translation
+3. response validator
+4. prompt v1
+5. evaluation harness
+6. explanation rollout
+7. suggestions
+8. comparison
+9. rewriting
+10. personalization
+
+NOTA RAPIDA
+Questo backlog non sostituisce i residui del motore:
+- GT-07
+- GT-09

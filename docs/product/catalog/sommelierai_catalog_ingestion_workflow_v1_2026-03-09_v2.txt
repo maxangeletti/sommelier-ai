@@ -1,0 +1,154 @@
+SOMMELIERAI — CATALOG INGESTION WORKFLOW V1
+Data: 2026-03-09
+Stato: operativo
+Classificazione: A/B foundation process
+Scopo: definire il flusso ufficiale con cui una nuova fonte dati entra nel catalogo, viene validata, normalizzata e trasformata nel dataset runtime `wines.normalized.csv`.
+
+PRINCIPIO GUIDA
+- Il catalogo master è la fonte editoriale/operativa.
+- `wines.normalized.csv` è un artefatto derivato per il motore.
+- Gli underscore restano interni/tecnici.
+- L’output utente finale deve restare user-friendly.
+
+1) INGRESSO FONTE
+Una nuova fonte può entrare solo se:
+- è autorizzata / permissioned, oppure proprietaria/curata internamente
+- ha copertura utile per il progetto
+- ha qualità minima sufficiente
+- ha campi mappabili verso il catalog master v1
+
+Output di questo step:
+- fonte accettata / rifiutata
+- owner della fonte
+- data di acquisizione
+- livello di affidabilità iniziale
+
+2) STAGING RAW
+I dati entrano in una zona di staging raw, senza essere ancora considerati validi per il catalogo.
+Campi minimi di staging:
+- source_name
+- source_record_id
+- ingestion_date
+- raw_payload / raw_row
+- note
+
+Regola:
+- nessuna riga raw entra direttamente nel dataset runtime.
+
+3) MAPPING VERSO MASTER CATALOG V1
+Ogni record raw va mappato verso lo schema del catalog master v1.
+
+Campi core da popolare prioritariamente:
+- wine_id interno
+- name
+- producer
+- country
+- region
+- zone
+- denomination
+- vintage
+- color
+- color_detail
+- grapes
+- intensity
+- sparkling
+- sweetness
+- food_pairings
+- occasion
+- style_tags
+- description
+- quality / balance / persistence
+- price fields se disponibili
+- source provenance fields
+
+Regole:
+- il mapping deve essere deterministico
+- i campi non certi non vanno inventati
+- i placeholder generici non sono ammessi come dato finale
+
+4) NORMALIZZAZIONE
+Dopo il mapping, i valori vengono normalizzati secondo i canonical interni.
+
+Esempi interni:
+- formaggi_erborinati
+- important_dinner
+- ruby_red
+- straw_yellow
+
+Regole:
+- canonical interni con underscore ammessi
+- sinonimi e varianti testuali ricondotti a un valore unico
+- nessuna forma user-facing in questo layer se rompe la coerenza tecnica
+
+5) VALIDAZIONE QUALITÀ
+Controlli obbligatori:
+- colonne obbligatorie presenti
+- nessun valore impossibile / palesemente incoerente
+- coerenza color / color_detail / sparkling / sweetness
+- food_pairings validi
+- occasion valida
+- style_tags puliti
+- campi numerici validi
+- dedup base per nome/produttore/annata/zona dove applicabile
+
+Esito:
+- PASS
+- PASS con note
+- FAIL
+
+Se FAIL:
+- il record non passa al catalogo ufficiale
+
+6) APPROVAZIONE CATALOGO
+Solo i record validati entrano nel catalog master ufficiale.
+
+Regole:
+- ogni inserimento deve essere tracciabile alla fonte
+- le modifiche devono essere versionabili
+- i fix manuali devono lasciare nota sintetica
+
+7) EXPORT VERSO RUNTIME
+Dal catalog master ufficiale si genera `wines.normalized.csv`.
+
+Il file runtime:
+- resta piatto
+- resta tecnico
+- contiene solo i campi necessari al motore
+- deve essere coerente con lo schema atteso dal backend
+
+Questo export è l’unico file che il backend deve leggere in esercizio.
+
+8) CONTROLLI POST-EXPORT
+Dopo la generazione del runtime file:
+- verifica caricamento backend
+- query baseline / GT
+- controllo output quality
+- controllo regressioni evidenti
+
+Minimo obbligatorio:
+- GT 01–13 se il cambio può toccare ranking/match/output
+- smoke test base se il cambio è solo catalogo/source handling
+
+9) STOP / GO
+GO se:
+- export valido
+- backend carica
+- GT non mostrano regressioni bloccanti
+
+STOP se:
+- si rompe il caricamento
+- il mapping produce campi incoerenti
+- i GT principali vanno a zero o degradano in modo non accettabile
+
+10) RUOLI
+- catalog master: fonte editoriale/operativa
+- normalized csv: artefatto runtime
+- backend: consumatore del normalized csv
+- UI: traduce i canonical tecnici in output user-friendly
+
+NOTA RAPIDA (NON CAMBIO ORA)
+Residui qualitativi aperti del motore, non del workflow:
+- GT-07 `rosso elegante`
+- GT-09 `bianco fresco per cena importante di pesce`
+
+Questi non invalidano il workflow di ingestion, ma restano aperti come tuning qualitativo del ranking/match.

@@ -1,0 +1,171 @@
+SOMMELIERAI — SOURCING POLICY V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: definire cosa può entrare nel catalogo SommelierAI, con quali vincoli e con quale separazione tra core dataset, commerce layer e ratings layer.
+
+PRINCIPIO GUIDA
+- La base del catalogo deve essere proprietaria/curata.
+- Le fonti esterne possono essere usate solo come enrichment o input controllato.
+- Nessuna fonte esterna non autorizzata deve diventare la fondazione del core dataset.
+- Gli underscore sono ammessi solo nei layer tecnici/interni.
+- L’output utente deve restare user-friendly.
+
+1) GERARCHIA DELLE FONTI
+Livello 1 — Core catalog source
+- Fonte proprietaria/curata internamente
+- È la base del catalogo ufficiale
+- Ha priorità massima
+
+Livello 2 — Permissioned enrichment source
+- Fonte esterna autorizzata o con uso chiaramente consentito
+- Può arricchire il catalogo
+- Non sostituisce automaticamente il core
+
+Livello 3 — Auxiliary reference source
+- Fonte utile per verifica, confronto o scouting
+- Non entra direttamente in produzione
+- Richiede validazione manuale o regole forti di gating
+
+2) COSA È CONSENTITO
+Consentito:
+- dataset curati internamente
+- dati proprietari prodotti dal progetto
+- fonti esterne con autorizzazione/licenza chiara
+- fonti commerciali usate solo dove il diritto d’uso è verificato
+- expert ratings solo se legalmente e operativamente gestibili
+
+Non consentito come fondazione core:
+- scraping opportunistico senza base chiara
+- community data non controllato come source-of-truth
+- marketplace / piattaforme consumer usate come dataset madre senza permission
+- campi non verificabili importati in massa senza quality gate
+
+3) SEPARAZIONE DEI LAYER
+A) CORE WINE DATA
+Contiene:
+- identità vino
+- provenienza
+- classificazione
+- caratteristiche enologiche
+- food pairing
+- occasion
+- style tags
+- qualità interna/curata
+
+Regola:
+- questo layer deve essere stabile, controllato e versionabile
+
+B) COMMERCE LAYER
+Contiene:
+- prezzo
+- disponibilità
+- seller/source commerciale
+- eventuale URL acquisto
+
+Regola:
+- è separato dal core
+- può essere assente
+- non deve definire da solo l’identità del vino
+
+C) RATINGS LAYER
+Contiene:
+- expert ratings
+- rating source
+- data aggiornamento
+- eventuali aggregazioni
+
+Regola:
+- separato dal core
+- mai sostitutivo della qualità interna
+- va gestito solo con sourcing autorizzato
+
+4) REGOLE DI INGRESSO DI UNA NUOVA FONTE
+Una nuova fonte può entrare solo se soddisfa tutte queste condizioni:
+- identificabilità chiara della fonte
+- finalità d’uso compatibile col progetto
+- mappabilità verso il catalog master
+- qualità minima dei campi
+- rischio legale/operativo accettabile
+
+Checklist minima:
+- nome fonte
+- owner/responsabile
+- tipo fonte
+- scope dati
+- permesso/licenza
+- frequenza aggiornamento
+- qualità stimata
+- rischio stimato
+- decisione: approved / rejected / experimental
+
+5) DECISIONI POSSIBILI
+A) APPROVED CORE
+- ammessa come base o parte del catalogo core
+
+B) APPROVED ENRICHMENT
+- ammessa solo come arricchimento separato
+
+C) EXPERIMENTAL
+- ammessa solo in staging/test
+- non entra nel catalogo ufficiale senza secondo passaggio
+
+D) REJECTED
+- non usabile nel workflow ufficiale
+
+6) POLICY SU PREZZI E DISPONIBILITÀ
+- prezzi e disponibilità sono informazione volatile
+- devono restare separati dal core catalog
+- possono aggiornarsi con frequenza diversa
+- non devono rompere il dataset base se mancanti
+- possono essere rimossi senza invalidare l’identità del vino
+
+7) POLICY SU EXPERT RATINGS
+- possibili solo come layer dedicato
+- ogni rating deve portare la source
+- nessun merge opaco di punteggi eterogenei
+- nessun uso come fondazione del ranking se il sourcing non è solido
+
+8) POLICY SU CANONICAL INTERNI
+Internamente sono ammessi canonical tecnici:
+- formaggi_erborinati
+- important_dinner
+- ruby_red
+- straw_yellow
+
+Ma:
+- UI
+- explain
+- copy finale
+- output utente
+
+devono essere sempre tradotti in forma leggibile/user-friendly.
+
+9) STOP / GO
+GO se:
+- la fonte è autorizzata o chiaramente accettabile
+- i dati sono mappabili
+- la qualità è sufficiente
+- il rischio è basso o gestibile
+
+STOP se:
+- permessi dubbi
+- qualità scarsa
+- struttura ingestibile
+- rischio legale/operativo alto
+- tentazione di usare la fonte come dataset madre senza controllo
+
+10) RACCOMANDAZIONE UFFICIALE V1
+Per SommelierAI v1:
+- base catalogo = proprietaria/curata
+- enrichment esterno = solo permissioned
+- commerce layer = separato
+- ratings layer = separato
+- nessuna dipendenza strutturale da fonte esterna consumer/community come fondazione del motore
+
+NOTA RAPIDA (NON CAMBIO ORA)
+Questa policy non risolve da sola:
+- sourcing operativo concreto delle prime fonti candidate
+- workflow di aggiornamento periodico
+- governance editoriale quotidiana
+
+Questi sono step successivi della roadmap.

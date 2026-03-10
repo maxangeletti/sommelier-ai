@@ -1,0 +1,150 @@
+SOMMELIERAI — STATO / PROGRESS AGGIORNATO
+Data: 2026-03-09
+
+RIFERIMENTO UFFICIALE
+- Handoff completo 2026-03-07
+- Release notes incrementale 2026-03-06
+- Sessione odierna: chiusura Task 2 + consolidamento Task 3 + fix puntuali GT
+
+====================================================================
+STATO SINTETICO
+====================================================================
+
+Blocco tecnico attuale:
+- prima della sessione: ~88%
+- dopo la sessione: ~91–92%
+
+Progetto completo end-to-end:
+- resta ~58–60%
+
+Lettura:
+- il motore tecnico è avanzato ulteriormente
+- il progetto completo resta non vicino alla chiusura senza:
+  - source strategy vini
+  - blocco LLM
+  - go-to-market/lancio
+
+====================================================================
+TASK UFFICIALI — AGGIORNAMENTO
+====================================================================
+
+A — Freeze / Foundation
+1. Ranking Transparency Debugger
+   Stato: 100%
+   Residuo: 0
+
+2. Dataset cleanup critico
+   Stato: 100%
+   Residuo: 0
+   Nota:
+   dataset 53 righe confermato e baseline aggiornata sul CSV ufficiale
+
+3. Output data quality
+   Stato: 100% sul perimetro lavorato
+   Residuo: ~0 sul perimetro toccato; residuo eventuale solo su rifiniture future non bloccanti
+   Nota:
+   chiusi color_detail, tags, filters diagnostici, food specificity output
+
+B — Accepted tuning
+4. Match refinement food
+   Stato: 90%
+   Residuo: 0.5–1 giorno
+   Nota:
+   baseline food-specific + floor confermata; non toccata in modo strutturale
+
+5. Match refinement occasion/style/prestige/elegance
+   Stato: ~91–92%
+   Residuo: 0.5–1.5 giorni
+   Nota:
+   chiuso il fix puntuale su GT-08 (rosso elegante per cena importante)
+
+6. Performance + cache
+   Stato: 75%
+   Residuo: 0.5–1 giorno
+
+C — Experimental / governato
+7. Tuning score/fallback/bonus con tracciamento
+   Stato: 60%
+   Residuo: 1–2 giorni
+   Nota:
+   non toccato in questa sessione
+
+8. Golden tests / query baseline
+   Stato: ~95%
+   Residuo: 0.25 giorni
+   Nota:
+   GT 01–13 rieseguiti e coerenti sul perimetro lavorato
+
+D — Chiusura / documentazione del blocco tecnico
+9. Release notes incrementale + handoff strutturato
+   Stato: ~95%
+   Residuo: 0.25 giorni
+
+10. Freeze finale di ciclo + verifica regressioni
+   Stato: ~80%
+   Residuo: 0.25–0.5 giorni
+
+E — Source strategy / catalogo vini
+11. Decisione fonte vini definitiva
+   Stato: 10%
+   Residuo: 3–5 giorni
+
+12. Modello dati catalogo / mapping / qualità fonte
+   Stato: 5%
+   Residuo: 2–4 giorni
+
+F — LLM
+13. Definizione uso LLM
+   Stato: 0%
+   Residuo: 1–2 giorni
+
+14. Implementazione LLM v1 utile
+   Stato: 0%
+   Residuo: 3–5 giorni
+
+G — Go-to-market / lancio prodotto
+15. Posizionamento e messaggio prodotto
+   Stato: 10%
+   Residuo: 2–3 giorni
+
+16. Strategia lancio / canali / pricing / alpha-beta
+   Stato: 0%
+   Residuo: 3–5 giorni
+
+====================================================================
+ESITO SESSIONE ODIERNA
+====================================================================
+
+Chiuso / stabilizzato:
+- Task 2 dataset cleanup critico
+- Task 3 output data quality sul perimetro lavorato
+- regressione filtro colore post-CSV
+- regressione color_detail/tags
+- regressione food specificity nei filters
+- regressione query combinata GT-08
+
+GT chiave verificati:
+- GT-02 formaggi erborinati
+- GT-03 franciacorta brut
+- GT-07 rosso elegante
+- GT-08 rosso elegante per cena importante
+- GT 01–13 di nuovo coerenti nel controllo completo
+
+====================================================================
+NOTA RAPIDA (NON CAMBIO ORA)
+====================================================================
+- structured continua a pesare anche in query dove il focus principale è elegance/occasion o tipologia
+- questo è un tema da task 5 / tuning successivo, non da output quality
+
+====================================================================
+PROSSIMO PASSO NATURALE
+====================================================================
+
+Restando nel piano ufficiale:
+- completare il residuo del task 5 (occasion/style/prestige/elegance)
+oppure
+- chiudere freeze finale di ciclo + verifica regressioni + documentazione finale del blocco tecnico
+
+====================================================================
+END
+====================================================================

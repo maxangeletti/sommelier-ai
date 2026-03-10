@@ -1,0 +1,118 @@
+SOMMELIERAI — LAUNCH PREREQUISITES CHECKLIST V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: definire la checklist minima che SommelierAI deve soddisfare prima di essere considerato launch-ready.
+
+PRINCIPIO GUIDA
+- Il launch non coincide con “l’app gira”.
+- Il launch richiede: prodotto comprensibile, output credibile, messaggio chiaro, documentazione allineata e percorso utente sensato.
+
+CHECKLIST UFFICIALE
+
+1) BASELINE PRODOTTO
+- ranking engine stabile
+- dataset runtime coerente
+- nessuna regressione bloccante aperta
+- casi d’uso flagship funzionanti
+Esito:
+- PASS / HOLD / FAIL
+
+2) QUALITÀ DEI RISULTATI
+- top results sensati sui casi principali
+- explainability leggibile
+- no output confusi o chiaramente fuorvianti
+- canonical tecnici non esposti all’utente
+Esito:
+- PASS / HOLD / FAIL
+
+3) RESIDUI TECNICI
+- GT critici sotto controllo
+- problemi aperti classificati
+- nessun bug grave nascosto sotto il tappeto
+Esito:
+- PASS / HOLD / FAIL
+
+Nota attuale:
+- residui aperti noti: GT-07, GT-09
+
+4) CATALOGO E SORGENTI
+- source strategy definita
+- catalog governance definita
+- master template definito
+- workflow di ingestion/update definito
+Esito:
+- PASS / HOLD / FAIL
+
+5) PRODUCT DOC & DOCUMENTAZIONE
+- product doc aggiornata
+- linked docs section aggiornata
+- roadmap/progress coerenti
+- release notes aggiornate
+Esito:
+- PASS / HOLD / FAIL
+
+6) MESSAGGIO PRODOTTO
+- value proposition chiara
+- target/personas definite
+- messaging non generico
+- promessa coerente col prodotto reale
+Esito:
+- PASS / HOLD / FAIL
+
+7) ONBOARDING / ESPERIENZA
+- percorso iniziale semplice
+- use case primari comprensibili
+- utente non esperto non si perde
+Esito:
+- PASS / HOLD / FAIL
+
+8) ASSET MINIMI DI LANCIO
+- messaggio principale
+- demo / screenshot / esempio d’uso
+- materiali minimi di presentazione
+Esito:
+- PASS / HOLD / FAIL
+
+9) METRICHE E OSSERVABILITÀ
+- criteri minimi per capire se il prodotto funziona
+- query flagship note
+- feedback loop minimo previsto
+Esito:
+- PASS / HOLD / FAIL
+
+10) DECISIONE FINALE
+- PRE-LAUNCH READY
+- SOFT LAUNCH READY
+- HOLD
+- NOT READY
+
+CRITERI PRATICI
+PRE-LAUNCH READY se:
+- prodotto già credibile
+- documentazione allineata
+- messaggio chiaro
+- residui aperti non bloccanti
+
+SOFT LAUNCH READY se:
+- use case principali affidabili
+- output abbastanza robusto
+- materiali minimi pronti
+- rischi noti sotto controllo
+
+HOLD se:
+- troppo gap tra promessa e prodotto
+- bug o incoerenze ancora troppo visibili
+- documentazione / messaging non allineati
+
+VALUTAZIONE ATTUALE INDICATIVA
+Alla data attuale SommelierAI sembra:
+- PRE-LAUNCH STRUCTURED
+- non ancora launch-ready pieno
+- avvicinabile a soft launch solo dopo ulteriore chiusura qualitativa e preparazione asset
+
+NOTA RAPIDA (NON CAMBIO ORA)
+Questa checklist non sostituisce:
+- channel strategy
+- pricing strategy
+- launch asset pack
+- piano acquisizione utenti

@@ -1,0 +1,264 @@
+SOMMELIERAI — CATALOGO V1 MINIMUM SCHEMA
+Data: 2026-03-09
+Stato: Official draft v1
+Contesto: source strategy = catalogo proprietario/curato; enrichment esterno solo permissioned; commerce e ratings come layer separati.
+
+OBIETTIVO
+Definire lo schema minimo ufficiale del catalogo v1 su cui SommelierAI deve poter vivere in modo stabile, con separazione netta tra:
+- core wine data
+- commerce layer
+- ratings layer
+
+PRINCIPIO GUIDA
+Il motore di matching/ranking non deve dipendere da campi esterni instabili o legalmente incerti.
+Il core catalogo deve essere sufficiente a:
+- descrivere il vino
+- supportare filtri
+- supportare ranking/match di base
+- generare output coerenti lato API/UI
+
+====================================
+A. CORE WINE DATA — OBBLIGATORI V1
+====================================
+Questi campi sono il minimo vitale del catalogo.
+
+1) id
+- tipo: string
+- ruolo: identificatore univoco interno
+- note: stabile, non derivato dal nome
+
+2) name
+- tipo: string
+- ruolo: nome display vino
+- note: senza artifici tipo “name — producer” se non realmente parte del nome ufficiale
+
+3) country
+- tipo: string
+- ruolo: paese
+
+4) region
+- tipo: string
+- ruolo: regione macro
+
+5) zone
+- tipo: string
+- ruolo: sottozona/comune/area utile al matching territoriale
+
+6) denomination
+- tipo: string
+- ruolo: denominazione ufficiale o equivalente
+
+7) vintage
+- tipo: string
+- ruolo: annata o NV
+
+8) color_detail
+- tipo: enum/string canonico
+- valori attesi v1:
+  - red
+  - ruby_red
+  - white
+  - straw_yellow
+  - rose
+- ruolo: colore usato in output/filter semanticamente coerente
+
+9) grapes
+- tipo: string multivalue separata da ;
+- ruolo: vitigno/i
+
+10) intensity
+- tipo: enum/string
+- valori attesi v1:
+  - low
+  - medium
+  - high
+- ruolo: filtro + supporto reasoning/match
+
+11) sparkling
+- tipo: enum/string
+- valori attesi v1:
+  - fermo
+  - spumante
+- ruolo: tipologia primaria
+
+12) sweetness
+- tipo: enum/string
+- valori attesi v1:
+  - secco
+  - dolce
+- ruolo: tipologia primaria
+
+13) food_pairings
+- tipo: string multivalue separata da |
+- ruolo: canonical pairing per matching food
+- note: usare canonical stabili; evitare testo libero nel core
+
+14) occasion
+- tipo: enum/string canonico
+- valori attesi v1:
+  - aperitif
+  - dinner
+  - important_dinner
+  - meditation
+- ruolo: supporto intent/match occasion
+
+15) quality
+- tipo: string/float
+- ruolo: qualità interna di base
+
+16) balance
+- tipo: string/float
+- ruolo: componente qualità interna
+
+17) persistence
+- tipo: string/float
+- ruolo: componente qualità interna
+
+17) reason
+- tipo: string
+- ruolo: microdescrizione operativa utente-facing
+- note: deve restare consistente col vino, non marketing random
+
+18) tags
+- tipo: string multivalue
+- ruolo: layer semantico corto per matching/keyword/reasoning leggero
+- note: deve poter includere segnali come elegante, strutturato, minerale, prestigioso ecc.
+
+====================================
+B. CORE WINE DATA — FORTEMENTE CONSIGLIATI V1
+====================================
+Questi campi non sono il minimo assoluto, ma dovrebbero stare nel catalogo v1 ufficiale.
+
+1) producer
+- tipo: string
+- ruolo: produttore
+- nota: può essere vuoto se non disponibile; non inventare valori placeholder
+
+2) price
+- tipo: string/float
+- ruolo: prezzo interno di riferimento
+- nota: utile per value layer interno, ma non deve essere confuso con prezzo live retailer
+
+3) purchase_url
+- tipo: string
+- ruolo: eventuale link esterno
+- nota: layer fragile; non base del motore
+
+4) popularity
+- tipo: string/float
+- ruolo: metrica opzionale interna
+
+5) rating_overall
+- tipo: string/float
+- ruolo: eventuale rating composito interno
+
+====================================
+C. DERIVED / ENGINE FIELDS — NON CATALOGO MASTER
+====================================
+Questi campi servono al motore/API ma non devono essere trattati come campi sorgente del catalogo master.
+
+- rank
+- score
+- match_score
+- __match_score
+- __price_delta
+- match_breakdown
+- ui_highlights
+- explain
+- __quality_score
+- __value_score
+
+Regola:
+questi campi si calcolano, non si mantengono come verità di catalogo.
+
+====================================
+D. COMMERCE LAYER — SEPARATO DAL CORE
+====================================
+Da tenere separato dal catalogo base.
+
+Campi possibili:
+- retailer_name
+- retailer_sku
+- availability_status
+- live_price
+- currency
+- purchase_url
+- last_price_check_at
+- shipping_country
+
+Regola:
+questo layer può cambiare spesso, non deve contaminare il catalogo master.
+
+====================================
+E. RATINGS LAYER — SEPARATO DAL CORE
+====================================
+Da tenere separato dal catalogo base.
+
+Campi possibili:
+- expert_rating_avg
+- expert_rating_count
+- expert_rating_sources
+- source_name
+- source_score
+- source_scale
+- source_date
+
+Regola:
+mai sostituire quality interna con ratings esterni.
+I ratings esterni devono essere enrichment opzionale, non fondazione del ranking core.
+
+====================================
+F. NORMALIZATION RULES V1
+====================================
+1) No placeholder inventati
+- niente producer fake tipo regione/comune usati come produttore
+
+2) Canonical languages
+- valori tecnici canonici preferibilmente coerenti e stabili
+- evitare mix inutile IT/EN nei campi macchina
+
+3) Output coherence
+- color_detail non deve contenere sweetness o typology
+- sparkling e sweetness restano campi separati
+
+4) Pairings canonicali
+- food_pairings devono usare token canonicali stabili
+- preferire specifico > generico quando possibile
+
+5) Occasion canonicale
+- usare solo il set previsto
+- le query utente in italiano si mappano nel parser, non nel dataset
+
+====================================
+G. MINIMUM IMPORT TEMPLATE V1
+====================================
+Colonne consigliate per il master CSV:
+
+id,name,producer,country,region,zone,denomination,vintage,color_detail,grapes,intensity,sparkling,sweetness,food_pairings,occasion,quality,balance,persistence,reason,tags,price,purchase_url,popularity,rating_overall
+
+====================================
+H. COSA NON METTERE NEL CORE V1
+====================================
+- prezzi live retailer come base verità
+- stock live
+- expert ratings fusi nel core score
+- campi UI/debug
+- campi derivati runtime
+- testo libero sporco per pairing/occasion se esiste un canonical
+
+====================================
+I. DECISIONE OPERATIVA
+====================================
+Per SommelierAI v1:
+- il catalogo master deve vivere come dataset proprietario/curato
+- il core schema sopra è la fondazione ufficiale
+- commerce e ratings sono layer separati
+- ogni nuova fonte futura va mappata su questo schema, non il contrario
+
+====================================
+J. NOTA RAPIDA (NON CAMBIO ORA)
+====================================
+Residui tecnici ancora aperti fuori da questo documento:
+- GT-07 rosso elegante: tuning qualitativo aperto
+- GT-09 bianco fresco per cena importante di pesce: tuning qualitativo aperto
+- questi non cambiano la validità dello schema catalogo v1

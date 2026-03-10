@@ -1,0 +1,109 @@
+SOMMELIERAI — LANDING PAGE STRUCTURE V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: definire la struttura minima consigliata della landing page di SommelierAI per la fase pre-launch / soft launch.
+
+PRINCIPIO GUIDA
+- La landing deve essere semplice da scansionare.
+- Deve mostrare pochi blocchi forti, non troppe sezioni deboli.
+- Ogni sezione deve aiutare a capire cosa fa il prodotto e perché è utile.
+
+1) HERO
+Contenuto:
+- headline
+- subheadline
+- CTA primaria
+- micro-proof line
+- mockup / screenshot principale
+
+Obiettivo:
+- far capire in pochi secondi il valore del prodotto
+
+2) USE CASES
+Contenuto:
+- 3–4 use case principali
+
+Esempi:
+- vino per cena importante
+- bottiglia che faccia figura
+- vino per pesce
+- rosso elegante
+
+Obiettivo:
+- tradurre il prodotto in bisogni reali
+
+3) HOW IT WORKS
+Contenuto:
+- inserisci il contesto
+- ottieni ranking guidato
+- capisci perché i risultati sono adatti
+
+Obiettivo:
+- rendere il flusso facile da capire
+
+4) WHY DIFFERENT
+Contenuto:
+- non lista casuale
+- ranking coerente
+- spiegazione chiara
+- esperienza più guidata
+
+Obiettivo:
+- spiegare la differenza percepita rispetto a ricerca generica / app confuse
+
+5) EXAMPLE RESULTS
+Contenuto:
+- 1–2 esempi di risultato
+- con reason / explainability leggibile
+
+Obiettivo:
+- mostrare qualità percepita concreta
+
+6) FAQ BREVE
+Contenuto:
+- come funziona?
+- è per esperti o anche per principianti?
+- cosa lo rende diverso?
+- come sceglie i risultati?
+
+Obiettivo:
+- ridurre attrito e dubbi
+
+7) CTA FINALE
+Contenuto:
+- call to action chiara
+- eventuale secondary CTA
+
+Obiettivo:
+- chiudere il percorso con un passo semplice
+
+STRUTTURA CONSIGLIATA IN SINTESI
+1. Hero
+2. Use cases
+3. How it works
+4. Why different
+5. Example results
+6. FAQ
+7. Final CTA
+
+SEZIONI NON PRIORITARIE NELLA FASE 1
+- lunga storia del brand
+- numeri vanity
+- troppi testimonial
+- blog feed
+- comparazioni troppo complesse
+- sezione pricing dettagliata se non ancora pronta
+
+DECISIONE UFFICIALE V1
+La landing page SommelierAI deve essere:
+- corta
+- leggibile
+- use-case driven
+- centrata su ranking + spiegazione
+
+NOTA RAPIDA (NON CAMBIO ORA)
+Questa struttura non definisce ancora:
+- copy finale completa
+- design finale
+- visual asset pack
+- CTA definitiva

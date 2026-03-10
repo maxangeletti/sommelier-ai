@@ -1,0 +1,43 @@
+SOMMELIERAI — STATUS / PROGRESS UPDATE
+Data: 2026-03-09
+
+Stato ufficiale aggiornato dopo GT finali:
+- Blocco tecnico: ~91–92%
+- Progetto completo: ~58–60%
+
+Task:
+- Task 2 — Dataset cleanup critico: CHIUSO (100%)
+- Task 3 — Output data quality: CHIUSO sul perimetro lavorato (100%)
+- Task 4 — Match refinement food: invariato in questo step, baseline preservata
+- Task 5 — Occasion / style / prestige / elegance: AVANZATO
+  * regressione su occasion/elegance risolta
+  * query combinata ripristinata
+  * tuning qualitativo residuo ancora aperto
+- Performance + cache: non toccato in questo ciclo
+- Freeze finale ciclo + verifica regressioni: verifica regressioni CHIUSA, freeze repo/tag ancora da eseguire se richiesto
+
+GT finali:
+- GT-01 ok
+- GT-02 ok
+- GT-03 ok
+- GT-04 ok
+- GT-05 ok
+- GT-06 ok
+- GT-07 ok
+- GT-08 ok
+- GT-09 ok
+- GT-10 ok
+- GT-11 ok
+- GT-12 ok
+- GT-13 ok
+
+Rischi residui / note rapide:
+- Top-1 di alcune query qualitative ancora perfezionabile (non regressione bloccante)
+- Structured contribution ancora presente in query dove si potrebbe desiderare peso minore
+- Non toccare questi punti senza classificazione e test dedicati
+
+Metodo preservato:
+- nessun refactor largo
+- nessun tocco a pesi/fallback/bonus senza tracciamento
+- modifiche mirate su file singolo
+- GT usati come baseline obbligatoria

@@ -1,0 +1,147 @@
+SOMMELIERAI — TARGET SEGMENTS & PERSONAS V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: definire i segmenti target prioritari e le prime personas operative per il go-to-market di SommelierAI.
+
+PRINCIPIO GUIDA
+- Non si lancia “per tutti”.
+- Si lancia prima per casi d’uso e utenti con bisogno forte, comprensibile e ripetibile.
+- I segmenti devono riflettere il prodotto reale disponibile oggi.
+
+1) SEGMENTI TARGET PRIORITARI
+
+A) Occasional chooser
+Profilo:
+- beve vino in modo non specialistico
+- compra in contesti concreti: cena, regalo, ospiti, figura
+Bisogno:
+- scegliere bene senza perdersi
+Valore SommelierAI:
+- ranking chiaro + spiegazione semplice
+Priorità:
+- altissima
+
+B) Guided improver
+Profilo:
+- ha interesse per il vino ma competenze parziali
+- vuole migliorare la scelta senza diventare esperto
+Bisogno:
+- capire differenze e fare scelte più sensate
+Valore SommelierAI:
+- confronto, shortlist, motivazione del risultato
+Priorità:
+- alta
+
+C) Context-driven buyer
+Profilo:
+- parte dal contesto, non dall’etichetta
+- cerca “vino per…”
+Bisogno:
+- corrispondenza pratica tra occasione/piatto/stile e bottiglia
+Valore SommelierAI:
+- use case-oriented discovery
+Priorità:
+- altissima
+
+2) SEGMENTI SECONDARI
+
+A) Gift buyer
+- cerca una bottiglia che faccia figura
+- bisogno forte di fiducia
+
+B) Value seeker
+- cerca buon risultato con controllo prezzo
+- sensibile a value-for-money
+
+C) Explorer
+- curioso su vitigno, zona, stile
+- meno urgente del target primario, ma utile per retention futura
+
+3) PERSONAS OPERATIVE V1
+
+Persona 1 — Luca, cena importante
+Età indicativa:
+- 32–45
+Contesto:
+- deve scegliere una bottiglia per una cena importante
+Pain:
+- non vuole fare una figura mediocre
+- non sa orientarsi tra troppe etichette
+Cosa cerca:
+- una scelta affidabile e spiegata bene
+Messaggio utile:
+- “Ti aiuto a scegliere una bottiglia coerente con il contesto, e ti spiego perché.”
+
+Persona 2 — Sara, regalo / figura
+Età indicativa:
+- 28–50
+Contesto:
+- deve regalare o portare una bottiglia
+Pain:
+- paura di sbagliare o sembrare casuale
+Cosa cerca:
+- sicurezza, eleganza, spiegazione semplice
+Messaggio utile:
+- “Trova una bottiglia che faccia figura senza scegliere a caso.”
+
+Persona 3 — Marco, vuole capire meglio
+Età indicativa:
+- 30–50
+Contesto:
+- appassionato medio
+Pain:
+- spesso legge troppo o confronta male
+Cosa cerca:
+- shortlist ragionata e differenze chiare
+Messaggio utile:
+- “Meno rumore, più confronto utile.”
+
+Persona 4 — Elena, vino per il piatto
+Età indicativa:
+- 26–48
+Contesto:
+- parte dal cibo o dall’occasione
+Pain:
+- non sa tradurre il contesto in bottiglie adatte
+Cosa cerca:
+- abbinamento sensato e veloce
+Messaggio utile:
+- “Dimmi il contesto, ti porto alle bottiglie più coerenti.”
+
+4) JOBS TO BE DONE
+SommelierAI deve aiutare l’utente a:
+- scegliere velocemente senza ansia
+- capire il perché della scelta
+- trovare una bottiglia per un contesto reale
+- confrontare poche opzioni buone invece di tante opzioni confuse
+- fare una buona figura senza essere esperto
+
+5) ORDINE DI PRIORITÀ PER IL GO-TO-MARKET
+Priorità 1:
+- context-driven buyer
+- occasional chooser
+
+Priorità 2:
+- guided improver
+- gift buyer
+
+Priorità 3:
+- value seeker
+- explorer
+
+6) DECISIONE UFFICIALE V1
+SommelierAI v1 deve comunicare prima di tutto verso utenti che:
+- partono dal contesto
+- vogliono una scelta più sicura
+- apprezzano una spiegazione chiara
+- non cercano un’enciclopedia del vino
+
+NOTA RAPIDA (NON CAMBIO ORA)
+Queste personas servono a:
+- messaging
+- landing
+- demo
+- test utente
+- onboarding iniziale
+
+Non sono ancora segmentazione definitiva di marketing avanzato.

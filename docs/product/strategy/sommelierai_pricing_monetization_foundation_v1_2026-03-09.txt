@@ -1,0 +1,139 @@
+SOMMELIERAI — PRICING & MONETIZATION FOUNDATION V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: definire le fondamenta della strategia di pricing e monetizzazione di SommelierAI in modo coerente con il prodotto reale, la roadmap e il go-to-market iniziale.
+
+PRINCIPIO GUIDA
+- La monetizzazione non deve arrivare prima della chiarezza del valore.
+- Prima si definisce cosa il prodotto fa bene e per chi.
+- Poi si decide cosa è free, cosa è premium e cosa può diventare subscription.
+- Il pricing deve riflettere utilità percepita, non solo presenza di AI.
+
+1) STATO DI PARTENZA
+Situazione attuale:
+- motore ranking proprietario presente
+- catalog governance strutturata
+- layer LLM in fondazione, non ancora rollout operativo
+- use case forti già identificati
+- launch foundation impostata, ma non ancora asset/funnel completi
+
+Conclusione:
+- siamo in fase di pricing foundation, non di pricing finale blindato
+
+2) LOGICA DI MONETIZZAZIONE CONSIGLIATA
+SommelierAI non dovrebbe monetizzare su:
+- accesso generico all’app in sé
+- branding “AI” astratto
+- promesse troppo ampie
+
+SommelierAI dovrebbe monetizzare su:
+- maggiore profondità d’uso
+- maggiore frequenza d’uso
+- maggiore qualità del supporto decisionale
+- funzionalità premium utili e comprensibili
+
+3) MODELLO CONSIGLIATO V1
+Modello principale consigliato:
+- freemium + premium subscription
+
+Struttura:
+A) Free tier
+- accesso limitato ma utile
+- sufficiente per capire il valore
+- ideale per discovery e prova
+
+B) Premium tier
+- sblocca maggiore continuità, profondità e comfort d’uso
+- migliora la probabilità di retention
+
+C) eventuale futuro tier higher-value
+- solo dopo validazione reale del premium base
+
+4) COSA PUÒ STARE NEL FREE
+Candidati free:
+- query limitate
+- ranking base
+- shortlist base
+- use case principali accessibili
+- explainability essenziale
+- accesso limitato nel tempo/volume
+
+Obiettivo:
+- far capire velocemente il valore del prodotto
+
+5) COSA PUÒ STARE NEL PREMIUM
+Candidati premium:
+- più query / uso continuativo
+- refinement più ricco
+- confronti più profondi
+- shortlist più ampie
+- use case premium
+- spiegazioni più ricche
+- preferenze salvate / esperienza più personale
+- eventuali features LLM più avanzate, quando mature
+
+Obiettivo:
+- dare un upgrade percepibile, non cosmetico
+
+6) COSA NON METTERE SUBITO A PAGAMENTO
+- la semplice possibilità di cercare vino
+- funzioni troppo basilari
+- cose che fanno sembrare il free inutile
+- caratteristiche non ancora davvero stabili
+
+7) RAZIONALE DEL PRICING
+Il premium deve essere percepito come:
+- più controllo
+- più continuità
+- più supporto utile
+- migliore esperienza decisionale
+
+Non come:
+- paywall arbitrario
+- tassa per usare l’app
+- accesso a feature poco comprensibili
+
+8) OPZIONI DI MONETIZZAZIONE FUTURA
+A) Subscription consumer
+- modello principale più naturale v1/v2
+
+B) Affiliate / commerce layer
+- possibile integrazione futura
+- non dovrebbe essere la base iniziale del modello
+
+C) B2B / enterprise / hospitality
+- possibile linea separata
+- non confondere col GTM consumer iniziale
+
+D) Sponsored placements
+- da evitare inizialmente se rompono fiducia nel ranking
+
+9) RISCHI DA EVITARE
+- pricing troppo presto
+- premium non abbastanza differenziato
+- free troppo debole
+- premium costruito su feature immature
+- monetizzazione che danneggia la fiducia nel ranking
+
+10) DECISIONE UFFICIALE V1
+SommelierAI dovrebbe partire con logica:
+- free utile
+- premium chiaramente superiore
+- subscription come modello principale
+- affiliate/commercial layer solo come leva futura separata e non invasiva
+
+11) PREREQUISITI PER DEFINIRE IL PRICING FINALE
+- use case flagship stabili
+- esperienza base convincente
+- primi feedback reali utenti
+- capienza minima del premium definita
+- confini tra free e premium chiari
+
+12) NOTA RAPIDA (NON CAMBIO ORA)
+Questo documento definisce la foundation.
+Non definisce ancora:
+- prezzi numerici finali
+- monthly vs yearly structure
+- paywall copy
+- pricing page copy
+- conversion funnel dettagliato

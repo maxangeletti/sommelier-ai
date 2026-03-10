@@ -1,0 +1,139 @@
+SOMMELIERAI — PRODUCT DOCUMENTATION INDEX V1
+Data: 2026-03-09
+Stato: operativo
+Scopo: mantenere un indice ufficiale e aggiornabile della documentazione prodotto, con path di riferimento chiari.
+
+STRUTTURA UFFICIALE DOCS
+docs/
+├─ product/
+│  ├─ catalog/
+│  ├─ strategy/
+│  ├─ roadmap/
+│  └─ release-notes/
+├─ technical/
+├─ roadmap/        # legacy / storico
+├─ archive/
+├─ enterprise/
+└─ marketing/
+
+1) PRODUCT / CATALOG
+Path:
+- /Users/massimilianoangeletti/sommelier-ai/docs/product/catalog/
+
+Contenuti attesi:
+- schema catalogo
+- template master
+- mapping master → normalized
+- sourcing policy operativa lato catalogo
+- ingestion workflow
+- update process
+- onboarding pack
+- source-specific mapping sheets
+- validation logs
+- post-export checks
+
+File presenti / attesi:
+- sommelierai_catalog_v1_minimum_schema_2026-03-09.txt
+- sommelierai_catalog_master_v1_template.csv
+- sommelierai_catalog_master_v1_template_v2.xlsx
+- sommelierai_master_to_normalized_mapping_2026-03-09.txt
+- sommelierai_sourcing_policy_v1_2026-03-09_v2.txt
+- sommelierai_catalog_ingestion_workflow_v1_2026-03-09_v2.txt
+- sommelierai_catalog_update_process_v1_2026-03-09_v2.txt
+- sommelierai_catalog_onboarding_pack_v1_2026-03-09_v2.txt
+- sommelierai_source_specific_mapping_sheet_template_v1_2026-03-09.xlsx
+- sommelierai_validation_log_template_v1_2026-03-09.xlsx
+- sommelierai_post_export_checks_template_v1_2026-03-09.txt
+
+2) PRODUCT / STRATEGY
+Path:
+- /Users/massimilianoangeletti/sommelier-ai/docs/product/strategy/
+
+Contenuti attesi:
+- source strategy
+- evaluation checklist
+- shortlist fonti
+- evaluation matrix
+- first-pass evaluation
+
+File presenti / attesi:
+- sommelierai_source_strategy_decision_2026-03-09.txt
+- sommelierai_source_evaluation_checklist_v1_2026-03-09.txt
+- sommelierai_candidate_sources_shortlist_v1_2026-03-09.txt
+- sommelierai_candidate_sources_evaluation_matrix_v1_2026-03-09.xlsx
+- sommelierai_candidate_sources_first_pass_evaluation_2026-03-09.xlsx
+
+3) PRODUCT / ROADMAP
+Path:
+- /Users/massimilianoangeletti/sommelier-ai/docs/product/roadmap/
+
+Contenuti attesi:
+- handoff operativo
+- freeze notes
+- status/progress
+- gantt
+- roadmap prodotto ufficiali
+
+File presenti / attesi:
+- SommelierAI_Roadmap_v1.1.docx
+- sommelierai_complete_handoff_roadmap_gt_2026-03-07_v2.txt
+- sommelierai_freeze_cycle_note_2026-03-09.txt
+- sommelierai_status_progress_2026-03-09.txt
+- sommelierai_status_progress_2026-03-09_v2.txt
+- sommelierai_roadmap_gantt_updated_2026-03-07_v2.xlsx
+
+4) PRODUCT / RELEASE-NOTES
+Path:
+- /Users/massimilianoangeletti/sommelier-ai/docs/product/release-notes/
+
+Contenuti attesi:
+- release notes incrementale ufficiale
+- batch update notes
+- eventuali note refresh/storiche recenti
+
+File presenti / attesi:
+- sommelierai_release_notes_incremental_2026-03-07_refreshed.txt
+- sommelierai_release_notes_incremental_2026-03-09.txt
+- sommelierai_release_notes_incremental_2026-03-09_v3.txt
+- sommelierai_batch_update_note_template_v1_2026-03-09.txt
+
+5) TECHNICAL
+Path:
+- /Users/massimilianoangeletti/sommelier-ai/docs/technical/
+
+Contenuti attesi:
+- documentazione ranking/debugger
+- matrici test tecniche
+- documenti tecnici di supporto non product-facing
+
+6) ROADMAP LEGACY / STORICO
+Path:
+- /Users/massimilianoangeletti/sommelier-ai/docs/roadmap/
+
+Contenuti attesi:
+- roadmap storiche
+- pdf legacy
+- release notes legacy
+- materiale non più corrente ma utile come storico
+
+7) REGOLE DI MANTENIMENTO
+- Ogni nuovo documento prodotto va salvato nel path corretto.
+- La product doc principale deve referenziare questo indice.
+- Nessun file nuovo deve restare “sciolto” in /docs se ha una categoria chiara.
+- Gli artefatti runtime o temporanei non devono inquinare la documentazione prodotto.
+- Gli underscore restano ammessi nei file tecnici/interni; l’output utente finale resta user-friendly.
+
+8) REGOLA OPERATIVA
+Quando nasce un nuovo deliverable documentale, bisogna sempre definire:
+- nome file
+- cartella di destinazione
+- ruolo del documento
+- se sostituisce qualcosa o se è additivo
+- se va anche richiamato nella product doc principale
+
+NOTA RAPIDA (NON CAMBIO ORA)
+Restano da riallineare in futuro, se si vuole una tassonomia ancora più pulita:
+- SommelierAI_Product_Tech_Doc_v0.2_SAFE_PERF.md
+- SommelierAI_Release_Notes_v0.2_SAFE_PERF.md
+
+Per ora restano validi come documenti core in /docs/product/.
