@@ -156,6 +156,8 @@ def get_wines_df() -> pd.DataFrame:
         CSV_CACHE.last_load_ts = _now()
         # Invalidate search cache immediately when dataset changes
         SEARCH_CACHE.clear()
+        global SEARCH_CACHE_LAST_PRUNE_TS
+        SEARCH_CACHE_LAST_PRUNE_TS = 0.0
 
     return CSV_CACHE.df
 
@@ -176,6 +178,8 @@ class CacheEntry:
 
 
 SEARCH_CACHE: Dict[str, CacheEntry] = {}
+SEARCH_CACHE_LAST_PRUNE_TS: float = 0.0
+SEARCH_CACHE_PRUNE_INTERVAL_SEC = 15.0
 
 
 def _cache_key(payload: Dict[str, Any]) -> str:
@@ -183,9 +187,23 @@ def _cache_key(payload: Dict[str, Any]) -> str:
     return hashlib.sha256(s.encode("utf-8")).hexdigest()
 
 
+def _cache_prune_if_needed(force: bool = False) -> None:
+    global SEARCH_CACHE_LAST_PRUNE_TS
+    if DISABLE_CACHE:
+        return
+    now = _now()
+    if not force and (now - SEARCH_CACHE_LAST_PRUNE_TS) < SEARCH_CACHE_PRUNE_INTERVAL_SEC:
+        return
+    expired = [k for k, ent in SEARCH_CACHE.items() if now - ent.ts > SEARCH_CACHE_TTL_SEC]
+    for k in expired:
+        SEARCH_CACHE.pop(k, None)
+    SEARCH_CACHE_LAST_PRUNE_TS = now
+
+
 def _cache_get(key: str) -> Optional[Any]:
     if DISABLE_CACHE:
         return None
+    _cache_prune_if_needed()
     ent = SEARCH_CACHE.get(key)
     if not ent:
         return None
@@ -201,11 +219,7 @@ def _cache_get(key: str) -> Optional[Any]:
 def _cache_set(key: str, value: Any) -> None:
     if DISABLE_CACHE:
         return
-    # opportunistic prune of expired entries before enforcing cap
-    now = _now()
-    expired = [k for k, ent in SEARCH_CACHE.items() if now - ent.ts > SEARCH_CACHE_TTL_SEC]
-    for k in expired:
-        SEARCH_CACHE.pop(k, None)
+    _cache_prune_if_needed()
     if len(SEARCH_CACHE) >= SEARCH_CACHE_CAP:
         oldest_key = None
         oldest_ts = float("inf")
@@ -332,7 +346,9 @@ AROMA_KEYWORDS = {
 # --- v1.0: Food pairing intent (match cibo-vino) ---
 # Parsing SAFE: attivo solo se l'utente cita cibi/contesti espliciti nella query.
 FOOD_KEYWORDS = {
-    # categorie
+    # categorie / sottocategorie specifiche prima delle generiche
+    "formaggi_erborinati": ["formaggi erborinati", "erborinati", "blu cheese", "blue cheese", "roquefort", "stilton"],
+    "pesce_crudo": ["pesce crudo", "crudo di pesce", "tartare di pesce", "carpaccio di pesce"],
     "pesce": ["pesce", "seafood", "sushi", "crudo", "ostriche", "crostacei", "gamberi", "scampi", "tonno", "salmone"],
     "carne": ["carne", "bistecca", "manzo", "vitello", "filetto", "tagliata", "grigliata", "bbq", "arrosto", "brasato", "maiale", "agnello", "cacciagione"],
     "pasta": ["pasta", "spaghetti", "tagliatelle", "lasagne", "risotto"],
@@ -347,6 +363,11 @@ FOOD_KEYWORDS = {
 # Export: elenco canonical (utile per normalizzazione CSV / test)
 FOOD_CANONICAL = sorted(list(FOOD_KEYWORDS.keys()))
 
+FOOD_EXCLUSIVE_MAP = {
+    "formaggi_erborinati": ["formaggi"],
+    "pesce_crudo": ["pesce"],
+}
+
 def parse_food_request(query: str) -> List[str]:
     q = _norm_lc(query)
     found: List[str] = []
@@ -355,7 +376,14 @@ def parse_food_request(query: str) -> List[str]:
             if re.search(rf"\b{re.escape(v)}\b", q):
                 found.append(canonical)
                 break
-    return sorted(set(found))
+
+    found_set = set(found)
+    for specific, generics in FOOD_EXCLUSIVE_MAP.items():
+        if specific in found_set:
+            for generic in generics:
+                found_set.discard(generic)
+
+    return sorted(found_set)
 
 def parse_style_intent(q: str) -> Dict[str, bool]:
     qq = _norm_lc(q)
@@ -379,19 +407,19 @@ def parse_occasion_intent(query: str) -> Optional[str]:
     q = _norm_lc(query)
 
     if re.search(r"\baperitivo\b|\bapericena\b", q):
-        return "aperitivo"
-    if re.search(r"\bcena\s+importante\b|\boccasione\s+speciale\b", q):
-        return "cena importante"
+        return "aperitif"
+    if re.search(r"\bcena\s+importante\b|\boccasione\s+speciale\b|\bserata\s+importante\b", q):
+        return "important_dinner"
     if re.search(r"\bcena\b", q):
-        return "cena"
+        return "dinner"
     if re.search(r"\bpranzo\b", q):
-        return "pranzo"
+        return "lunch"
     if re.search(r"\bmeditazione\b", q):
-        return "meditazione"
+        return "meditation"
     if re.search(r"\bestate\b|\bestivo\b", q):
-        return "estate"
+        return "summer"
     if re.search(r"\bquotidiano\b|\bdi\s+tutti\s+i\s+giorni\b", q):
-        return "quotidiano"
+        return "everyday"
 
     return None
 
@@ -740,34 +768,28 @@ def _filter_by_price(df: pd.DataFrame, price_info: Dict[str, Any]) -> pd.DataFra
 def _filter_by_color(df: pd.DataFrame, color_req: Optional[str]) -> pd.DataFrame:
     """Filtra per colore SOLO se richiesto esplicitamente.
 
-    Fix robusto:
-    - gestisce valori "color" non normalizzati (es. "rosso, strutturato")
-    - fallback su "color_detail" se presente
-    - supporta sinonimi (white/red/rosé/rosato)
+    Supporta dataset IT + EN dopo normalizzazione CSV.
     """
     if not color_req:
         return df
 
-    # normalizza richiesta
-    want = _norm(str(color_req))
-    synonyms = {
-        "white": "bianco",
-        "red": "rosso",
-        "rose": "rosato",
-        "rosé": "rosato",
-        "rosa": "rosato",
-        "rosato": "rosato",
-        "bianca": "bianco",
-        "bianche": "bianco",
-        "bianchi": "bianco",
-        "rossa": "rosso",
-        "rosse": "rosso",
-        "rossi": "rosso",
+    want = _norm_lc(str(color_req))
+    alias = {
+        "rossa": "rosso", "rosse": "rosso", "rossi": "rosso",
+        "red": "rosso", "ruby_red": "rosso",
+        "bianca": "bianco", "bianche": "bianco", "bianchi": "bianco",
+        "white": "bianco", "straw_yellow": "bianco", "golden_yellow": "bianco",
+        "rosé": "rosato", "rose": "rosato", "pink": "rosato", "salmon": "rosato",
     }
-    want = synonyms.get(want, want)
+    want = alias.get(want, want)
 
-    # colonne candidate
-    cols: list[str] = []
+    accepted = {
+        "rosso": {"rosso", "red", "ruby_red"},
+        "bianco": {"bianco", "white", "straw_yellow", "golden_yellow"},
+        "rosato": {"rosato", "rose", "rosé", "pink", "salmon"},
+    }.get(want, {want})
+
+    cols = []
     if "color" in df.columns:
         cols.append("color")
     if "color_detail" in df.columns and "color_detail" not in cols:
@@ -775,14 +797,11 @@ def _filter_by_color(df: pd.DataFrame, color_req: Optional[str]) -> pd.DataFrame
     if not cols:
         return df
 
-    # match "token" (separatore: spazio, virgola, pipe, slash, punto e virgola)
-    # usa contains invece di == per tollerare formati diversi nel CSV
-    token_re = re.compile(rf"(?:^|[\s,;|/]+){re.escape(want)}(?:$|[\s,;|/]+)")
-
+    import re as _re
     mask = None
     for c in cols:
-        series = df[c].astype(str).map(_norm)
-        m = series.str.contains(token_re, regex=True, na=False)
+        series = df[c].astype(str).map(_norm_lc)
+        m = series.apply(lambda x: any(tok in _re.split(r"[\s,;|/]+", x) for tok in accepted))
         mask = m if mask is None else (mask | m)
 
     return df.loc[mask] if mask is not None else df
@@ -1437,6 +1456,8 @@ def _match_score_row_explain(
                 occasion_score = 1.0
             elif occ_req == "cena" and "cena importante" in occ_row:
                 occasion_score = 1.0
+            elif occ_req == "cena importante" and occ_row == "cena":
+                occasion_score = 0.7
 
     prestige_score = _prestige_match_score(row) if prestige_intent else 0.0
 
@@ -1480,12 +1501,29 @@ def _match_score_row_explain(
         w_kw = 0.15
         w_food = 0.0
         w_occ = 0.0
+    elif food_present and occasion_intent:
+        # Food stays primary, but occasion must still matter.
+        w_food = 0.55
+        w_occ = 0.20
+        w_struct = 0.15
+        w_kw = 0.10
+        w_prestige = 0.0
+        w_eleg = 0.0
     elif food_present:
         # Food becomes dominant when explicitly requested
         w_food = 0.70
         w_struct = 0.20
         w_kw = 0.10
         w_occ = 0.0
+        w_prestige = 0.0
+        w_eleg = 0.0
+    elif occasion_intent and elegant_intent:
+        # Combined branch: keep both occasion and elegance active.
+        w_occ = 0.40
+        w_eleg = 0.30
+        w_struct = 0.20
+        w_kw = 0.10
+        w_food = 0.0
         w_prestige = 0.0
     elif occasion_intent:
         # Occasion becomes a primary driver when explicitly requested and no food is present
@@ -1542,8 +1580,9 @@ def _match_score_row_explain(
         "elegance": {"w": round(w_eleg_n, 4), "s": round(elegant_score, 4), "c": round(w_eleg_n * elegant_score, 4)},
         "structured_components": comps_struct or {},
         "foods_req": foods_req or [],
-        "occasion_req": occasion_intent or None,
-        "prestige_req": prestige_intent,
+        "occasion_req": 1.0 if occasion_intent else 0.0,
+        "prestige_req": 1.0 if prestige_intent else 0.0,
+        "elegance_req": 1.0 if elegant_intent else 0.0,
         "region_req": region or None,
         "grapes_req": grapes_req or [],
         "color_req": color_req or None,
@@ -1704,6 +1743,39 @@ def _match_score_row(
 
 
 
+
+def _normalize_color_detail_output(row: Any) -> str:
+    """Normalize color_detail for API output only.
+
+    Prevents non-color values like sweetness/sparkling from leaking into color_detail.
+    """
+    raw_cd = _norm_lc(getattr(row, "color_detail", ""))
+    raw_c = _norm_lc(getattr(row, "color", ""))
+    sparkling = _norm_lc(getattr(row, "sparkling", ""))
+    sweetness = _norm_lc(getattr(row, "sweetness", ""))
+    hay = " ".join([raw_cd, raw_c])
+
+    if any(k in hay for k in ["ruby_red", "rosso rubino", "rubino"]):
+        return "ruby_red"
+    if any(k in hay for k in ["straw_yellow", "giallo paglierino", "paglierino"]):
+        return "straw_yellow"
+    if any(k in hay for k in ["golden_yellow", "giallo dorato", "dorato"]):
+        return "golden_yellow"
+    if any(k in hay for k in ["rose", "rosé", "rosato", "rosa", "salmon"]):
+        return "rose"
+    if any(k in hay for k in ["red", "rosso"]):
+        return "red"
+    if any(k in hay for k in ["white", "bianco"]):
+        return "white"
+
+    # If color_detail was polluted by sweetness / sparkling, fall back to best-effort color.
+    if sweetness in ("dolce", "sweet"):
+        return "white"
+    if sparkling in ("spumante", "frizzante"):
+        return "white"
+
+    return ""
+
 def _build_wine_card(row: Any, rank: int, score: float, price_delta: float, match_score: float = 0.0) -> Dict[str, Any]:
     # prezzo mostrato: preferiamo price_avg, fallback price_min
     pr = _price_effective(row)
@@ -1712,14 +1784,14 @@ def _build_wine_card(row: Any, rank: int, score: float, price_delta: float, matc
         # format semplice
         price_str = f"{pr:.2f}"
 
-    # tags: usa style_tags + color + body (senza duplicare troppo)
+    # tags: usa style_tags + color_detail normalizzato + body (senza duplicare troppo)
     tags_parts: List[str] = []
     st = _norm(getattr(row, "style_tags", ""))
     if st:
         tags_parts.append(st)
-    c = _norm(getattr(row, "color_detail", "")) or _norm(getattr(row, "color", ""))
-    if c:
-        tags_parts.append(c)
+    normalized_color_detail = _normalize_color_detail_output(row)
+    if normalized_color_detail:
+        tags_parts.append(normalized_color_detail)
     b = _norm(getattr(row, "body", ""))
     if b:
         tags_parts.append(b)
@@ -1754,11 +1826,15 @@ def _build_wine_card(row: Any, rank: int, score: float, price_delta: float, matc
         "occasion": _norm(getattr(row, "occasion", "")),
     }
 
-    # opzionali: quality/balance/persistence/color_detail
-    for k in ["quality", "balance", "persistence", "color_detail"]:
+    # opzionali: quality/balance/persistence
+    for k in ["quality", "balance", "persistence"]:
         v = _norm(getattr(row, k, ""))
         if v:
             card[k] = v
+
+    normalized_color_detail = normalized_color_detail or _normalize_color_detail_output(row)
+    if normalized_color_detail:
+        card["color_detail"] = normalized_color_detail
 
     # A/B/D: riportiamo anche i campi "veri" del dataset + derivati
     gv = _norm(getattr(row, "grape_varieties", ""))
@@ -1967,6 +2043,7 @@ def run_search(
     style_intent = parse_style_intent(q)
     occasion_intent = parse_occasion_intent(q)
     prestige_intent = parse_prestige_intent(q)
+    elegance_intent = bool(re.search(r"\b(elegante|elegant|finezza|raffinato|raffinata)\b", _norm_lc(q)))
 
     filtered = df
 
@@ -2173,7 +2250,9 @@ def run_search(
             "intensity": intensity_req,
             "typology": typology_req,
             "foods": foods_req,
+            "occasion_intent": bool(occasion_intent),
             "prestige_intent": prestige_intent,
+            "elegance_intent": elegance_intent,
             "value_intent": value_intent,
         },
         "count": len(sorted_cards),
@@ -2389,6 +2468,7 @@ def post_search(payload: Dict[str, Any] = Body(...)) -> JSONResponse:
 
     # Cache: disable when debug=true (must be fresh and include meta.debug)
     if not debug:
+        _ = get_wines_df()
         cache_key = _cache_key({
             "build": BUILD_ID,
             "csv_mtime": CSV_CACHE.mtime,
@@ -2427,6 +2507,7 @@ def get_search_stream(
 
     # Cache: disable when debug=true (must be fresh and include meta.debug)
     if not debug:
+        _ = get_wines_df()
         cache_key = _cache_key({
             "build": BUILD_ID,
             "csv_mtime": CSV_CACHE.mtime,
