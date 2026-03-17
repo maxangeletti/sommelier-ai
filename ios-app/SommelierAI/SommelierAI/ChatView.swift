@@ -853,20 +853,19 @@ struct ChatView: View {
                     Text(judge)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                        .lineLimit(2)
                 }
-    
-            }
 
-            if let url = wine.purchase_url, let u = URL(string: url) {
-                Link("Apri link acquisto", destination: u)
-                    .font(.footnote)
-            }
+                if let url = wine.purchase_url, let u = URL(string: url) {
+                    Link("Apri link acquisto", destination: u)
+                        .font(.footnote)
+                }
 
-            if let tags = wine.tags, !tags.isEmpty {
-                Text(tags.filter { !["red","white","rose","rosso","bianco","rosato","ruby_red","ruby red","low","medium","high","fermo","secco","dolce","amabile","frizzante","spumante","straw yellow","straw_yellow","sparkling","sweet"].contains($0.lowercased()) }.map { $0.replacingOccurrences(of: "_", with: " ") }.joined(separator: " • "))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if let tags = wine.tags, !tags.isEmpty {
+                    Text(tags.filter { !["red","white","rose","rosso","bianco","rosato","ruby_red","ruby red","low","medium","high","fermo","secco","dolce","amabile","frizzante","spumante","straw yellow","straw_yellow","sparkling","sweet"].contains($0.lowercased()) }.map { $0.replacingOccurrences(of: "_", with: " ") }.joined(separator: " • "))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         .padding(12)
