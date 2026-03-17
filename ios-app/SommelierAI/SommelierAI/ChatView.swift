@@ -38,8 +38,6 @@ struct ChatView: View {
 
     @State private var inputText: String = ""
     @FocusState private var isInputFocused: Bool
-    @FocusState private var isInputFocused: Bool
-    @FocusState private var isInputFocused: Bool
 
     private let bottomID = "bottom"
 
@@ -409,7 +407,6 @@ struct ChatView: View {
                     }
 
                     lastResultMessageUUID = msgUUID
-                            isInputFocused = false
                     lastResultHadWines = false
 
                     guard isNearBottom else { return }
