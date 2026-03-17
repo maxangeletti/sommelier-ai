@@ -833,12 +833,29 @@ struct ChatView: View {
                     .lineLimit(2)
             }
 
-            let judge = judgementsInline(wine)
-            if !judge.isEmpty {
-                Text(judge)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+            // ✅ UI-C: bottone espandi/collassa
+            let isExpanded = expandedWineIDs.contains(wine.id)
+            Button {
+                if isExpanded { expandedWineIDs.remove(wine.id) }
+                else { expandedWineIDs.insert(wine.id) }
+            } label: {
+                HStack {
+                    Text(isExpanded ? "Meno dettagli" : "Più dettagli")
+                        .font(.caption).foregroundStyle(AppColors.accentWine)
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption2).foregroundStyle(AppColors.accentWine)
+                }
+            }.buttonStyle(.plain)
+
+            if isExpanded {
+                let judge = judgementsInline(wine)
+                if !judge.isEmpty {
+                    Text(judge)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+    
             }
 
             if let url = wine.purchase_url, let u = URL(string: url) {
