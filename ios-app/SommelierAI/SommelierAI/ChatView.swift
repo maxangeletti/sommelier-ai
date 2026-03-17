@@ -29,7 +29,7 @@
 
 import SwiftUI
 
-private let rankingDebugMode = true
+private let rankingDebugMode = false
 
 struct ChatView: View {
     @StateObject private var vm = ChatViewModel()
@@ -826,7 +826,7 @@ struct ChatView: View {
             }
 
             if let pairings = wine.food_pairings, !pairings.isEmpty {
-                Text("🍽 " + pairings.joined(separator: " • "))
+                Text("🍽 " + pairings.map { $0.replacingOccurrences(of: "_", with: " ").capitalized }.joined(separator: " • "))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
@@ -846,7 +846,7 @@ struct ChatView: View {
             }
 
             if let tags = wine.tags, !tags.isEmpty {
-                Text(tags.joined(separator: " • "))
+                Text(tags.filter { !["red","white","rose","rosso","bianco","rosato","ruby_red","ruby red","low","medium","high","fermo","secco","dolce","amabile","frizzante","spumante"].contains($0.lowercased()) }.map { $0.replacingOccurrences(of: "_", with: " ") }.joined(separator: " • "))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
