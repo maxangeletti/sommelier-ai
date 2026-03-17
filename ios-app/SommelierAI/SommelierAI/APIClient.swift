@@ -32,7 +32,7 @@ import Foundation
 
 final class APIClient {
     private let baseURL = URL(string: "https://sommelier-ai.onrender.com")!
-    private let timeout: TimeInterval = 20
+    private let timeout: TimeInterval = 60
 
     private struct SuggestionsResponse: Decodable {
         let suggestions: [String]
