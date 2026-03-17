@@ -126,7 +126,7 @@ struct FavoritesTabView: View {
                 .lineLimit(3)
 
             if let tags = wine.tags, !tags.isEmpty {
-                Text(tags.filter { !["red","white","rose","rosso","bianco","rosato","ruby_red","ruby red","low","medium","high","fermo","secco","dolce","amabile","frizzante","spumante"].contains($0.lowercased()) }.map { $0.replacingOccurrences(of: "_", with: " ") }.joined(separator: " • "))
+                Text(tags.filter { let t = $0.lowercased().replacingOccurrences(of: "_", with: " "); return !["red","white","rose","rosso","bianco","rosato","ruby red","ruby","orange","low","medium","high","fermo","secco","dolce","amabile","frizzante","spumante","garnet","straw","golden","pink","pale"].contains(t) }.map { $0.replacingOccurrences(of: "_", with: " ") }.joined(separator: " • "))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
