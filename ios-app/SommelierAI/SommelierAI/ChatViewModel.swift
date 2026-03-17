@@ -329,7 +329,7 @@ final class ChatViewModel: ObservableObject {
            !detail.isEmpty {
             switch expected {
             case "red":
-                return detail.contains("ross") || detail.contains("rubin") || detail.contains("granat") || detail.contains("porpora")
+                return detail.contains("ross") || detail.contains("rubin") || detail.contains("granat") || detail.contains("porpora") || detail.contains("red") || detail.contains("ruby")
             case "white":
                 return detail.contains("bianc") || detail.contains("giall") || detail.contains("paglier") || detail.contains("straw")
             case "rose":
