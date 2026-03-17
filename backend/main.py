@@ -2019,31 +2019,48 @@ def run_search(
     
     limit = _clamp(int(limit or MAX_RESULTS_DEFAULT), 1, MAX_RESULTS_CAP)
     q = _norm(query)
-    
-    price_info = parse_price(q)
-    region = parse_region(q)
 
-    # A/B/D requests
-    grapes_req = parse_grapes(q)
+    # --- LLM Intent Layer (nuovo) ---
+    # Chiama il layer LLM per normalizzare query ambigue/laterali.
+    # Graceful degradation: se LLM non disponibile, tutto continua come prima.
+    from llm_intent_parser import parse_intent_with_llm, merge_intent
+
+    llm_intent = parse_intent_with_llm(q)
+
+    # I parser rule-based girano comunque (invariati)
+    price_info = parse_price(q)
+    region = parse_region(q) or llm_intent.get("region")
+    grapes_req = parse_grapes(q) or llm_intent.get("grapes", [])
     aromas_req = parse_aromas(q)
     intensity_req = parse_intensity_request(q)
     typology_req = parse_typology_request(q)
-    foods_req = parse_food_request(q)
 
+    # Foods: unione rule-based + LLM
+    foods_rule = parse_food_request(q)
+    foods_llm = llm_intent.get("foods", [])
+    foods_req = sorted(set(foods_rule) | set(foods_llm))
 
-    color_req = parse_color_request(q)
+    color_req = parse_color_request(q) or llm_intent.get("color")
 
     # VALUE intent (solo se richiesto dall'utente)
-    value_intent = parse_value_intent(q)
+    value_intent = parse_value_intent(q) or llm_intent.get("value_intent", False)
 
     # ✅ Opzione 2: se l'utente chiede qualità/prezzo e non ha scelto un sort specifico, usa relevance_v2
     if value_intent and (not sort or sort == "relevance"):
         sort = "relevance_v2"
 
     style_intent = parse_style_intent(q)
-    occasion_intent = parse_occasion_intent(q)
-    prestige_intent = parse_prestige_intent(q)
-    elegance_intent = bool(re.search(r"\b(elegante|elegant|finezza|raffinato|raffinata)\b", _norm_lc(q)))
+
+    # Occasion: LLM arricchisce se rule-based non ha trovato nulla
+    occasion_intent = parse_occasion_intent(q) or llm_intent.get("occasion")
+
+    # Prestige/elegance: OR logico (basta uno dei due a rilevarlo)
+    prestige_intent = parse_prestige_intent(q) or llm_intent.get("prestige_intent", False)
+    elegance_intent = (
+        bool(re.search(r"\b(elegante|elegant|finezza|raffinato|raffinata)\b", _norm_lc(q)))
+        or llm_intent.get("elegant_intent", False)
+    )
+    # --- Fine LLM Intent Layer ---
 
     filtered = df
 
