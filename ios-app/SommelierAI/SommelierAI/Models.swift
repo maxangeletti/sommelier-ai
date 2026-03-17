@@ -52,7 +52,6 @@ struct SearchMeta: Codable {
     var total: Int?
     var rank_mode: String?
     var model: String?
-    var debug: AnyCodable?
     var build_id: String?
 }
 
