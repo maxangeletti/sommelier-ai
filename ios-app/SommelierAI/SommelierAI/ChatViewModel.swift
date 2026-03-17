@@ -322,7 +322,7 @@ final class ChatViewModel: ObservableObject {
 
         if let c = wine.color?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
            !c.isEmpty {
-            return c == expected
+            return c == expected || (expected == "red" && (c == "rosso" || c == "rouge")) || (expected == "white" && (c == "bianco" || c == "blanc")) || (expected == "rose" && (c == "rosato"))
         }
 
         if let detail = wine.color_detail?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
