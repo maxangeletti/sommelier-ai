@@ -861,7 +861,7 @@ struct ChatView: View {
     private func metaLineTop(_ w: WineCard) -> String {
         var parts: [String] = []
         if let producer = clean(w.producer) { parts.append(producer) }
-        let originParts = [clean(w.country), clean(w.region), clean(w.zone)].compactMap { $0 }
+        let originParts = [clean(WineLocalizer.country(w.country)), clean(WineLocalizer.region(w.region)), clean(w.zone)].compactMap { $0 }
         if !originParts.isEmpty { parts.append(originParts.joined(separator: " · ")) }
         return parts.joined(separator: " · ")
     }
@@ -878,7 +878,7 @@ struct ChatView: View {
         if let q = clean(w.quality) { parts.append("Qualità: \(q)") }
         if let b = clean(w.balance) { parts.append("Equilibrio: \(b)") }
         if let p = clean(w.persistence) { parts.append("Persistenza: \(p)") }
-        if let c = clean(w.color_detail) { parts.append("Colore: \(c)") }
+        if let c = clean(w.color_detail) { parts.append("Colore: \(WineLocalizer.color(c))") }
         return parts.joined(separator: " · ")
     }
 
