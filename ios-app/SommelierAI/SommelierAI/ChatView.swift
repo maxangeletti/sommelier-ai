@@ -37,6 +37,9 @@ struct ChatView: View {
     @EnvironmentObject private var tierStore: TierStore
 
     @State private var inputText: String = ""
+    @FocusState private var isInputFocused: Bool
+    @FocusState private var isInputFocused: Bool
+    @FocusState private var isInputFocused: Bool
 
     private let bottomID = "bottom"
 
@@ -393,6 +396,7 @@ struct ChatView: View {
                     if hasWines {
                         if lastResultMessageUUID != msgUUID || lastResultHadWines == false {
                             lastResultMessageUUID = msgUUID
+                            isInputFocused = false
                             lastResultHadWines = true
 
                             let firstWineAnchor = "wine:\(msgUUID):0"
@@ -405,6 +409,7 @@ struct ChatView: View {
                     }
 
                     lastResultMessageUUID = msgUUID
+                            isInputFocused = false
                     lastResultHadWines = false
 
                     guard isNearBottom else { return }
@@ -449,6 +454,7 @@ struct ChatView: View {
             HStack(spacing: 10) {
                 TextField("Scrivi che vino cerchi…", text: $inputText)
                     .textFieldStyle(.roundedBorder)
+                    .focused($isInputFocused)
                     .onChange(of: inputText) { _, new in
                         vm.updateDraft(new)
                     }
