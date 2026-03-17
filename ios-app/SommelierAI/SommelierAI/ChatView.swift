@@ -64,6 +64,7 @@ struct ChatView: View {
 
     @State private var lastResultMessageUUID: String? = nil
     @State private var lastResultHadWines: Bool = false
+    @State private var expandedWineIDs: Set<String> = []
 
     private var allowedChatSortModes: [ChatDomain.SortMode] {
         tierStore.tier == .free ? [.relevance] : ChatDomain.SortMode.allCases
