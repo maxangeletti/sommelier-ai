@@ -864,7 +864,7 @@ struct ChatView: View {
             }
 
             if let tags = wine.tags, !tags.isEmpty {
-                Text(tags.filter { !["red","white","rose","rosso","bianco","rosato","ruby_red","ruby red","low","medium","high","fermo","secco","dolce","amabile","frizzante","spumante"].contains($0.lowercased()) }.map { $0.replacingOccurrences(of: "_", with: " ") }.joined(separator: " • "))
+                Text(tags.filter { !["red","white","rose","rosso","bianco","rosato","ruby_red","ruby red","low","medium","high","fermo","secco","dolce","amabile","frizzante","spumante","straw yellow","straw_yellow","sparkling","sweet"].contains($0.lowercased()) }.map { $0.replacingOccurrences(of: "_", with: " ") }.joined(separator: " • "))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

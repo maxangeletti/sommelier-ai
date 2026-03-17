@@ -34,6 +34,7 @@ struct WineLocalizer {
         case "ruby_red":     return "Rosso rubino"
         case "ruby red":     return "Rosso rubino"
         case "straw_yellow": return "Giallo paglierino"
+        case "straw yellow": return "Giallo paglierino"
         case "sparkling":    return "Spumante"
         case "sweet":        return "Dolce"
         default:             return raw.replacingOccurrences(of: "_", with: " ").capitalized
