@@ -569,7 +569,7 @@ final class ChatViewModel: ObservableObject {
                         if let m = ev.message, !m.isEmpty {
                             messages[idx].text = m
                         } else if messages[idx].text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                            messages[idx].text = gotAnyWine ? "Ecco i migliori risultati:" : "Ecco i risultati:"
+                            messages[idx].text = gotAnyWine ? "Ecco i migliori risultati:" : "Nessun vino trovato per questa ricerca. Prova con termini diversi."
                         }
 
                         // ✅ base = risultati completi (dopo color guard)
