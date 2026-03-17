@@ -31,7 +31,7 @@ import Foundation
 // ✅ PATCH 7c: modello SSE fuori da APIClient per evitare issue actor/Decodable
 
 final class APIClient {
-    private let baseURL = URL(string: "http://127.0.0.1:8000")!
+    private let baseURL = URL(string: "https://sommelier-ai.onrender.com")!
     private let timeout: TimeInterval = 20
 
     private struct SuggestionsResponse: Decodable {
