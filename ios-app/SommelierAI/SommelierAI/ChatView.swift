@@ -37,7 +37,6 @@ struct ChatView: View {
     @EnvironmentObject private var tierStore: TierStore
 
     @State private var inputText: String = ""
-    @FocusState private var isInputFocused: Bool
 
     private let bottomID = "bottom"
 
@@ -61,13 +60,34 @@ struct ChatView: View {
     // ✅ UI toggles (manual)
     @State private var showSuggestions: Bool = false
     @State private var showPriceBar: Bool = false
+    @State private var showFilters: Bool = false  // UI-E: accordion filtri collassato
 
     @State private var lastResultMessageUUID: String? = nil
     @State private var lastResultHadWines: Bool = false
-    @State private var expandedWineIDs: Set<String> = []
+
+    // ✅ UI-D: filtri visibili solo quando ci sono risultati vini
+    private var hasResults: Bool {
+        guard let msg = vm.messages.last(where: { $0.role == .assistant }),
+              let wines = msg.wines, !wines.isEmpty else { return false }
+        return true
+    }
+
+    // ✅ UI-E: pallino indicatore filtri attivi
+    private var hasActiveFilters: Bool {
+        let grape = vm.selectedGrapeFilter.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let color = vm.selectedColorFilter.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let intensity = vm.selectedIntensityFilter.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let grapeActive = !grape.isEmpty && grape != "tutti"
+        let colorActive = !color.isEmpty && color != "tutti"
+        let intensityActive = !intensity.isEmpty && intensity != "tutti"
+        let priceActive = vm.maxPriceFilter > 0
+        return grapeActive || colorActive || intensityActive || priceActive
+    }
 
     private var allowedChatSortModes: [ChatDomain.SortMode] {
-        tierStore.tier == .free ? [.relevance] : ChatDomain.SortMode.allCases
+        if tierStore.tier == .free { return [.relevance] }
+        // UI-F: nasconde Rating e Popolari (nessun dato reale nel dataset)
+        return ChatDomain.SortMode.allCases.filter { $0 != .rating && $0 != .popular }
     }
 
     // ✅ FIX (chirurgico): niente nesting, icona sempre visibile
@@ -119,42 +139,108 @@ struct ChatView: View {
                     .background(Color.yellow.opacity(0.2))
             }
 
-            // ✅ Barra filtri SCROLLABILE (al posto del collapse "…") + compressione
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
+            // ✅ UI-D + UI-E: Filtri post-risultati, collassati di default (accordion)
+            if hasResults {
+                // Header accordion: sempre visibile, tap espande/collassa
+                Button {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        showFilters.toggle()
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "line.3.horizontal.decrease")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
 
-                    Button {
-                        vm.prepareGrapeSheetOptions()
-                        showGrapeSheet = true
-                    } label: {
-                        filterChip(
-                            system: grapeSymbolName,
-                            title: grapeButtonTitle,
-                            badge: displayedWineCount > 0 ? "\(displayedWineCount)" : nil,
-                            badgeColor: grapeBadgeColor
-                        )
+                        Text("Filtra risultati")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+
+                        if hasActiveFilters {
+                            Circle()
+                                .fill(AppColors.accentWine)
+                                .frame(width: 6, height: 6)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: showFilters ? "chevron.up" : "chevron.down")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                }
+                .buttonStyle(.plain)
+
+                if showFilters {
+                    // Chip filtri
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+
+                            Button {
+                                vm.prepareGrapeSheetOptions()
+                                showGrapeSheet = true
+                            } label: {
+                                filterChip(
+                                    system: grapeSymbolName,
+                                    title: grapeButtonTitle,
+                                    badge: displayedWineCount > 0 ? "\(displayedWineCount)" : nil,
+                                    badgeColor: grapeBadgeColor
+                                )
+                            }
+
+                            Button { showColorSheet = true } label: {
+                                filterChip(system: "paintpalette", title: colorButtonTitle)
+                            }
+
+                            Button { showIntensitySheet = true } label: {
+                                filterChip(system: "flame", title: intensityButtonTitle)
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 4)
                     }
 
-                    Button { showColorSheet = true } label: {
-                        filterChip(system: "paintpalette", title: colorButtonTitle)
-                    }
+                    // Prezzo
+                    VStack(spacing: 6) {
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                showPriceBar.toggle()
+                            }
+                        } label: {
+                            HStack {
+                                Text("Prezzo max")
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
 
-                    Button { showIntensitySheet = true } label: {
-                        filterChip(system: "flame", title: intensityButtonTitle)
-                    }
+                                Spacer()
 
-                    Button { vm.clear() } label: {
-                        filterChip(system: "trash", title: "Reset")
+                                Text(vm.maxPriceFilter > 0 ? String(format: "€%.0f", vm.maxPriceFilter) : "OFF")
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+
+                                Image(systemName: showPriceBar ? "chevron.up" : "chevron.down")
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                                    .padding(.leading, 6)
+                            }
+                        }
+                        .buttonStyle(.plain)
+
+                        if showPriceBar {
+                            Slider(value: $vm.maxPriceFilter, in: 0...200, step: 5)
+                        }
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .onChange(of: vm.maxPriceFilter) { _, newValue in
+                        if newValue > 0 { showPriceBar = true } else { showPriceBar = false }
                     }
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, isFilterBarCompact ? 4 : 8)
-            }
-            .scaleEffect(isFilterBarCompact ? 0.92 : 1.0, anchor: .top)
-            .opacity(isFilterBarCompact ? 0.94 : 1.0)
-            .background(AppColors.backgroundPrimary)
 
-            Divider()
+                Divider()
+            }
 
             let cleanSuggestions = vm.suggestions
                 .map { sanitizeSuggestion($0) }
@@ -272,44 +358,6 @@ struct ChatView: View {
                 }
             }
 
-            // ✅ Filtro Prezzo Max: tap apre/chiude; resta visibile finché maxPriceFilter > 0
-            VStack(spacing: 6) {
-                Button {
-                    withAnimation(.easeInOut(duration: 0.15)) {
-                        showPriceBar.toggle()
-                    }
-                } label: {
-                    HStack {
-                        Text("Prezzo max")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-
-                        Spacer()
-
-                        Text(vm.maxPriceFilter > 0 ? String(format: "€%.0f", vm.maxPriceFilter) : "OFF")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-
-                        Image(systemName: showPriceBar ? "chevron.up" : "chevron.down")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .padding(.leading, 6)
-                    }
-                }
-                .buttonStyle(.plain)
-
-                if showPriceBar {
-                    Slider(value: $vm.maxPriceFilter, in: 0...200, step: 5)
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .onChange(of: vm.maxPriceFilter) { _, newValue in
-                if newValue > 0 { showPriceBar = true } else { showPriceBar = false }
-            }
-
-            Divider()
-
             // Chat
             ScrollViewReader { proxy in
                 ScrollView {
@@ -395,7 +443,6 @@ struct ChatView: View {
                     if hasWines {
                         if lastResultMessageUUID != msgUUID || lastResultHadWines == false {
                             lastResultMessageUUID = msgUUID
-                            isInputFocused = false
                             lastResultHadWines = true
 
                             let firstWineAnchor = "wine:\(msgUUID):0"
@@ -452,7 +499,6 @@ struct ChatView: View {
             HStack(spacing: 10) {
                 TextField("Scrivi che vino cerchi…", text: $inputText)
                     .textFieldStyle(.roundedBorder)
-                    .focused($isInputFocused)
                     .onChange(of: inputText) { _, new in
                         vm.updateDraft(new)
                     }
@@ -476,6 +522,14 @@ struct ChatView: View {
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            // ✅ UI-D: Cestino (Reset) in navbar
+            ToolbarItem(placement: .topBarLeading) {
+                Button { vm.clear() } label: {
+                    Image(systemName: "trash")
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             ToolbarItem(placement: .principal) {
                 Text("Sommelier AI").font(.headline)
             }
@@ -827,45 +881,29 @@ struct ChatView: View {
             }
 
             if let pairings = wine.food_pairings, !pairings.isEmpty {
-                Text("🍽 " + pairings.map { $0.replacingOccurrences(of: "_", with: " ").capitalized }.joined(separator: " • "))
+                Text("🍽 " + pairings.joined(separator: " • "))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
             }
 
-            // ✅ UI-C: bottone espandi/collassa
-            let isExpanded = expandedWineIDs.contains(wine.id)
-            Button {
-                if isExpanded { expandedWineIDs.remove(wine.id) }
-                else { expandedWineIDs.insert(wine.id) }
-            } label: {
-                HStack {
-                    Text(isExpanded ? "Meno dettagli" : "Più dettagli")
-                        .font(.caption).foregroundStyle(AppColors.accentWine)
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.caption2).foregroundStyle(AppColors.accentWine)
-                }
-            }.buttonStyle(.plain)
+            let judge = judgementsInline(wine)
+            if !judge.isEmpty {
+                Text(judge)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
 
-            if isExpanded {
-                let judge = judgementsInline(wine)
-                if !judge.isEmpty {
-                    Text(judge)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                }
+            if let url = wine.purchase_url, let u = URL(string: url) {
+                Link("Apri link acquisto", destination: u)
+                    .font(.footnote)
+            }
 
-                if let url = wine.purchase_url, let u = URL(string: url) {
-                    Link("Apri link acquisto", destination: u)
-                        .font(.footnote)
-                }
-
-                if let tags = wine.tags, !tags.isEmpty {
-                    Text(tags.filter { !["red","white","rose","rosso","bianco","rosato","ruby_red","ruby red","low","medium","high","fermo","secco","dolce","amabile","frizzante","spumante","straw yellow","straw_yellow","sparkling","sweet"].contains($0.lowercased()) }.map { $0.replacingOccurrences(of: "_", with: " ") }.joined(separator: " • "))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+            if let tags = wine.tags, !tags.isEmpty {
+                Text(tags.joined(separator: " • "))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(12)
@@ -878,7 +916,7 @@ struct ChatView: View {
     private func metaLineTop(_ w: WineCard) -> String {
         var parts: [String] = []
         if let producer = clean(w.producer) { parts.append(producer) }
-        let originParts = [clean(WineLocalizer.country(w.country)), clean(WineLocalizer.region(w.region)), clean(w.zone)].compactMap { $0 }
+        let originParts = [clean(w.country), clean(w.region), clean(w.zone)].compactMap { $0 }
         if !originParts.isEmpty { parts.append(originParts.joined(separator: " · ")) }
         return parts.joined(separator: " · ")
     }
@@ -895,7 +933,7 @@ struct ChatView: View {
         if let q = clean(w.quality) { parts.append("Qualità: \(q)") }
         if let b = clean(w.balance) { parts.append("Equilibrio: \(b)") }
         if let p = clean(w.persistence) { parts.append("Persistenza: \(p)") }
-        if let c = clean(w.color_detail) { parts.append("Colore: \(WineLocalizer.color(c))") }
+        if let c = clean(w.color_detail) { parts.append("Colore: \(c)") }
         return parts.joined(separator: " · ")
     }
 
