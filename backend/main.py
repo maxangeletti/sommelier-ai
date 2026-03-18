@@ -565,51 +565,55 @@ def parse_intensity_request(query: str) -> Optional[str]:
 
 
 def _normalize_level(s: str) -> str:
-    # normalize italian/english-ish into low/medium/high
+    # normalize italian/english-ish into 5-level AIS tannin scale + body/acidity compat
     v = _norm_lc(s)
     if not v:
         return ""
-    if any(k in v for k in ["low", "basso", "legger", "delicat"]):
-        return "low"
-    if any(k in v for k in ["high", "alto", "intens", "strutturat", "power", "potent", "robusto"]):
+    # exact canonical matches first (CSV values)
+    if v == "medium_plus":
+        return "medium_plus"
+    if v == "medium_low":
+        return "medium_low"
+    if any(k in v for k in ["high", "alto", "alta", "intens", "strutturat", "power", "potent", "robusto", "astringent"]):
         return "high"
     if any(k in v for k in ["medium", "medio", "media", "moderato"]):
         return "medium"
+    if any(k in v for k in ["low", "basso", "bassa", "legger", "delicat"]):
+        return "low"
     return ""
 
 
 def derive_intensity(body: str, tannins: str, alcohol_level: str) -> Optional[str]:
-    # body/tannins in CSV are often categorical; alcohol may be numeric or text.
+    # body/tannins in CSV are categorical; alcohol may be numeric or text.
+    # Uses numeric scoring to handle 5-level tannin scale properly.
     b = _normalize_level(body)
     t = _normalize_level(tannins)
 
+    # Map to numeric intensity contribution
+    _body_score = {"low": 0.0, "medium": 0.5, "high": 1.0}.get(b, 0.5)
+    _tan_score = {
+        "low": 0.10, "medium_low": 0.30, "medium": 0.50,
+        "medium_plus": 0.75, "high": 1.00,
+    }.get(t, 0.50)
+
     alc = _parse_float_maybe(alcohol_level)
-    # scoring: high if any strong signal
-    high_signals = 0
-    low_signals = 0
-
-    if b == "high":
-        high_signals += 1
-    if t == "high":
-        high_signals += 1
-    if b == "low":
-        low_signals += 1
-    if t == "low":
-        low_signals += 1
-
+    _alc_score = 0.5  # default
     if alc is not None:
         if alc >= 14.0:
-            high_signals += 1
-        if alc <= 11.5:
-            low_signals += 1
+            _alc_score = 1.0
+        elif alc >= 13.0:
+            _alc_score = 0.7
+        elif alc <= 11.5:
+            _alc_score = 0.0
+        elif alc <= 12.0:
+            _alc_score = 0.2
 
-    if high_signals >= 2:
+    # Weighted average: body 35%, tannins 40%, alcohol 25%
+    score = 0.35 * _body_score + 0.40 * _tan_score + 0.25 * _alc_score
+
+    if score >= 0.70:
         return "high"
-    if low_signals >= 2:
-        return "low"
-    if high_signals == 1 and low_signals == 0:
-        return "high"
-    if low_signals == 1 and high_signals == 0:
+    if score <= 0.25:
         return "low"
     return "medium"
 
@@ -1214,7 +1218,9 @@ def _score_row_a9v2_composite(
 
     def _lvl(x: str) -> str:
         if x in ("alto", "alta", "high"): return "high"
+        if x in ("medium_plus",): return "medium_plus"
         if x in ("medio", "media", "medium"): return "medium"
+        if x in ("medium_low",): return "medium_low"
         if x in ("basso", "bassa", "low"): return "low"
         return x
 
@@ -1231,7 +1237,7 @@ def _score_row_a9v2_composite(
     if style_intent and style_intent.get("elegant"):
         if "elegante" in tags:
             sem_boost += 0.06
-        elif body == "medium" and tan in ("low", "medium") and acid in ("medium", "high"):
+        elif body == "medium" and tan in ("low", "medium_low", "medium") and acid in ("medium", "high"):
             sem_boost += 0.03
     # meditation / meditazione
     if style_intent and style_intent.get("meditation"):
@@ -1244,7 +1250,7 @@ def _score_row_a9v2_composite(
     if style_intent and style_intent.get("power"):
         if "strutturato" in tags:
             sem_boost += 0.04
-        if body == "high" and tan in ("medium", "high"):
+        if body == "high" and tan in ("medium", "medium_plus", "high"):
             sem_boost += 0.02
         if alc >= 14.0:
             sem_boost += 0.01
@@ -1473,7 +1479,7 @@ def _match_score_row_explain(
             elegant_score = 1.0
         elif any(tok in tags for tok in ["finezza", "raffinato", "raffinata", "minerale", "fresco", "teso", "equilibrato", "salino", "agrumi"]):
             elegant_score = 0.75
-        elif body_row in ("medium", "medio", "media") and tan_row in ("low", "medium", "basso", "bassa", "medio", "media") and acid_row in ("medium", "high", "media", "alta", "alto"):
+        elif body_row in ("medium", "medio", "media") and tan_row in ("low", "medium_low", "medium", "basso", "bassa", "medio", "media") and acid_row in ("medium", "high", "media", "alta", "alto"):
             elegant_score = 0.45
 
     struct_score = 0.0
@@ -2019,48 +2025,31 @@ def run_search(
     
     limit = _clamp(int(limit or MAX_RESULTS_DEFAULT), 1, MAX_RESULTS_CAP)
     q = _norm(query)
-
-    # --- LLM Intent Layer (nuovo) ---
-    # Chiama il layer LLM per normalizzare query ambigue/laterali.
-    # Graceful degradation: se LLM non disponibile, tutto continua come prima.
-    from llm_intent_parser import parse_intent_with_llm, merge_intent
-
-    llm_intent = parse_intent_with_llm(q)
-
-    # I parser rule-based girano comunque (invariati)
+    
     price_info = parse_price(q)
-    region = parse_region(q) or llm_intent.get("region")
-    grapes_req = parse_grapes(q) or llm_intent.get("grapes", [])
+    region = parse_region(q)
+
+    # A/B/D requests
+    grapes_req = parse_grapes(q)
     aromas_req = parse_aromas(q)
     intensity_req = parse_intensity_request(q)
     typology_req = parse_typology_request(q)
+    foods_req = parse_food_request(q)
 
-    # Foods: unione rule-based + LLM
-    foods_rule = parse_food_request(q)
-    foods_llm = llm_intent.get("foods", [])
-    foods_req = sorted(set(foods_rule) | set(foods_llm))
 
-    color_req = parse_color_request(q) or llm_intent.get("color")
+    color_req = parse_color_request(q)
 
     # VALUE intent (solo se richiesto dall'utente)
-    value_intent = parse_value_intent(q) or llm_intent.get("value_intent", False)
+    value_intent = parse_value_intent(q)
 
     # ✅ Opzione 2: se l'utente chiede qualità/prezzo e non ha scelto un sort specifico, usa relevance_v2
     if value_intent and (not sort or sort == "relevance"):
         sort = "relevance_v2"
 
     style_intent = parse_style_intent(q)
-
-    # Occasion: LLM arricchisce se rule-based non ha trovato nulla
-    occasion_intent = parse_occasion_intent(q) or llm_intent.get("occasion")
-
-    # Prestige/elegance: OR logico (basta uno dei due a rilevarlo)
-    prestige_intent = parse_prestige_intent(q) or llm_intent.get("prestige_intent", False)
-    elegance_intent = (
-        bool(re.search(r"\b(elegante|elegant|finezza|raffinato|raffinata)\b", _norm_lc(q)))
-        or llm_intent.get("elegant_intent", False)
-    )
-    # --- Fine LLM Intent Layer ---
+    occasion_intent = parse_occasion_intent(q)
+    prestige_intent = parse_prestige_intent(q)
+    elegance_intent = bool(re.search(r"\b(elegante|elegant|finezza|raffinato|raffinata)\b", _norm_lc(q)))
 
     filtered = df
 
@@ -2348,8 +2337,12 @@ def run_search(
             s = _norm_lc(str(x or ""))
             if s in ("alto", "alta", "high"):
                 return "high"
+            if s == "medium_plus":
+                return "medium_plus"
             if s in ("medio", "media", "medium"):
                 return "medium"
+            if s == "medium_low":
+                return "medium_low"
             if s in ("basso", "bassa", "low"):
                 return "low"
             return s
