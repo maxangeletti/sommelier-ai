@@ -1396,13 +1396,22 @@ def _structured_match_components(
     comps: Dict[str, float] = {}
 
     if region:
+        _REGION_ALIASES = {
+            "borgogna": "bourgogne", "alsazia": "alsace", "loira": "loire",
+            "provenza": "provence", "rodano": "rhone",
+            "toscana": "tuscany",
+        }
         hay = " ".join([
             _norm_lc(getattr(row, "region", "")),
             _norm_lc(getattr(row, "zone", "")),
             _norm_lc(getattr(row, "denomination", "")),
             _norm_lc(getattr(row, "country", "")),
         ])
-        comps["region"] = 1.0 if _norm_lc(region) in hay else 0.0
+        r_lc = _norm_lc(region)
+        found = r_lc in hay
+        if not found and r_lc in _REGION_ALIASES:
+            found = _REGION_ALIASES[r_lc] in hay
+        comps["region"] = 1.0 if found else 0.0
 
     if grapes_req:
         gv = _norm_lc(getattr(row, "grape_varieties", "")) or _norm_lc(getattr(row, "grapes", ""))
@@ -2153,11 +2162,23 @@ def run_search(
 
     # region filter (match in region/zone/denomination/country — OR logic)
     if region:
+        # Alias map: italiano → nome nel CSV (il dataset usa nomi originali)
+        _REGION_ALIASES = {
+            "borgogna": "bourgogne", "alsazia": "alsace", "loira": "loire",
+            "provenza": "provence", "rodano": "rhone",
+            "toscana": "tuscany",  # nel caso il CSV usasse inglese
+        }
         r_lc = _norm_lc(region)
+        # Cerca sia il termine originale sia l'alias
+        search_terms = [r_lc]
+        if r_lc in _REGION_ALIASES:
+            search_terms.append(_REGION_ALIASES[r_lc])
         mask = pd.Series(False, index=filtered.index)
         for col in ["region", "zone", "denomination", "country"]:
             if col in filtered.columns:
-                mask = mask | filtered[col].astype(str).str.lower().str.contains(r_lc, na=False)
+                col_lower = filtered[col].astype(str).str.lower()
+                for term in search_terms:
+                    mask = mask | col_lower.str.contains(term, na=False)
         filtered = filtered.loc[mask]
 
     # color filter (bianco/rosso/rosato)
