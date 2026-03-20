@@ -560,7 +560,7 @@ INTENSITY_WORDS = {
 TANNIN_WORDS = {
     "poco tannico": "low", "leggermente tannico": "low", "tannino leggero": "low",
     "morbido": "medium_low", "tannino morbido": "medium_low",
-    "tannico": "medium_plus", "tannino marcato": "medium_plus",
+    "tannico": "high", "tannino marcato": "medium_plus",
     "molto tannico": "high", "astringente": "high", "tannino forte": "high",
 }
 
