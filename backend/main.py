@@ -1395,7 +1395,12 @@ def _structured_match_components(
             _norm(getattr(row, "tannins", "")),
             _norm(getattr(row, "alcohol_level", "")),
         ) or ""
-        comps["intensity"] = 1.0 if _norm_lc(di) == _norm_lc(intensity_req) else 0.0
+        # Match graduale basato su distanza nella scala AIS 5 livelli
+        _INTENSITY_NUM = {"low": 0.10, "medium_low": 0.30, "medium": 0.50, "medium_plus": 0.75, "high": 1.00}
+        di_val = _INTENSITY_NUM.get(_norm_lc(di), 0.50)
+        req_val = _INTENSITY_NUM.get(_norm_lc(intensity_req), 0.50)
+        dist = abs(di_val - req_val) / 0.90  # normalizza 0..1
+        comps["intensity"] = max(0.0, 1.0 - dist)
 
     if typology_req:
         sp_req = typology_req.get("sparkling")
