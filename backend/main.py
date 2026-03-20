@@ -2075,32 +2075,76 @@ def run_search(
     
     limit = _clamp(int(limit or MAX_RESULTS_DEFAULT), 1, MAX_RESULTS_CAP)
     q = _norm(query)
-    
+
+    # --- LLM Intent Layer (graceful degradation) ---
+    llm_intent = {}
+    llm_used = False
+    t_llm = time.perf_counter()
+    try:
+        from llm_intent_parser import parse_intent_with_llm, LLM_ENABLED
+        if LLM_ENABLED:
+            llm_intent = parse_intent_with_llm(q)
+            llm_used = bool(llm_intent and any(
+                v for k, v in llm_intent.items()
+                if v and v != [] and v is not False and k != "free_context"
+            ))
+    except Exception:
+        llm_intent = {}
+        llm_used = False
+    timings["llm"] = round(time.perf_counter() - t_llm, 6)
+    t0 = time.perf_counter()
+    # --- Fine LLM Intent Layer ---
+
+    # Rule-based parsers (invariati)
     price_info = parse_price(q)
     region = parse_region(q)
-
-    # A/B/D requests
     grapes_req = parse_grapes(q)
     aromas_req = parse_aromas(q)
     intensity_req = parse_intensity_request(q)
     tannin_req = parse_tannin_request(q)
     typology_req = parse_typology_request(q)
     foods_req = parse_food_request(q)
-
-
     color_req = parse_color_request(q)
-
-    # VALUE intent (solo se richiesto dall'utente)
     value_intent = parse_value_intent(q)
-
-    # ✅ Opzione 2: se l'utente chiede qualità/prezzo e non ha scelto un sort specifico, usa relevance_v2
-    if value_intent and (not sort or sort == "relevance"):
-        sort = "relevance_v2"
-
     style_intent = parse_style_intent(q)
     occasion_intent = parse_occasion_intent(q)
     prestige_intent = parse_prestige_intent(q)
     elegance_intent = bool(re.search(r"\b(elegante|elegant|finezza|raffinato|raffinata)\b", _norm_lc(q)))
+
+    # --- LLM Merge: arricchisce solo dove rule-based è vuoto ---
+    if llm_used:
+        if not region and llm_intent.get("region"):
+            region = llm_intent["region"]
+        if not grapes_req and llm_intent.get("grapes"):
+            grapes_req = llm_intent["grapes"]
+        if not color_req and llm_intent.get("color"):
+            color_req = llm_intent["color"]
+        if not occasion_intent and llm_intent.get("occasion"):
+            occasion_intent = llm_intent["occasion"]
+        if not prestige_intent and llm_intent.get("prestige_intent"):
+            prestige_intent = True
+        if not elegance_intent and llm_intent.get("elegant_intent"):
+            elegance_intent = True
+        if not value_intent and llm_intent.get("value_intent"):
+            value_intent = True
+        # Foods: unione
+        llm_foods = llm_intent.get("foods", [])
+        if llm_foods:
+            foods_req = sorted(set(foods_req) | set(llm_foods))
+        # Sweetness/sparkling: LLM arricchisce se rule-based vuoto
+        if not typology_req.get("sweetness") and llm_intent.get("sweetness"):
+            typology_req["sweetness"] = llm_intent["sweetness"]
+        if not typology_req.get("sparkling") and llm_intent.get("sparkling"):
+            typology_req["sparkling"] = llm_intent["sparkling"]
+        # Intensity/style: LLM può suggerire se rule-based non ha trovato
+        if not intensity_req and llm_intent.get("style"):
+            style_map = {"strutturato": "high", "potente": "high", "leggero": "low", "fresco": "low"}
+            if llm_intent["style"] in style_map:
+                intensity_req = style_map[llm_intent["style"]]
+
+    # ✅ Opzione 2: se l'utente chiede qualità/prezzo e non ha scelto un sort specifico, usa relevance_v2
+    if value_intent and (not sort or sort == "relevance"):
+        sort = "relevance_v2"
 
     filtered = df
 
@@ -2315,6 +2359,7 @@ def run_search(
             "prestige_intent": prestige_intent,
             "elegance_intent": elegance_intent,
             "value_intent": value_intent,
+            "llm_used": llm_used,
         },
         "count": len(sorted_cards),
         "timestamp": int(_now()),
@@ -2324,6 +2369,8 @@ def run_search(
 
     if debug:
         meta["__debug_sort_after_override"] = _debug_sort_after_override
+        if llm_used:
+            meta["__llm_intent"] = {k: v for k, v in llm_intent.items() if v and v != [] and v is not False}
 
     if debug:
         debug_rows = [
