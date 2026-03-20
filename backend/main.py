@@ -305,6 +305,9 @@ REGION_PATTERNS = [
     r"\betna\b", r"\blanghe\b", r"\bfranciacorta\b", r"\bvalpolicella\b", r"\bchianti\b",
     r"\bmontalcino\b", r"\bbolgheri\b", r"\bbarolo\b", r"\bbarbaresco\b", r"\bsoave\b",
     r"\bchablis\b", r"\bpauillac\b", r"\bsancerre\b", r"\bpriorat\b",
+    # Denominazioni (match su colonna denomination del CSV)
+    r"\bprosecco\b", r"\bamarone\b", r"\bbrunello\b", r"\blugana\b", r"\bgavi\b",
+    r"\blambrusco\b", r"\bpassito\b", r"\brecioto\b",
 ]
 
 
