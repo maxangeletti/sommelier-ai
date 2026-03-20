@@ -2120,29 +2120,34 @@ def run_search(
     prestige_intent = parse_prestige_intent(q)
     elegance_intent = bool(re.search(r"\b(elegante|elegant|finezza|raffinato|raffinata)\b", _norm_lc(q)))
 
-    # --- LLM Merge: arricchisce solo dove rule-based è vuoto ---
-    if llm_used:
-        if not region and llm_intent.get("region"):
+    # --- LLM Merge: SOLO se rule-based non ha trovato segnali significativi ---
+    rb_has_signals = any([
+        region, grapes_req, color_req, foods_req, occasion_intent,
+        prestige_intent, elegance_intent, intensity_req, tannin_req,
+        typology_req.get("sparkling"), typology_req.get("sweetness"),
+    ])
+
+    if llm_used and not rb_has_signals:
+        if llm_intent.get("region"):
             region = llm_intent["region"]
-        if not grapes_req and llm_intent.get("grapes"):
+        if llm_intent.get("grapes"):
             grapes_req = llm_intent["grapes"]
-        if not color_req and llm_intent.get("color"):
+        if llm_intent.get("color"):
             color_req = llm_intent["color"]
-        if not occasion_intent and llm_intent.get("occasion"):
+        if llm_intent.get("occasion"):
             occasion_intent = llm_intent["occasion"]
-        if not prestige_intent and llm_intent.get("prestige_intent"):
+        if llm_intent.get("prestige_intent"):
             prestige_intent = True
-        if not elegance_intent and llm_intent.get("elegant_intent"):
+        if llm_intent.get("elegant_intent"):
             elegance_intent = True
-        if not value_intent and llm_intent.get("value_intent"):
+        if llm_intent.get("value_intent"):
             value_intent = True
-        # Foods: unione
         llm_foods = llm_intent.get("foods", [])
         if llm_foods:
             foods_req = sorted(set(foods_req) | set(llm_foods))
-        # NOTE: sweetness, sparkling, intensity NON vengono mergiati da LLM.
-        # Sono filtri hard e LLM li imposta troppo spesso come default (es. "secco", "fermo")
-        # causando 0 risultati. Solo il rule-based li attiva su richiesta esplicita dell'utente.
+    elif llm_used:
+        # Rule-based ha segnali → LLM non interviene, log per debug
+        llm_used = False  # segnala che LLM non ha contribuito
 
     # ✅ Opzione 2: se l'utente chiede qualità/prezzo e non ha scelto un sort specifico, usa relevance_v2
     if value_intent and (not sort or sort == "relevance"):
