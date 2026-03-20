@@ -296,8 +296,15 @@ def parse_price(query: str) -> Dict[str, Any]:
 
 # --- region parsing (robusto ma semplice) ---
 REGION_PATTERNS = [
+    # Regioni
     r"\bpiemonte\b", r"\btoscana\b", r"\bveneto\b", r"\bsicilia\b", r"\bpuglia\b", r"\btrentino\b",
     r"\bloira\b", r"\bborgogna\b", r"\bbordeaux\b", r"\bchampagne\b", r"\balsazia\b",
+    r"\bcampania\b", r"\bcalabria\b", r"\bsardegna\b", r"\bumbria\b", r"\bfriuli\b",
+    r"\babruzzo\b", r"\blazio\b", r"\bliguria\b", r"\bmarche\b", r"\bprovence\b",
+    # Zone (match su colonna zone del CSV)
+    r"\betna\b", r"\blanghe\b", r"\bfranciacorta\b", r"\bvalpolicella\b", r"\bchianti\b",
+    r"\bmontalcino\b", r"\bbolgheri\b", r"\bbarolo\b", r"\bbarbaresco\b", r"\bsoave\b",
+    r"\bchablis\b", r"\bpauillac\b", r"\bsancerre\b", r"\bpriorat\b",
 ]
 
 
@@ -433,6 +440,12 @@ def parse_prestige_intent(query: str) -> bool:
         r"\bdi\s+livello\b",
         r"\bprestigios[oa]\b",
         r"\bpremium\b",
+        # GT-26: linguaggio informale prestige
+        r"\bstupire\b",
+        r"\bfar\s+colpo\b",
+        r"\bimpressionare\b",
+        r"\bvino\s+wow\b",
+        r"\beffetto\s+wow\b",
     ]
     return any(re.search(pat, q) for pat in patterns)
 
@@ -2091,10 +2104,14 @@ def run_search(
     # price filter
     filtered = _filter_by_price(filtered, price_info)
 
-    # region filter (match in region/zone/denomination/country)
+    # region filter (match in region/zone/denomination/country — OR logic)
     if region:
+        r_lc = _norm_lc(region)
+        mask = pd.Series(False, index=filtered.index)
         for col in ["region", "zone", "denomination", "country"]:
-            filtered = _filter_by_text_contains(filtered, col, region)
+            if col in filtered.columns:
+                mask = mask | filtered[col].astype(str).str.lower().str.contains(r_lc, na=False)
+        filtered = filtered.loc[mask]
 
     # color filter (bianco/rosso/rosato)
     filtered = _filter_by_color(filtered, color_req)
