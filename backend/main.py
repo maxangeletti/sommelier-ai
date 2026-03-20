@@ -613,7 +613,7 @@ def derive_intensity(body: str, tannins: str, alcohol_level: str) -> Optional[st
 
     if score >= 0.70:
         return "high"
-    if score <= 0.25:
+    if score <= 0.45:
         return "low"
     return "medium"
 
