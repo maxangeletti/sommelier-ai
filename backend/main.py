@@ -556,6 +556,22 @@ INTENSITY_WORDS = {
 }
 
 
+# --- Tannin request parser (scala AIS 5 livelli) ---
+TANNIN_WORDS = {
+    "poco tannico": "low", "leggermente tannico": "low", "tannino leggero": "low",
+    "morbido": "medium_low", "tannino morbido": "medium_low",
+    "tannico": "medium_plus", "tannino marcato": "medium_plus",
+    "molto tannico": "high", "astringente": "high", "tannino forte": "high",
+}
+
+def parse_tannin_request(query: str) -> Optional[str]:
+    q = _norm_lc(query)
+    for w, v in sorted(TANNIN_WORDS.items(), key=lambda x: -len(x[0])):
+        if w in q:
+            return v
+    return None
+
+
 def parse_intensity_request(query: str) -> Optional[str]:
     q = _norm_lc(query)
     for w, v in INTENSITY_WORDS.items():
@@ -1359,6 +1375,7 @@ def _structured_match_components(
     color_req: Optional[str],
     intensity_req: Optional[str],
     typology_req: Dict[str, Optional[str]],
+    tannin_req: Optional[str] = None,
 ) -> Dict[str, float]:
     comps: Dict[str, float] = {}
 
@@ -1402,6 +1419,14 @@ def _structured_match_components(
         dist = abs(di_val - req_val) / 0.90  # normalizza 0..1
         comps["intensity"] = max(0.0, 1.0 - dist)
 
+    if tannin_req:
+        _TANNIN_AIS = {"low": 0.10, "medium_low": 0.30, "medium": 0.50, "medium_plus": 0.75, "high": 1.00}
+        wine_tan = _normalize_level(_norm(getattr(row, "tannins", "")))
+        wine_val = _TANNIN_AIS.get(wine_tan, 0.50)
+        req_val = _TANNIN_AIS.get(tannin_req, 0.50)
+        tan_dist = abs(wine_val - req_val) / 0.90
+        comps["tannin"] = max(0.0, 1.0 - tan_dist)
+
     if typology_req:
         sp_req = typology_req.get("sparkling")
         sw_req = typology_req.get("sweetness")
@@ -1431,6 +1456,7 @@ def _match_score_row_explain(
     foods_req: List[str],
     occasion_intent: Optional[str] = None,
     prestige_intent: bool = False,
+    tannin_req: Optional[str] = None,
 ) -> Tuple[float, Dict[str, Any], List[str]]:
     """Compute match score (0..1) + breakdown + short explanation (deterministico).
 
@@ -1444,7 +1470,7 @@ def _match_score_row_explain(
     w_prestige = 0.0
     w_eleg = 0.0
 
-    comps_struct = _structured_match_components(row, region, grapes_req, color_req, intensity_req, typology_req)
+    comps_struct = _structured_match_components(row, region, grapes_req, color_req, intensity_req, typology_req, tannin_req)
     kw = _keyword_match_score(row, query)
     elegant_intent = bool(re.search(r"\b(elegante|elegant|finezza|raffinato|raffinata)\b", _norm_lc(query)))
 
@@ -1750,8 +1776,9 @@ def _match_score_row(
     foods_req: List[str],
     occasion_intent: Optional[str] = None,
     prestige_intent: bool = False,
+    tannin_req: Optional[str] = None,
 ) -> float:
-    score, _, _ = _match_score_row_explain(row, query, region, grapes_req, color_req, intensity_req, typology_req, foods_req, occasion_intent, prestige_intent)
+    score, _, _ = _match_score_row_explain(row, query, region, grapes_req, color_req, intensity_req, typology_req, foods_req, occasion_intent, prestige_intent, tannin_req)
     return score
 
 
@@ -2040,6 +2067,7 @@ def run_search(
     grapes_req = parse_grapes(q)
     aromas_req = parse_aromas(q)
     intensity_req = parse_intensity_request(q)
+    tannin_req = parse_tannin_request(q)
     typology_req = parse_typology_request(q)
     foods_req = parse_food_request(q)
 
@@ -2124,7 +2152,7 @@ def run_search(
         }
 
         # ✅ UI match score (0..1) + available to relevance_v2 composite as M
-        mscore, mbd, mexpl = _match_score_row_explain(r, q, region, grapes_req, color_req, intensity_req, typology_req, foods_req, occasion_intent, prestige_intent)
+        mscore, mbd, mexpl = _match_score_row_explain(r, q, region, grapes_req, color_req, intensity_req, typology_req, foods_req, occasion_intent, prestige_intent, tannin_req)
         boosts["__match_score_ui"] = mscore
         
         # ✅ Flatten match_breakdown per iOS (converte i dict in valori numerici)
