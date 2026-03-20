@@ -870,7 +870,9 @@ def _filter_new_A_B_D(
             lambda r: derive_intensity(r.get("body", ""), r.get("tannins", ""), r.get("alcohol_level", "")) or "",
             axis=1,
         )
-        df = df.loc[derived_int.eq(intensity_req)]
+        df_filtered = df.loc[derived_int.eq(intensity_req)]
+        if len(df_filtered) > 0:
+            df = df_filtered
 
     return df
 
