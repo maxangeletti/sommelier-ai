@@ -15,6 +15,9 @@ from fastapi import FastAPI, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 
+# LLM intent parser (dual-step: parse + explain)
+from llm_intent_parser import parse_intent_with_llm, generate_personalized_reason
+
 
 # =========================
 # Build signature (anti-confusione / anti-regressione)
@@ -296,18 +299,8 @@ def parse_price(query: str) -> Dict[str, Any]:
 
 # --- region parsing (robusto ma semplice) ---
 REGION_PATTERNS = [
-    # Regioni
     r"\bpiemonte\b", r"\btoscana\b", r"\bveneto\b", r"\bsicilia\b", r"\bpuglia\b", r"\btrentino\b",
     r"\bloira\b", r"\bborgogna\b", r"\bbordeaux\b", r"\bchampagne\b", r"\balsazia\b",
-    r"\bcampania\b", r"\bcalabria\b", r"\bsardegna\b", r"\bumbria\b", r"\bfriuli\b",
-    r"\babruzzo\b", r"\blazio\b", r"\bliguria\b", r"\bmarche\b", r"\bprovence\b",
-    # Zone (match su colonna zone del CSV)
-    r"\betna\b", r"\blanghe\b", r"\bfranciacorta\b", r"\bvalpolicella\b", r"\bchianti\b",
-    r"\bmontalcino\b", r"\bbolgheri\b", r"\bbarolo\b", r"\bbarbaresco\b", r"\bsoave\b",
-    r"\bchablis\b", r"\bpauillac\b", r"\bsancerre\b", r"\bpriorat\b",
-    # Denominazioni (match su colonna denomination del CSV)
-    r"\bprosecco\b", r"\bamarone\b", r"\bbrunello\b", r"\blugana\b", r"\bgavi\b",
-    r"\blambrusco\b", r"\bpassito\b", r"\brecioto\b",
 ]
 
 
@@ -443,12 +436,6 @@ def parse_prestige_intent(query: str) -> bool:
         r"\bdi\s+livello\b",
         r"\bprestigios[oa]\b",
         r"\bpremium\b",
-        # GT-26: linguaggio informale prestige
-        r"\bstupire\b",
-        r"\bfar\s+colpo\b",
-        r"\bimpressionare\b",
-        r"\bvino\s+wow\b",
-        r"\beffetto\s+wow\b",
     ]
     return any(re.search(pat, q) for pat in patterns)
 
@@ -572,22 +559,6 @@ INTENSITY_WORDS = {
 }
 
 
-# --- Tannin request parser (scala AIS 5 livelli) ---
-TANNIN_WORDS = {
-    "poco tannico": "low", "leggermente tannico": "low", "tannino leggero": "low",
-    "morbido": "medium_low", "tannino morbido": "medium_low",
-    "tannico": "high", "tannino marcato": "medium_plus",
-    "molto tannico": "high", "astringente": "high", "tannino forte": "high",
-}
-
-def parse_tannin_request(query: str) -> Optional[str]:
-    q = _norm_lc(query)
-    for w, v in sorted(TANNIN_WORDS.items(), key=lambda x: -len(x[0])):
-        if w in q:
-            return v
-    return None
-
-
 def parse_intensity_request(query: str) -> Optional[str]:
     q = _norm_lc(query)
     for w, v in INTENSITY_WORDS.items():
@@ -597,55 +568,51 @@ def parse_intensity_request(query: str) -> Optional[str]:
 
 
 def _normalize_level(s: str) -> str:
-    # normalize italian/english-ish into 5-level AIS tannin scale + body/acidity compat
+    # normalize italian/english-ish into low/medium/high
     v = _norm_lc(s)
     if not v:
         return ""
-    # exact canonical matches first (CSV values)
-    if v == "medium_plus":
-        return "medium_plus"
-    if v == "medium_low":
-        return "medium_low"
-    if any(k in v for k in ["high", "alto", "alta", "intens", "strutturat", "power", "potent", "robusto", "astringent"]):
+    if any(k in v for k in ["low", "basso", "legger", "delicat"]):
+        return "low"
+    if any(k in v for k in ["high", "alto", "intens", "strutturat", "power", "potent", "robusto"]):
         return "high"
     if any(k in v for k in ["medium", "medio", "media", "moderato"]):
         return "medium"
-    if any(k in v for k in ["low", "basso", "bassa", "legger", "delicat"]):
-        return "low"
     return ""
 
 
 def derive_intensity(body: str, tannins: str, alcohol_level: str) -> Optional[str]:
-    # body/tannins in CSV are categorical; alcohol may be numeric or text.
-    # Uses numeric scoring to handle 5-level tannin scale properly.
+    # body/tannins in CSV are often categorical; alcohol may be numeric or text.
     b = _normalize_level(body)
     t = _normalize_level(tannins)
 
-    # Map to numeric intensity contribution
-    _body_score = {"low": 0.0, "medium": 0.5, "high": 1.0}.get(b, 0.5)
-    _tan_score = {
-        "low": 0.10, "medium_low": 0.30, "medium": 0.50,
-        "medium_plus": 0.75, "high": 1.00,
-    }.get(t, 0.50)
-
     alc = _parse_float_maybe(alcohol_level)
-    _alc_score = 0.5  # default
+    # scoring: high if any strong signal
+    high_signals = 0
+    low_signals = 0
+
+    if b == "high":
+        high_signals += 1
+    if t == "high":
+        high_signals += 1
+    if b == "low":
+        low_signals += 1
+    if t == "low":
+        low_signals += 1
+
     if alc is not None:
         if alc >= 14.0:
-            _alc_score = 1.0
-        elif alc >= 13.0:
-            _alc_score = 0.7
-        elif alc <= 11.5:
-            _alc_score = 0.0
-        elif alc <= 12.0:
-            _alc_score = 0.2
+            high_signals += 1
+        if alc <= 11.5:
+            low_signals += 1
 
-    # Weighted average: body 35%, tannins 40%, alcohol 25%
-    score = 0.35 * _body_score + 0.40 * _tan_score + 0.25 * _alc_score
-
-    if score >= 0.70:
+    if high_signals >= 2:
         return "high"
-    if score <= 0.45:
+    if low_signals >= 2:
+        return "low"
+    if high_signals == 1 and low_signals == 0:
+        return "high"
+    if low_signals == 1 and high_signals == 0:
         return "low"
     return "medium"
 
@@ -902,9 +869,7 @@ def _filter_new_A_B_D(
             lambda r: derive_intensity(r.get("body", ""), r.get("tannins", ""), r.get("alcohol_level", "")) or "",
             axis=1,
         )
-        df_filtered = df.loc[derived_int.eq(intensity_req)]
-        if len(df_filtered) > 0:
-            df = df_filtered
+        df = df.loc[derived_int.eq(intensity_req)]
 
     return df
 
@@ -1252,9 +1217,7 @@ def _score_row_a9v2_composite(
 
     def _lvl(x: str) -> str:
         if x in ("alto", "alta", "high"): return "high"
-        if x in ("medium_plus",): return "medium_plus"
         if x in ("medio", "media", "medium"): return "medium"
-        if x in ("medium_low",): return "medium_low"
         if x in ("basso", "bassa", "low"): return "low"
         return x
 
@@ -1271,7 +1234,7 @@ def _score_row_a9v2_composite(
     if style_intent and style_intent.get("elegant"):
         if "elegante" in tags:
             sem_boost += 0.06
-        elif body == "medium" and tan in ("low", "medium_low", "medium") and acid in ("medium", "high"):
+        elif body == "medium" and tan in ("low", "medium") and acid in ("medium", "high"):
             sem_boost += 0.03
     # meditation / meditazione
     if style_intent and style_intent.get("meditation"):
@@ -1284,7 +1247,7 @@ def _score_row_a9v2_composite(
     if style_intent and style_intent.get("power"):
         if "strutturato" in tags:
             sem_boost += 0.04
-        if body == "high" and tan in ("medium", "medium_plus", "high"):
+        if body == "high" and tan in ("medium", "high"):
             sem_boost += 0.02
         if alc >= 14.0:
             sem_boost += 0.01
@@ -1391,27 +1354,17 @@ def _structured_match_components(
     color_req: Optional[str],
     intensity_req: Optional[str],
     typology_req: Dict[str, Optional[str]],
-    tannin_req: Optional[str] = None,
 ) -> Dict[str, float]:
     comps: Dict[str, float] = {}
 
     if region:
-        _REGION_ALIASES = {
-            "borgogna": "bourgogne", "alsazia": "alsace", "loira": "loire",
-            "provenza": "provence", "rodano": "rhone",
-            "toscana": "tuscany",
-        }
         hay = " ".join([
             _norm_lc(getattr(row, "region", "")),
             _norm_lc(getattr(row, "zone", "")),
             _norm_lc(getattr(row, "denomination", "")),
             _norm_lc(getattr(row, "country", "")),
         ])
-        r_lc = _norm_lc(region)
-        found = r_lc in hay
-        if not found and r_lc in _REGION_ALIASES:
-            found = _REGION_ALIASES[r_lc] in hay
-        comps["region"] = 1.0 if found else 0.0
+        comps["region"] = 1.0 if _norm_lc(region) in hay else 0.0
 
     if grapes_req:
         gv = _norm_lc(getattr(row, "grape_varieties", "")) or _norm_lc(getattr(row, "grapes", ""))
@@ -1437,20 +1390,7 @@ def _structured_match_components(
             _norm(getattr(row, "tannins", "")),
             _norm(getattr(row, "alcohol_level", "")),
         ) or ""
-        # Match graduale basato su distanza nella scala AIS 5 livelli
-        _INTENSITY_NUM = {"low": 0.10, "medium_low": 0.30, "medium": 0.50, "medium_plus": 0.75, "high": 1.00}
-        di_val = _INTENSITY_NUM.get(_norm_lc(di), 0.50)
-        req_val = _INTENSITY_NUM.get(_norm_lc(intensity_req), 0.50)
-        dist = abs(di_val - req_val) / 0.90  # normalizza 0..1
-        comps["intensity"] = max(0.0, 1.0 - dist)
-
-    if tannin_req:
-        _TANNIN_AIS = {"low": 0.10, "medium_low": 0.30, "medium": 0.50, "medium_plus": 0.75, "high": 1.00}
-        wine_tan = _normalize_level(_norm(getattr(row, "tannins", "")))
-        wine_val = _TANNIN_AIS.get(wine_tan, 0.50)
-        req_val = _TANNIN_AIS.get(tannin_req, 0.50)
-        tan_dist = abs(wine_val - req_val) / 0.90
-        comps["tannin"] = max(0.0, 1.0 - tan_dist)
+        comps["intensity"] = 1.0 if _norm_lc(di) == _norm_lc(intensity_req) else 0.0
 
     if typology_req:
         sp_req = typology_req.get("sparkling")
@@ -1481,7 +1421,6 @@ def _match_score_row_explain(
     foods_req: List[str],
     occasion_intent: Optional[str] = None,
     prestige_intent: bool = False,
-    tannin_req: Optional[str] = None,
 ) -> Tuple[float, Dict[str, Any], List[str]]:
     """Compute match score (0..1) + breakdown + short explanation (deterministico).
 
@@ -1495,7 +1434,7 @@ def _match_score_row_explain(
     w_prestige = 0.0
     w_eleg = 0.0
 
-    comps_struct = _structured_match_components(row, region, grapes_req, color_req, intensity_req, typology_req, tannin_req)
+    comps_struct = _structured_match_components(row, region, grapes_req, color_req, intensity_req, typology_req)
     kw = _keyword_match_score(row, query)
     elegant_intent = bool(re.search(r"\b(elegante|elegant|finezza|raffinato|raffinata)\b", _norm_lc(query)))
 
@@ -1537,7 +1476,7 @@ def _match_score_row_explain(
             elegant_score = 1.0
         elif any(tok in tags for tok in ["finezza", "raffinato", "raffinata", "minerale", "fresco", "teso", "equilibrato", "salino", "agrumi"]):
             elegant_score = 0.75
-        elif body_row in ("medium", "medio", "media") and tan_row in ("low", "medium_low", "medium", "basso", "bassa", "medio", "media") and acid_row in ("medium", "high", "media", "alta", "alto"):
+        elif body_row in ("medium", "medio", "media") and tan_row in ("low", "medium", "basso", "bassa", "medio", "media") and acid_row in ("medium", "high", "media", "alta", "alto"):
             elegant_score = 0.45
 
     struct_score = 0.0
@@ -1801,9 +1740,8 @@ def _match_score_row(
     foods_req: List[str],
     occasion_intent: Optional[str] = None,
     prestige_intent: bool = False,
-    tannin_req: Optional[str] = None,
 ) -> float:
-    score, _, _ = _match_score_row_explain(row, query, region, grapes_req, color_req, intensity_req, typology_req, foods_req, occasion_intent, prestige_intent, tannin_req)
+    score, _, _ = _match_score_row_explain(row, query, region, grapes_req, color_req, intensity_req, typology_req, foods_req, occasion_intent, prestige_intent)
     return score
 
 
@@ -2084,100 +2022,54 @@ def run_search(
     
     limit = _clamp(int(limit or MAX_RESULTS_DEFAULT), 1, MAX_RESULTS_CAP)
     q = _norm(query)
-
-    # --- LLM Intent Layer (graceful degradation) ---
-    llm_intent = {}
-    llm_used = False
-    t_llm = time.perf_counter()
-    try:
-        from llm_intent_parser import parse_intent_with_llm, LLM_ENABLED
-        if LLM_ENABLED:
-            llm_intent = parse_intent_with_llm(q)
-            llm_used = bool(llm_intent and any(
-                v for k, v in llm_intent.items()
-                if v and v != [] and v is not False and k != "free_context"
-            ))
-    except Exception:
-        llm_intent = {}
-        llm_used = False
-    timings["llm"] = round(time.perf_counter() - t_llm, 6)
-    t0 = time.perf_counter()
-    # --- Fine LLM Intent Layer ---
-
-    # Rule-based parsers (invariati)
+    
+    # --- LLM Intent Layer Step 1: Parse ---
+    llm_intent = parse_intent_with_llm(q)
+    
     price_info = parse_price(q)
-    region = parse_region(q)
-    grapes_req = parse_grapes(q)
+    region = parse_region(q) or llm_intent.get("region")
+
+    # A/B/D requests
+    grapes_req = parse_grapes(q) or llm_intent.get("grapes", [])
     aromas_req = parse_aromas(q)
     intensity_req = parse_intensity_request(q)
-    tannin_req = parse_tannin_request(q)
     typology_req = parse_typology_request(q)
-    foods_req = parse_food_request(q)
-    color_req = parse_color_request(q)
-    value_intent = parse_value_intent(q)
-    style_intent = parse_style_intent(q)
-    occasion_intent = parse_occasion_intent(q)
-    prestige_intent = parse_prestige_intent(q)
-    elegance_intent = bool(re.search(r"\b(elegante|elegant|finezza|raffinato|raffinata)\b", _norm_lc(q)))
+    
+    # Foods: unione rule-based + LLM
+    foods_rule = parse_food_request(q)
+    foods_llm = llm_intent.get("foods", [])
+    foods_req = sorted(set(foods_rule) | set(foods_llm))
 
-    # --- LLM Merge: SOLO se rule-based non ha trovato segnali significativi ---
-    rb_has_signals = any([
-        region, grapes_req, color_req, foods_req, occasion_intent,
-        prestige_intent, elegance_intent, intensity_req, tannin_req,
-        typology_req.get("sparkling"), typology_req.get("sweetness"),
-    ])
+    color_req = parse_color_request(q) or llm_intent.get("color")
 
-    if llm_used and not rb_has_signals:
-        if llm_intent.get("region"):
-            region = llm_intent["region"]
-        if llm_intent.get("grapes"):
-            grapes_req = llm_intent["grapes"]
-        if llm_intent.get("color"):
-            color_req = llm_intent["color"]
-        if llm_intent.get("occasion"):
-            occasion_intent = llm_intent["occasion"]
-        if llm_intent.get("prestige_intent"):
-            prestige_intent = True
-        if llm_intent.get("elegant_intent"):
-            elegance_intent = True
-        if llm_intent.get("value_intent"):
-            value_intent = True
-        llm_foods = llm_intent.get("foods", [])
-        if llm_foods:
-            foods_req = sorted(set(foods_req) | set(llm_foods))
-    elif llm_used:
-        # Rule-based ha segnali → LLM non interviene, log per debug
-        llm_used = False  # segnala che LLM non ha contribuito
+    # VALUE intent (solo se richiesto dall'utente)
+    value_intent = parse_value_intent(q) or llm_intent.get("value_intent", False)
 
     # ✅ Opzione 2: se l'utente chiede qualità/prezzo e non ha scelto un sort specifico, usa relevance_v2
     if value_intent and (not sort or sort == "relevance"):
         sort = "relevance_v2"
+
+    style_intent = parse_style_intent(q)
+    
+    # Occasion: LLM arricchisce se rule-based non ha trovato nulla
+    occasion_intent = parse_occasion_intent(q) or llm_intent.get("occasion")
+    
+    # Prestige/elegance: OR logico (basta uno dei due a rilevarlo)
+    prestige_intent = parse_prestige_intent(q) or llm_intent.get("prestige_intent", False)
+    elegance_intent = (
+        bool(re.search(r"\b(elegante|elegant|finezza|raffinato|raffinata)\b", _norm_lc(q)))
+        or llm_intent.get("elegant_intent", False)
+    )
 
     filtered = df
 
     # price filter
     filtered = _filter_by_price(filtered, price_info)
 
-    # region filter (match in region/zone/denomination/country — OR logic)
+    # region filter (match in region/zone/denomination/country)
     if region:
-        # Alias map: italiano → nome nel CSV (il dataset usa nomi originali)
-        _REGION_ALIASES = {
-            "borgogna": "bourgogne", "alsazia": "alsace", "loira": "loire",
-            "provenza": "provence", "rodano": "rhone",
-            "toscana": "tuscany",  # nel caso il CSV usasse inglese
-        }
-        r_lc = _norm_lc(region)
-        # Cerca sia il termine originale sia l'alias
-        search_terms = [r_lc]
-        if r_lc in _REGION_ALIASES:
-            search_terms.append(_REGION_ALIASES[r_lc])
-        mask = pd.Series(False, index=filtered.index)
         for col in ["region", "zone", "denomination", "country"]:
-            if col in filtered.columns:
-                col_lower = filtered[col].astype(str).str.lower()
-                for term in search_terms:
-                    mask = mask | col_lower.str.contains(term, na=False)
-        filtered = filtered.loc[mask]
+            filtered = _filter_by_text_contains(filtered, col, region)
 
     # color filter (bianco/rosso/rosato)
     filtered = _filter_by_color(filtered, color_req)
@@ -2235,7 +2127,7 @@ def run_search(
         }
 
         # ✅ UI match score (0..1) + available to relevance_v2 composite as M
-        mscore, mbd, mexpl = _match_score_row_explain(r, q, region, grapes_req, color_req, intensity_req, typology_req, foods_req, occasion_intent, prestige_intent, tannin_req)
+        mscore, mbd, mexpl = _match_score_row_explain(r, q, region, grapes_req, color_req, intensity_req, typology_req, foods_req, occasion_intent, prestige_intent)
         boosts["__match_score_ui"] = mscore
         
         # ✅ Flatten match_breakdown per iOS (converte i dict in valori numerici)
@@ -2359,6 +2251,60 @@ def run_search(
     t0 = time.perf_counter()
     for i, c in enumerate(sorted_cards, start=1):
         c["rank"] = i
+    
+    # --- LLM Intent Layer Step 2: Explain ---
+    # Genera reason personalizzata per il vino top-ranked
+    if sorted_cards:
+        # Estrai tannin_req dalla query (parser veloce)
+        tannin_req = None
+        q_lc = _norm_lc(q)
+        # Pattern LOW: negazioni esplicite (poco/non/senza + tannico)
+        if re.search(r"\b(poco|non|senza)\s+(tannic|tannin)", q_lc):
+            tannin_req = "low"
+        # Pattern LOW: tannini + aggettivo morbido/basso/delicato
+        elif re.search(r"\btannin[oi]\s+(bass[oi]|morbid[oi]|delicat[oi]|legg?er[oi])\b", q_lc):
+            tannin_req = "low"
+        # Pattern HIGH: tannico/astringente (dopo aver escluso i LOW)
+        elif re.search(r"\b(tannic[oi]|astringent[ei])\b", q_lc):
+            tannin_req = "high"
+        # Pattern HIGH: tannini + aggettivo forte (alti/importanti/marcati)
+        elif re.search(r"\btannin[oi]\s+(alt[oi]|important[ei]|marcati|evident[ei])\b", q_lc):
+            tannin_req = "high"
+        
+        # Raccogliere segnali attivi dal ranking
+        active_signals = {
+            "color": color_req,
+            "prestige_intent": prestige_intent,
+            "elegant_intent": elegance_intent,
+            "occasion": occasion_intent,
+            "foods": foods_req,
+            "style": style_intent.get("style") if style_intent else None,
+            "tannin_req": tannin_req,
+            "intensity_req": intensity_req,
+            "region": region,
+            "grapes": grapes_req,
+            "sparkling": typology_req.get("sparkling") if typology_req else None,
+            "sweetness": typology_req.get("sweetness") if typology_req else None,
+        }
+        
+        # Info vino top per contestualizzare la reason
+        top_wine_info = {
+            "name": sorted_cards[0].get("name"),
+            "region": sorted_cards[0].get("region"),
+        }
+        
+        # Genera reason personalizzata
+        personalized_reason = generate_personalized_reason(
+            query=q,
+            active_signals=active_signals,
+            top_wine=top_wine_info
+        )
+        
+        # Sostituisci reason statica con quella personalizzata
+        sorted_cards[0]["reason"] = personalized_reason
+    
+    timings["llm_explain"] = round(time.perf_counter() - t0, 6)
+    t0 = time.perf_counter()
 
     meta = {
         "build_id": BUILD_ID,
@@ -2378,7 +2324,6 @@ def run_search(
             "prestige_intent": prestige_intent,
             "elegance_intent": elegance_intent,
             "value_intent": value_intent,
-            "llm_used": llm_used,
         },
         "count": len(sorted_cards),
         "timestamp": int(_now()),
@@ -2388,8 +2333,6 @@ def run_search(
 
     if debug:
         meta["__debug_sort_after_override"] = _debug_sort_after_override
-        if llm_used:
-            meta["__llm_intent"] = {k: v for k, v in llm_intent.items() if v and v != [] and v is not False}
 
     if debug:
         debug_rows = [
@@ -2458,12 +2401,8 @@ def run_search(
             s = _norm_lc(str(x or ""))
             if s in ("alto", "alta", "high"):
                 return "high"
-            if s == "medium_plus":
-                return "medium_plus"
             if s in ("medio", "media", "medium"):
                 return "medium"
-            if s == "medium_low":
-                return "medium_low"
             if s in ("basso", "bassa", "low"):
                 return "low"
             return s

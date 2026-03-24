@@ -245,6 +245,187 @@ def merge_intent(llm_intent: Dict[str, Any], rule_based: Dict[str, Any]) -> Dict
 
 
 # =========================
+# Step 2: Explain Personalizzato
+# =========================
+
+EXPLAIN_SYSTEM_PROMPT = """Sei un sommelier esperto che spiega perché un vino è la scelta giusta.
+Ricevi la query dell'utente e i segnali di ranking che hanno guidato la selezione.
+Genera una spiegazione breve (max 30 parole) in italiano naturale e conversazionale.
+
+La spiegazione deve:
+- Essere contestuale alla query specifica dell'utente
+- Menzionare i segnali chiave che giustificano la scelta
+- Evitare tecnicismi eccessivi e underscore
+- Usare un tono caldo ma professionale
+
+Esempi:
+Query: "vino elegante per cena importante"
+Signals: prestige_intent=true, occasion=important_dinner, color=rosso, elegant_intent=true
+→ "Un rosso prestigioso perfetto per occasioni formali, con eleganza e grande finezza"
+
+Query: "bianco fresco per pesce"
+Signals: color=bianco, foods=["pesce"], style=fresco
+→ "Bianco fresco e minerale, ideale per esaltare i sapori delicati del pesce"
+
+Query: "vino tannico e strutturato"
+Signals: tannin_req=high, intensity_req=high, color=rosso
+→ "Rosso potente e tannico, con struttura importante e grande persistenza"
+
+Query: "voglio stupire"
+Signals: prestige_intent=true
+→ "Una bottiglia di grande prestigio che lascerà il segno"
+
+Restituisci SOLO il testo della spiegazione, senza introduzioni o commenti."""
+
+
+def generate_personalized_reason(
+    query: str,
+    active_signals: Dict[str, Any],
+    top_wine: Optional[Dict[str, Any]] = None
+) -> str:
+    """
+    Step 2: Genera reason personalizzata usando LLM.
+    
+    Args:
+        query: Query originale dell'utente
+        active_signals: Dizionario con i segnali attivi del ranking
+            Es: {
+                "prestige_intent": True,
+                "occasion": "important_dinner",
+                "color": "rosso",
+                "tannin_req": "high",
+                "foods": ["pesce"],
+                ...
+            }
+        top_wine: Opzionale - info sul vino top per personalizzare ulteriormente
+    
+    Returns:
+        Reason personalizzata (str). Fallback a template generico se LLM non disponibile.
+    """
+    if not LLM_ENABLED or not LLM_API_KEY or not query.strip():
+        return _generate_fallback_reason(active_signals)
+    
+    try:
+        # Prepara contesto strutturato per l'LLM
+        signals_text = _format_signals_for_llm(active_signals, top_wine)
+        
+        user_message = f"""Query utente: "{query}"
+
+Segnali di ranking attivi:
+{signals_text}
+
+Genera una spiegazione breve (max 30 parole) di perché questo è il vino giusto."""
+
+        with httpx.Client(timeout=LLM_TIMEOUT_SEC) as client:
+            response = client.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "x-api-key": LLM_API_KEY,
+                    "anthropic-version": "2023-06-01",
+                    "content-type": "application/json",
+                },
+                json={
+                    "model": LLM_MODEL,
+                    "max_tokens": 150,  # reason breve
+                    "system": EXPLAIN_SYSTEM_PROMPT,
+                    "messages": [{"role": "user", "content": user_message}],
+                },
+            )
+        response.raise_for_status()
+        data = response.json()
+        reason = data["content"][0]["text"].strip()
+        
+        # Validazione: max 40 parole, min 5 parole
+        word_count = len(reason.split())
+        if 5 <= word_count <= 40:
+            return reason
+        else:
+            return _generate_fallback_reason(active_signals)
+    
+    except Exception:
+        # Fallback silenzioso
+        return _generate_fallback_reason(active_signals)
+
+
+def _format_signals_for_llm(signals: Dict[str, Any], top_wine: Optional[Dict[str, Any]]) -> str:
+    """Formatta i segnali attivi in testo leggibile per l'LLM."""
+    lines = []
+    
+    if signals.get("color"):
+        lines.append(f"- Colore: {signals['color']}")
+    if signals.get("prestige_intent"):
+        lines.append("- Intento: prestigio/importanza")
+    if signals.get("elegant_intent"):
+        lines.append("- Intento: eleganza")
+    if signals.get("occasion"):
+        lines.append(f"- Occasione: {signals['occasion']}")
+    if signals.get("foods"):
+        lines.append(f"- Abbinamento: {', '.join(signals['foods'])}")
+    if signals.get("style"):
+        lines.append(f"- Stile: {signals['style']}")
+    if signals.get("tannin_req"):
+        lines.append(f"- Tannicità richiesta: {signals['tannin_req']}")
+    if signals.get("intensity_req"):
+        lines.append(f"- Intensità richiesta: {signals['intensity_req']}")
+    if signals.get("region"):
+        lines.append(f"- Regione: {signals['region']}")
+    if signals.get("grapes"):
+        lines.append(f"- Vitigni: {', '.join(signals['grapes'])}")
+    if signals.get("sparkling"):
+        lines.append(f"- Tipologia: {signals['sparkling']}")
+    if signals.get("sweetness"):
+        lines.append(f"- Dolcezza: {signals['sweetness']}")
+    
+    if top_wine:
+        if top_wine.get("name"):
+            lines.append(f"- Vino selezionato: {top_wine['name']}")
+        if top_wine.get("region"):
+            lines.append(f"- Provenienza: {top_wine['region']}")
+    
+    return "\n".join(lines) if lines else "- Nessun segnale specifico"
+
+
+def _generate_fallback_reason(signals: Dict[str, Any]) -> str:
+    """Template fallback se LLM non disponibile."""
+    parts = []
+    
+    if signals.get("prestige_intent"):
+        parts.append("Vino di prestigio")
+    elif signals.get("elegant_intent"):
+        parts.append("Vino elegante")
+    
+    if signals.get("color"):
+        color_map = {"rosso": "Rosso", "bianco": "Bianco", "rosato": "Rosato"}
+        parts.append(color_map.get(signals["color"], "Vino"))
+    
+    if signals.get("style"):
+        parts.append(signals["style"])
+    
+    if signals.get("tannin_req") == "high":
+        parts.append("con tannini importanti")
+    elif signals.get("tannin_req") == "low":
+        parts.append("con tannini morbidi")
+    
+    if signals.get("foods"):
+        foods_str = ", ".join(signals["foods"])
+        parts.append(f"ideale per {foods_str}")
+    
+    if signals.get("occasion"):
+        occasion_map = {
+            "aperitif": "per aperitivo",
+            "dinner": "per cena",
+            "important_dinner": "per occasioni importanti",
+            "meditation": "da meditazione",
+        }
+        parts.append(occasion_map.get(signals["occasion"], ""))
+    
+    if parts:
+        return " ".join(parts)
+    else:
+        return "Selezione basata su qualità e caratteristiche del vino"
+
+
+# =========================
 # Integrazione in run_search: patch minima
 # =========================
 
@@ -252,11 +433,9 @@ def merge_intent(llm_intent: Dict[str, Any], rule_based: Dict[str, Any]) -> Dict
 # SUBITO DOPO: q = _norm(query)
 # E PRIMA DI: price_info = parse_price(q)
 
-INTEGRATION_SNIPPET = '''
-    # --- LLM Intent Layer (nuovo) ---
-    # Chiama il layer LLM per normalizzare query ambigue/laterali.
-    # Graceful degradation: se LLM non disponibile, tutto continua come prima.
-    from llm_intent_parser import parse_intent_with_llm, merge_intent
+INTEGRATION_SNIPPET_STEP1 = '''
+    # --- LLM Intent Layer Step 1: Parse (già integrato) ---
+    from llm_intent_parser import parse_intent_with_llm
     
     llm_intent = parse_intent_with_llm(q)
     
@@ -286,7 +465,43 @@ INTEGRATION_SNIPPET = '''
         bool(re.search(r"\\b(elegante|elegant|finezza|raffinato|raffinata)\\b", _norm_lc(q)))
         or llm_intent.get("elegant_intent", False)
     )
-    # --- Fine LLM Intent Layer ---
+'''
+
+INTEGRATION_SNIPPET_STEP2 = '''
+    # --- LLM Intent Layer Step 2: Explain (nuovo) ---
+    # Chiamare DOPO il ranking, quando si costruisce il risultato finale
+    from llm_intent_parser import generate_personalized_reason
+    
+    # Raccogliere segnali attivi dal ranking
+    active_signals = {
+        "color": color_req,
+        "prestige_intent": prestige_intent,
+        "elegant_intent": elegance_intent,
+        "occasion": occasion_intent,
+        "foods": foods_req,
+        "style": style_intent.get("style") if style_intent else None,
+        "tannin_req": tannin_req,
+        "intensity_req": intensity_req,
+        "region": region,
+        "grapes": grapes_req,
+        "sparkling": typology_req.get("sparkling") if typology_req else None,
+        "sweetness": typology_req.get("sweetness") if typology_req else None,
+    }
+    
+    # Generare reason personalizzata per il vino top
+    top_wine_info = {
+        "name": results[0]["name"] if results else None,
+        "region": results[0]["region"] if results else None,
+    }
+    
+    personalized_reason = generate_personalized_reason(
+        query=q,
+        active_signals=active_signals,
+        top_wine=top_wine_info
+    )
+    
+    # Usare personalized_reason al posto del template statico
+    # results[0]["reason"] = personalized_reason
 '''
 
 # =========================
