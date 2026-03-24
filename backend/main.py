@@ -314,11 +314,42 @@ def parse_region(query: str) -> Optional[str]:
 
 # --- B: vitigni (match su query -> filtro su grape_varieties) ---
 KNOWN_GRAPES = [
+    # Italiani principali
     "sangiovese", "nebbiolo", "barbera", "montepulciano", "primitivo", "aglianico",
-    "nero d'avola", "negroamaro", "corvina", "glera", "vermentino",
-    "chardonnay", "sauvignon", "sauvignon blanc", "pinot noir",
-    "cabernet sauvignon", "cabernet franc", "merlot", "syrah", "shiraz",
-    "grenache", "riesling", "chenin blanc", "malbec", "tempranillo",
+    "nero d'avola", "negroamaro", "corvina", "corvinone", "rondinella", "molinaro",
+    "glera", "vermentino",
+    "sagrantino", "dolcetto", "arneis", "grignolino", "lagrein", "cannonau",
+    
+    # Bianchi italiani
+    "trebbiano", "verdicchio", "fiano", "greco", "grechetto", "garganega", "pecorino",
+    "cortese", "turbiana", "friulano", "ribolla gialla", "pigato", "vernaccia",
+    "malvasia", "moscato bianco", "moscato di scanzo",
+    
+    # Sicilia e Sud
+    "nerello mascalese", "nerello cappuccio", "frappato", "carricante", "gaglioppo",
+    "zibibbo", "grillo", "catarratto",
+    
+    # Valle d'Aosta e Alto Adige
+    "petit rouge", "prie blanc", "schiava", "lagrein",
+    
+    # Friuli e confine est
+    "vitovska", "rebula",
+    
+    # Emilia
+    "lambrusco di sorbara",
+    
+    # Lazio
+    "cesanese", "procanico",
+    
+    # Bianchi aromatici
+    "gewurztraminer", "albarino",
+    
+    # Internazionali
+    "chardonnay", "sauvignon", "sauvignon blanc", "pinot noir", "pinot nero", "pinot meunier",
+    "cabernet sauvignon", "cabernet franc", "merlot", "petit verdot",
+    "syrah", "shiraz", "grenache", "garnacha", "carignan", "cinsault",
+    "riesling", "chenin blanc", "malbec", "tempranillo", "graciano", "carinena",
+    "touriga nacional", "touriga franca", "tinta roriz",
 ]
 
 
