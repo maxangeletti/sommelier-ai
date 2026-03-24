@@ -598,6 +598,24 @@ def parse_intensity_request(query: str) -> Optional[str]:
     return None
 
 
+def _parse_tannin_request(query: str) -> Optional[str]:
+    """Parse tannin level request from query. Returns 'low' or 'high' or None."""
+    q_lc = _norm_lc(query)
+    # Pattern LOW: negazioni esplicite (poco/non/senza + tannico)
+    if re.search(r"\b(poco|non|senza)\s+(tannic|tannin)", q_lc):
+        return "low"
+    # Pattern LOW: tannini + aggettivo morbido/basso/delicato
+    if re.search(r"\btannin[oi]\s+(bass[oi]|morbid[oi]|delicat[oi]|legg?er[oi])\b", q_lc):
+        return "low"
+    # Pattern HIGH: tannico/astringente (dopo aver escluso i LOW)
+    if re.search(r"\b(tannic[oi]|astringent[ei])\b", q_lc):
+        return "high"
+    # Pattern HIGH: tannini + aggettivo forte (alti/importanti/marcati)
+    if re.search(r"\btannin[oi]\s+(alt[oi]|important[ei]|marcati|evident[ei])\b", q_lc):
+        return "high"
+    return None
+
+
 def _normalize_level(s: str) -> str:
     # normalize italian/english-ish into low/medium/high
     v = _norm_lc(s)
@@ -1385,6 +1403,7 @@ def _structured_match_components(
     color_req: Optional[str],
     intensity_req: Optional[str],
     typology_req: Dict[str, Optional[str]],
+    tannin_req: Optional[str] = None,
 ) -> Dict[str, float]:
     comps: Dict[str, float] = {}
 
@@ -1423,6 +1442,26 @@ def _structured_match_components(
         ) or ""
         comps["intensity"] = 1.0 if _norm_lc(di) == _norm_lc(intensity_req) else 0.0
 
+    if tannin_req:
+        tan_raw = _norm_lc(getattr(row, "tannins", ""))
+        # Map 5-level AIS scale to high/low match
+        if tannin_req == "high":
+            # high/medium_plus = perfect match, medium = partial
+            if tan_raw in ("high", "medium_plus"):
+                comps["tannin"] = 1.0
+            elif tan_raw == "medium":
+                comps["tannin"] = 0.4
+            else:
+                comps["tannin"] = 0.0
+        elif tannin_req == "low":
+            # low/medium_low = perfect match, medium = partial
+            if tan_raw in ("low", "medium_low"):
+                comps["tannin"] = 1.0
+            elif tan_raw == "medium":
+                comps["tannin"] = 0.4
+            else:
+                comps["tannin"] = 0.0
+
     if typology_req:
         sp_req = typology_req.get("sparkling")
         sw_req = typology_req.get("sweetness")
@@ -1452,6 +1491,7 @@ def _match_score_row_explain(
     foods_req: List[str],
     occasion_intent: Optional[str] = None,
     prestige_intent: bool = False,
+    tannin_req: Optional[str] = None,
 ) -> Tuple[float, Dict[str, Any], List[str]]:
     """Compute match score (0..1) + breakdown + short explanation (deterministico).
 
@@ -1465,7 +1505,7 @@ def _match_score_row_explain(
     w_prestige = 0.0
     w_eleg = 0.0
 
-    comps_struct = _structured_match_components(row, region, grapes_req, color_req, intensity_req, typology_req)
+    comps_struct = _structured_match_components(row, region, grapes_req, color_req, intensity_req, typology_req, tannin_req)
     kw = _keyword_match_score(row, query)
     elegant_intent = bool(re.search(r"\b(elegante|elegant|finezza|raffinato|raffinata)\b", _norm_lc(query)))
 
@@ -1621,6 +1661,7 @@ def _match_score_row_explain(
         "grapes_req": grapes_req or [],
         "color_req": color_req or None,
         "intensity_req": intensity_req or None,
+        "tannin_req": tannin_req or None,
         "typology_req": typology_req or {},
     }
 
@@ -1771,8 +1812,9 @@ def _match_score_row(
     foods_req: List[str],
     occasion_intent: Optional[str] = None,
     prestige_intent: bool = False,
+    tannin_req: Optional[str] = None,
 ) -> float:
-    score, _, _ = _match_score_row_explain(row, query, region, grapes_req, color_req, intensity_req, typology_req, foods_req, occasion_intent, prestige_intent)
+    score, _, _ = _match_score_row_explain(row, query, region, grapes_req, color_req, intensity_req, typology_req, foods_req, occasion_intent, prestige_intent, tannin_req)
     return score
 
 
@@ -2064,6 +2106,7 @@ def run_search(
     grapes_req = parse_grapes(q) or llm_intent.get("grapes", [])
     aromas_req = parse_aromas(q)
     intensity_req = parse_intensity_request(q)
+    tannin_req = _parse_tannin_request(q)
     typology_req = parse_typology_request(q)
     
     # Foods: unione rule-based + LLM
@@ -2158,7 +2201,7 @@ def run_search(
         }
 
         # ✅ UI match score (0..1) + available to relevance_v2 composite as M
-        mscore, mbd, mexpl = _match_score_row_explain(r, q, region, grapes_req, color_req, intensity_req, typology_req, foods_req, occasion_intent, prestige_intent)
+        mscore, mbd, mexpl = _match_score_row_explain(r, q, region, grapes_req, color_req, intensity_req, typology_req, foods_req, occasion_intent, prestige_intent, tannin_req)
         boosts["__match_score_ui"] = mscore
         
         # ✅ Flatten match_breakdown per iOS (converte i dict in valori numerici)
@@ -2286,22 +2329,6 @@ def run_search(
     # --- LLM Intent Layer Step 2: Explain ---
     # Genera reason personalizzata per il vino top-ranked
     if sorted_cards:
-        # Estrai tannin_req dalla query (parser veloce)
-        tannin_req = None
-        q_lc = _norm_lc(q)
-        # Pattern LOW: negazioni esplicite (poco/non/senza + tannico)
-        if re.search(r"\b(poco|non|senza)\s+(tannic|tannin)", q_lc):
-            tannin_req = "low"
-        # Pattern LOW: tannini + aggettivo morbido/basso/delicato
-        elif re.search(r"\btannin[oi]\s+(bass[oi]|morbid[oi]|delicat[oi]|legg?er[oi])\b", q_lc):
-            tannin_req = "low"
-        # Pattern HIGH: tannico/astringente (dopo aver escluso i LOW)
-        elif re.search(r"\b(tannic[oi]|astringent[ei])\b", q_lc):
-            tannin_req = "high"
-        # Pattern HIGH: tannini + aggettivo forte (alti/importanti/marcati)
-        elif re.search(r"\btannin[oi]\s+(alt[oi]|important[ei]|marcati|evident[ei])\b", q_lc):
-            tannin_req = "high"
-        
         # Raccogliere segnali attivi dal ranking
         active_signals = {
             "color": color_req,
@@ -2349,6 +2376,7 @@ def run_search(
             "grapes": grapes_req,
             "aromas": aromas_req,
             "intensity": intensity_req,
+            "tannin": tannin_req,
             "typology": typology_req,
             "foods": foods_req,
             "occasion_intent": bool(occasion_intent),
