@@ -1404,10 +1404,18 @@ def _keyword_match_score(row: Any, query: str) -> float:
         _norm_lc(getattr(row, "region", "")),
         _norm_lc(getattr(row, "description", "")),
     ])
+    
+    # Check full phrase match first (e.g., "barolo serralunga")
+    q_norm = _norm_lc(query)
+    if q_norm in hay:
+        return 1.0
+    
+    # Fallback: token-by-token matching
     hits = 0
     for t in toks:
         if t in hay:
             hits += 1
+    return min(1.0, max(0.0, hits / max(1, len(toks))))
     return min(1.0, max(0.0, hits / max(1, len(toks))))
 
 
