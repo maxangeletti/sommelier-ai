@@ -23,7 +23,7 @@ from llm_intent_parser import parse_intent_with_llm, generate_personalized_reaso
 # Build signature (anti-confusione / anti-regressione)
 # =========================
 
-BUILD_ID = "SommelierAI v0.2 STABILE + A/B/D (CSV schema real) + cache-safe 2026-03-25-frizzante-fix"
+BUILD_ID = "SommelierAI v0.2 STABILE + A/B/D (CSV schema real) + cache-safe 2026-03-25-v1.6.0"
 
 
 # =========================
