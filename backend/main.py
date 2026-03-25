@@ -890,7 +890,11 @@ def _filter_new_A_B_D(
         derived_sw = df["sweetness"].astype(str).map(normalize_sweetness)
 
         if sp_req:
-            df = df.loc[derived_sp.eq(sp_req)]
+            # ✅ FIX: "frizzante" query includes both frizzante AND spumante (both effervescent)
+            if sp_req == "frizzante":
+                df = df.loc[derived_sp.isin(["frizzante", "spumante"])]
+            else:
+                df = df.loc[derived_sp.eq(sp_req)]
         if sw_req:
             df = df.loc[derived_sw.eq(sw_req)]
 
