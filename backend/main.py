@@ -850,7 +850,7 @@ def _filter_by_color(df: pd.DataFrame, color_req: Optional[str]) -> pd.DataFrame
     for c in cols:
         series = df[c].astype(str).map(_norm_lc)
         m = series.apply(lambda x: any(tok in _re.split(r"[\s,;|/]+", x) for tok in accepted))
-        mask = m if mask is None else (mask | m)
+        m_bool = m.astype(bool); mask = m_bool if mask is None else (mask | m_bool)
 
     return df.loc[mask] if mask is not None else df
 
@@ -2149,10 +2149,14 @@ def run_search(
     # price filter
     filtered = _filter_by_price(filtered, price_info)
 
-    # region filter (match in region/zone/denomination/country)
+    # region filter (match in region/zone/denomination/country) - OR logic
     if region:
+        mask = pd.Series([False] * len(filtered), index=filtered.index)
         for col in ["region", "zone", "denomination", "country"]:
-            filtered = _filter_by_text_contains(filtered, col, region)
+            if col in filtered.columns:
+                v = _norm_lc(region)
+                mask |= filtered[col].astype(str).str.lower().str.contains(v, na=False)
+        filtered = filtered.loc[mask]
 
     # color filter (bianco/rosso/rosato)
     filtered = _filter_by_color(filtered, color_req)
