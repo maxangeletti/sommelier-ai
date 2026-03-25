@@ -70,6 +70,10 @@ struct ChatView: View {
         tierStore.tier == .free ? [.relevance] : ChatDomain.SortMode.allCases
     }
 
+    private var allowedRankingModes: [RankingMode] {
+        tierStore.tier == .free ? [.standard, .smart] : RankingMode.allCases
+    }
+
     // ✅ FIX (chirurgico): niente nesting, icona sempre visibile
     private var grapeSymbolName: String { "leaf" }
 
@@ -119,42 +123,40 @@ struct ChatView: View {
                     .background(Color.yellow.opacity(0.2))
             }
 
-            // ✅ Barra filtri SCROLLABILE (al posto del collapse "…") + compressione
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
+            // ✅ Barra filtri SCROLLABILE - visibile solo dopo primo risultato
+            if lastResultHadWines {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
 
-                    Button {
-                        vm.prepareGrapeSheetOptions()
-                        showGrapeSheet = true
-                    } label: {
-                        filterChip(
-                            system: grapeSymbolName,
-                            title: grapeButtonTitle,
-                            badge: displayedWineCount > 0 ? "\(displayedWineCount)" : nil,
-                            badgeColor: grapeBadgeColor
-                        )
-                    }
+                        Button {
+                            vm.prepareGrapeSheetOptions()
+                            showGrapeSheet = true
+                        } label: {
+                            filterChip(
+                                system: grapeSymbolName,
+                                title: grapeButtonTitle,
+                                badge: displayedWineCount > 0 ? "\(displayedWineCount)" : nil,
+                                badgeColor: grapeBadgeColor
+                            )
+                        }
 
-                    Button { showColorSheet = true } label: {
-                        filterChip(system: "paintpalette", title: colorButtonTitle)
-                    }
+                        Button { showColorSheet = true } label: {
+                            filterChip(system: "paintpalette", title: colorButtonTitle)
+                        }
 
-                    Button { showIntensitySheet = true } label: {
-                        filterChip(system: "flame", title: intensityButtonTitle)
+                        Button { showIntensitySheet = true } label: {
+                            filterChip(system: "flame", title: intensityButtonTitle)
+                        }
                     }
-
-                    Button { vm.clear() } label: {
-                        filterChip(system: "trash", title: "Reset")
-                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, isFilterBarCompact ? 4 : 8)
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, isFilterBarCompact ? 4 : 8)
-            }
-            .scaleEffect(isFilterBarCompact ? 0.92 : 1.0, anchor: .top)
-            .opacity(isFilterBarCompact ? 0.94 : 1.0)
-            .background(AppColors.backgroundPrimary)
+                .scaleEffect(isFilterBarCompact ? 0.92 : 1.0, anchor: .top)
+                .opacity(isFilterBarCompact ? 0.94 : 1.0)
+                .background(AppColors.backgroundPrimary)
 
-            Divider()
+                Divider()
+            }
 
             let cleanSuggestions = vm.suggestions
                 .map { sanitizeSuggestion($0) }
@@ -492,7 +494,7 @@ struct ChatView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Picker("Ranking", selection: $vm.rankingMode) {
-                        ForEach(RankingMode.allCases) { mode in
+                        ForEach(allowedRankingModes) { mode in
                             Text(mode.title).tag(mode)
                         }
                     }

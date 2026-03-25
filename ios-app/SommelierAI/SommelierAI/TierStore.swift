@@ -25,7 +25,7 @@ final class TierStore: ObservableObject {
 
     init() {
         load()
-        tier = .premium   // DEBUG TEMPORANEO — rimuovere dopo i test
+//        tier = .premium   // DEBUG TEMPORANEO — rimuovere dopo i test
     }
 
     private func save() {
