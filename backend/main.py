@@ -684,6 +684,7 @@ def parse_typology_request(query: str) -> Dict[str, Optional[str]]:
 
     sparkling: Optional[str] = None
     sweetness: Optional[str] = None
+    tannin: Optional[str] = None
 
     # sparkling keywords
     if re.search(r"\bspumante\b", q) or re.search(r"\bchampagne\b", q) or re.search(r"\bprosecco\b", q):
@@ -710,7 +711,20 @@ def parse_typology_request(query: str) -> Dict[str, Optional[str]]:
         if sweetness is None:
             sweetness = "secco"
 
-    return {"sparkling": sparkling, "sweetness": sweetness}
+    # ✅ AIS Tannin levels (5 livelli) - ORDINE IMPORTANTE: più specifici prima
+    if re.search(r"\bpoco\s+tannico\b|\btannini\s+leggeri\b", q):
+        tannin = "low"
+    elif re.search(r"\btannico\s+morbido\b|\bmorbido\b.*\btannic", q):
+        tannin = "low-medium"
+    elif re.search(r"\btannico\s+aggressivo\b|\baggressivo\b.*\btannic", q):
+        tannin = "very_high"
+    elif re.search(r"\bmolto\s+tannico\b|\btannicissimo\b", q):
+        tannin = "high"
+    elif re.search(r"\btannico\b", q):
+        # "tannico" senza qualificatori → medium-high
+        tannin = "medium-high"
+
+    return {"sparkling": sparkling, "sweetness": sweetness, "tannin": tannin}
 
 
 # --- Intent: "qualità/prezzo" SOLO su richiesta utente ---
@@ -877,11 +891,12 @@ def _filter_new_A_B_D(
                 mask = mask | lc.str.contains(re.escape(_norm_lc(v)), na=False)
         df = df.loc[mask]
 
-    # D) typology: derived sparkling + normalized sweetness
+    # D) typology: derived sparkling + normalized sweetness + tannin
     sp_req = typology_req.get("sparkling")
     sw_req = typology_req.get("sweetness")
+    tannin_req = typology_req.get("tannin")
 
-    if sp_req or sw_req or intensity_req:
+    if sp_req or sw_req or intensity_req or tannin_req:
         # compute derived columns on the fly (vectorized apply is fine at this scale; dataset is cached)
         derived_sp = df.apply(
             lambda r: derive_sparkling(r.get("denomination", ""), r.get("style_tags", ""), r.get("name", ""), r.get("description", "")),
@@ -897,6 +912,20 @@ def _filter_new_A_B_D(
                 df = df.loc[derived_sp.eq(sp_req)]
         if sw_req:
             df = df.loc[derived_sw.eq(sw_req)]
+        
+        # ✅ Tannin filter (AIS 5 levels)
+        if tannin_req:
+            # Map CSV tannins (low/medium/high) to AIS levels
+            tannin_map = {
+                "low": ["low"],
+                "low-medium": ["low", "medium"],
+                "medium-high": ["medium", "high"],
+                "high": ["high"],
+                "very_high": ["high"]  # very_high = highest tannins (Sagrantino, Nebbiolo)
+            }
+            allowed_levels = tannin_map.get(tannin_req, [])
+            if allowed_levels:
+                df = df.loc[df["tannins"].isin(allowed_levels)]
 
     # A) intensity: derived from body/tannins/alcohol_level
     if intensity_req:
@@ -1430,6 +1459,8 @@ def _structured_match_components(
     if typology_req:
         sp_req = typology_req.get("sparkling")
         sw_req = typology_req.get("sweetness")
+        tannin_req = typology_req.get("tannin")
+        
         if sp_req:
             sp = derive_sparkling(
                 _norm(getattr(row, "denomination", "")),
@@ -1441,6 +1472,23 @@ def _structured_match_components(
         if sw_req:
             sw = normalize_sweetness(_norm(getattr(row, "sweetness", ""))) or ""
             comps["sweetness"] = 1.0 if _norm_lc(sw) == _norm_lc(sw_req) else 0.0
+        
+        # ✅ Tannin matching (AIS 5 levels)
+        if tannin_req:
+            wine_tannin = _norm_lc(getattr(row, "tannins", ""))
+            # Exact match gets full score
+            if tannin_req == "very_high" and wine_tannin == "high":
+                comps["tannin"] = 1.0  # very_high = high tannins wines
+            elif tannin_req == "high" and wine_tannin == "high":
+                comps["tannin"] = 1.0
+            elif tannin_req == "medium-high" and wine_tannin in ("medium", "high"):
+                comps["tannin"] = 1.0 if wine_tannin == "medium" else 0.8
+            elif tannin_req == "low-medium" and wine_tannin in ("low", "medium"):
+                comps["tannin"] = 1.0 if wine_tannin == "low" else 0.8
+            elif tannin_req == "low" and wine_tannin == "low":
+                comps["tannin"] = 1.0
+            else:
+                comps["tannin"] = 0.0
 
     return comps
 
