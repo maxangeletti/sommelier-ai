@@ -2167,6 +2167,10 @@ def run_search(
         filtered = filtered.loc[mask]
         filtered = filtered.loc[mask]
 
+    # Tannin → color rosso implicito (tannino è rilevante solo per rossi)
+    if typology_req.get("tannin") and not color_req:
+        color_req = "rosso"
+
     # color filter (bianco/rosso/rosato)
     filtered = _filter_by_color(filtered, color_req)
 
