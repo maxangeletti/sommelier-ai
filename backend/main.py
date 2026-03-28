@@ -1416,7 +1416,6 @@ def _keyword_match_score(row: Any, query: str) -> float:
         if t in hay:
             hits += 1
     return min(1.0, max(0.0, hits / max(1, len(toks))))
-    return min(1.0, max(0.0, hits / max(1, len(toks))))
 
 
 def _structured_match_components(
@@ -2144,8 +2143,9 @@ def run_search(
     
     # Occasion: LLM arricchisce se rule-based non ha trovato nulla
     occasion_intent = parse_occasion_intent(q) or llm_intent.get("occasion")
-    
-    # Prestige/elegance: OR logico (basta uno dei due a rilevarlo)
+    # DEBUG: check Barolo pre-filter
+    if "barolo" in q.lower():
+        barolo_pre = df[df["name"].str.contains("Barolo", case=False, na=False)]
     prestige_intent = parse_prestige_intent(q) or llm_intent.get("prestige_intent", False)
     elegance_intent = (
         bool(re.search(r"\b(elegante|elegant|finezza|raffinato|raffinata)\b", _norm_lc(q)))
@@ -2165,9 +2165,25 @@ def run_search(
                 v = _norm_lc(region)
                 mask |= filtered[col].astype(str).str.lower().str.contains(v, na=False)
         filtered = filtered.loc[mask]
+        filtered = filtered.loc[mask]
 
     # color filter (bianco/rosso/rosato)
     filtered = _filter_by_color(filtered, color_req)
+
+    # Keyword filter: se query matcha esattamente una denominazione, mostra SOLO quella
+    keyword_matches = []
+    for idx, row in filtered.iterrows():
+        name_lower = str(row.get('name', '')).lower()
+        denom_lower = str(row.get('denomination', '')).lower()
+        q_lower = q.lower().strip()
+        
+        # Match esatto su name o denomination
+        if q_lower in name_lower or q_lower in denom_lower:
+            keyword_matches.append(idx)
+    
+    # Se ci sono match esatti, mostra SOLO quelli
+    if len(keyword_matches) > 0 and len(keyword_matches) < len(filtered):
+        filtered = filtered.loc[keyword_matches]
     # A/B/D filters
     filtered = _filter_new_A_B_D(filtered, grapes_req, aromas_req, intensity_req, typology_req)
     timings["filters"] = round(time.perf_counter() - t0, 6)

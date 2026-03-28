@@ -57,6 +57,9 @@ Regole:
 - "cena da amici che amano la Francia" → region: loira o borgogna (scegli il più probabile), occasion: dinner
 - "vino da meditazione potente" → occasion: meditation, style: potente
 - "ho già preso il pesce, abbino la carne" → foods: ["carne"] (ignora ciò che è già stato ordinato)
+- CRITICO: NON inferire vitigni da denominazioni! "barolo" NON deve produrre grapes: ["nebbiolo"], "brunello" NON deve produrre ["sangiovese"]. Estrai "grapes" SOLO se l'utente nomina esplicitamente il vitigno (es. "un nebbiolo", "vino di sangiovese").
+- CRITICO: NON inferire region da denominazioni specifiche! "barolo", "brunello", "chianti", "franciacorta" sono denominazioni che saranno matchate tramite keyword, NON tramite filtro region. Estrai "region" SOLO se l'utente dice esplicitamente la regione (es. "vino del piemonte", "un toscano").
+- CRITICO: NON inferire color da denominazioni! "barolo", "brunello", "chianti" sono denominazioni rosse note, ma NON estrarre color=rosso. Estrai "color" SOLO se l'utente dice esplicitamente il colore (es. "rosso", "bianco", "rosato").
 - Non inventare valori. Se non sei sicuro, usa null.
 """
 
