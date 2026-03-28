@@ -2361,6 +2361,9 @@ def run_search(
             debug_map[cid] = dbg
             timings["score"] = round(time.perf_counter() - t0, 6)
             t0 = time.perf_counter()
+    
+    # Salva count totale PRIMA del limit
+    total_count = len(scored)
     sorted_cards = _apply_sort(scored, sort, value_intent=value_intent)[:limit]
     timings["sort"] = round(time.perf_counter() - t0, 6)
     t0 = time.perf_counter()
@@ -2441,6 +2444,7 @@ def run_search(
             "value_intent": value_intent,
         },
         "count": len(sorted_cards),
+        "total_count": total_count,
         "timestamp": int(_now()),
     }
     if explain:
