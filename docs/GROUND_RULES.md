@@ -9,9 +9,9 @@
 **ALL'INIZIO DI OGNI SESSIONE, LEGGERE NELL'ORDINE**:
 
 1. **`docs/GROUND_RULES.md`** (questo file) — Regole operative
-2. **`docs/SESSION_HANDOFF_[LAST].md`** — Contesto ultima sessione
-3. **`docs/roadmap/ROADMAP_UFFICIALE_[LAST].md`** — Stato progetto
-4. **`docs/SommelierAI_ProjectContext_[LAST].md`** — Context completo
+2. **`docs/roadmap/SESSION_HANDOFF_[LAST].md`** — Contesto ultima sessione
+3. **`docs/roadmap/ROADMAP_v[LAST].md`** — Stato progetto
+4. **`docs/context/ProjectContext_v[LAST].md`** — Context completo
 5. **`docs/TODO_NEXT_SESSION.md`** — Task prioritari
 
 **Solo DOPO aver letto tutti questi file, iniziare a lavorare.**
@@ -22,8 +22,8 @@
 
 **PRIMA DI CHIUDERE OGNI SESSIONE, CREARE E SALVARE**:
 
-### A) RELEASE_NOTES_vX_X_X.md
-**Path**: `docs/RELEASE_NOTES_vX_X_X.md`
+### A) Release Notes
+**Path**: `docs/releases/vX.X.X.md`
 
 **Contenuto minimo**:
 - Modifiche applicate (feature/fix/refactor)
@@ -34,7 +34,7 @@
 - Prossimi passi
 
 ### B) ROADMAP Aggiornata
-**Path**: `docs/roadmap/ROADMAP_UFFICIALE_vX.X.md`
+**Path**: `docs/roadmap/ROADMAP_vX.X.md`
 
 **Aggiornare**:
 - Task completati oggi (spostare da "In corso" a "Completato")
@@ -42,8 +42,8 @@
 - Milestone progress (X/Y task)
 - Metriche attuali (se cambiate)
 
-### C) SESSION_HANDOFF_YYYY-MM-DD.md
-**Path**: `docs/SESSION_HANDOFF_YYYY-MM-DD.md`
+### C) SESSION_HANDOFF
+**Path**: `docs/roadmap/SESSION_HANDOFF_YYYY-MM-DD.md`
 
 **Contenuto minimo**:
 - Contesto veloce (30 secondi - cosa fatto oggi)
@@ -89,21 +89,16 @@ git status  # deve essere clean
 git log --oneline -5  # verifica commit presente
 
 # 2. Claude genera 4 file obbligatori
-# - RELEASE_NOTES_vX_X_X.md
-# - ROADMAP_UFFICIALE_vX.X.md (aggiornato)
-# - SESSION_HANDOFF_YYYY-MM-DD.md
+# - releases/vX.X.X.md
+# - roadmap/ROADMAP_vX.X.md (aggiornato)
+# - roadmap/SESSION_HANDOFF_YYYY-MM-DD.md
 # - TODO_NEXT_SESSION.md (aggiornato)
 
-# 3. Claude salva nel progetto
-# - docs/RELEASE_NOTES_vX_X_X.md
-# - docs/roadmap/ROADMAP_UFFICIALE_vX.X.md
-# - docs/SESSION_HANDOFF_YYYY-MM-DD.md
-# - docs/TODO_NEXT_SESSION.md
+# 3. Claude salva nel progetto nelle path corrette
 
 # 4. Commit documentazione
-git add docs/RELEASE_NOTES_*.md
-git add docs/roadmap/ROADMAP_UFFICIALE_*.md
-git add docs/SESSION_HANDOFF_*.md
+git add docs/releases/*.md
+git add docs/roadmap/*.md
 git add docs/TODO_NEXT_SESSION.md
 git commit -m "docs: session YYYY-MM-DD release notes + roadmap update"
 git push
