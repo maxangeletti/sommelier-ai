@@ -1,0 +1,2952 @@
+=============================================
+ SommelierAI — GT Full Run (Wed Mar 25 19:32:53 CET 2026)
+=============================================
+
+>>> PREFLIGHT: Checking dataset size...
+Dataset results for "vino": 30 wines
+Meta: {
+  "build_id": "SommelierAI v0.2 STABILE + A/B/D (CSV schema real) + cache-safe 2026-03-25-frizzante-fix",
+  "query": "vino",
+  "sort": "relevance",
+  "limit": 30,
+  "filters": {
+    "price": {
+      "mode": "none"
+    },
+    "region": null,
+    "color": null,
+    "grapes": [],
+    "aromas": [],
+    "intensity": null,
+    "typology": {
+      "sparkling": null,
+      "sweetness": null,
+      "tannin": null
+    },
+    "foods": [],
+    "occasion_intent": false,
+    "prestige_intent": false,
+    "elegance_intent": false,
+    "value_intent": false
+  },
+  "count": 30,
+  "timestamp": 1774463575,
+  "__debug_sort_after_override": "relevance",
+  "debug": {
+    "rows": [
+      {
+        "rank": 1,
+        "id": "67",
+        "name": "Bolgheri DOC Rosso Superiore",
+        "sort": "relevance",
+        "score": 4.8667,
+        "match_score": 0.5,
+        "price": "180.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "red",
+          "body": "high",
+          "tannins": "medium_plus",
+          "acidity": "medium",
+          "alcohol_level": "14.0",
+          "sweetness": "secco",
+          "style_tags": "elegante;complesso;longevo;iconico",
+          "occasion": "important_dinner"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 2,
+        "id": "60",
+        "name": "Gevrey-Chambertin AOC",
+        "sort": "relevance",
+        "score": 4.8333,
+        "match_score": 0.5,
+        "price": "210.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "red",
+          "body": "medium",
+          "tannins": "medium_low",
+          "acidity": "high",
+          "alcohol_level": "13.5",
+          "sweetness": "dry",
+          "style_tags": "elegante;finezza;longevo;prestigioso",
+          "occasion": "important_dinner"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 3,
+        "id": "12",
+        "name": "Barolo DOCG Serralunga d'Alba",
+        "sort": "relevance",
+        "score": 4.8,
+        "match_score": 0.5,
+        "price": "65.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "red",
+          "body": "high",
+          "tannins": "medium_plus",
+          "acidity": "medium",
+          "alcohol_level": "14.5",
+          "sweetness": "dry",
+          "style_tags": "strutturato;longevo;speziato",
+          "occasion": "important_dinner"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 4,
+        "id": "51",
+        "name": "Pauillac AOC",
+        "sort": "relevance",
+        "score": 4.7667,
+        "match_score": 0.5,
+        "price": "145.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "red",
+          "body": "high",
+          "tannins": "medium_plus",
+          "acidity": "medium",
+          "alcohol_level": "13.5",
+          "sweetness": "dry",
+          "style_tags": "elegante;longevo;complesso;blasone",
+          "occasion": "important_dinner"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 5,
+        "id": "52",
+        "name": "Champagne AOC Special Cuvee",
+        "sort": "relevance",
+        "score": 4.7667,
+        "match_score": 0.5,
+        "price": "78.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "white",
+          "body": "medium",
+          "tannins": "low",
+          "acidity": "high",
+          "alcohol_level": "12.0",
+          "sweetness": "brut",
+          "style_tags": "elegante;metodo classico;brut;prestigioso",
+          "occasion": "important_dinner"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 6,
+        "id": "53",
+        "name": "Champagne AOC Collection",
+        "sort": "relevance",
+        "score": 4.7667,
+        "match_score": 0.5,
+        "price": "72.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "white",
+          "body": "medium",
+          "tannins": "low",
+          "acidity": "high",
+          "alcohol_level": "12.0",
+          "sweetness": "brut",
+          "style_tags": "elegante;metodo classico;brut;prestigioso",
+          "occasion": "important_dinner"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 7,
+        "id": "4",
+        "name": "Sagrantino di Montefalco DOCG",
+        "sort": "relevance",
+        "score": 4.7,
+        "match_score": 0.5,
+        "price": "44.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "red",
+          "body": "high",
+          "tannins": "high",
+          "acidity": "medium",
+          "alcohol_level": "15.0",
+          "sweetness": "dry",
+          "style_tags": "tannico;potente",
+          "occasion": "meditation"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 8,
+        "id": "10",
+        "name": "Barolo DOCG Monforte d'Alba",
+        "sort": "relevance",
+        "score": 4.7,
+        "match_score": 0.5,
+        "price": "72.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "red",
+          "body": "high",
+          "tannins": "medium_plus",
+          "acidity": "high",
+          "alcohol_level": "14.5",
+          "sweetness": "dry",
+          "style_tags": "strutturato;potente;tannico;complesso",
+          "occasion": "important_dinner"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 9,
+        "id": "13",
+        "name": "Brunello di Montalcino DOCG",
+        "sort": "relevance",
+        "score": 4.7,
+        "match_score": 0.5,
+        "price": "52.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "red",
+          "body": "high",
+          "tannins": "medium_plus",
+          "acidity": "medium",
+          "alcohol_level": "14.0",
+          "sweetness": "dry",
+          "style_tags": "elegante;strutturato;equilibrato;longevo",
+          "occasion": "important_dinner"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 10,
+        "id": "55",
+        "name": "Mosel Riesling Kabinett",
+        "sort": "relevance",
+        "score": 4.7,
+        "match_score": 0.5,
+        "price": "48.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "white",
+          "body": "medium",
+          "tannins": "low",
+          "acidity": "high",
+          "alcohol_level": "8.5",
+          "sweetness": "off_dry",
+          "style_tags": "elegante;teso;minerale;longevo",
+          "occasion": "important_dinner"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 11,
+        "id": "61",
+        "name": "Habemus Lazio IGP",
+        "sort": "relevance",
+        "score": 4.6667,
+        "match_score": 0.5,
+        "price": "95.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "red",
+          "body": "high",
+          "tannins": "medium_plus",
+          "acidity": "medium",
+          "alcohol_level": "14.5",
+          "sweetness": "dry",
+          "style_tags": "importante;elegante;mediterraneo;prestigioso",
+          "occasion": "important_dinner"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 12,
+        "id": "79",
+        "name": "Meursault AOC",
+        "sort": "relevance",
+        "score": 4.6667,
+        "match_score": 0.5,
+        "price": "95.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "white",
+          "body": "medium",
+          "tannins": "low",
+          "acidity": "medium",
+          "alcohol_level": "13.0",
+          "sweetness": "secco",
+          "style_tags": "elegante;complesso;burroso;minerale",
+          "occasion": "important_dinner"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 13,
+        "id": "9",
+        "name": "Barolo DOCG Serralunga d'Alba",
+        "sort": "relevance",
+        "score": 4.6,
+        "match_score": 0.5,
+        "price": "65.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "red",
+          "body": "high",
+          "tannins": "medium_plus",
+          "acidity": "high",
+          "alcohol_level": "14.5",
+          "sweetness": "dry",
+          "style_tags": "strutturato;potente;tannico;longevo",
+          "occasion": "important_dinner"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 14,
+        "id": "14",
+        "name": "Amarone della Valpolicella DOCG",
+        "sort": "relevance",
+        "score": 4.6,
+        "match_score": 0.5,
+        "price": "58.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "red",
+          "body": "high",
+          "tannins": "medium_plus",
+          "acidity": "low",
+          "alcohol_level": "15.5",
+          "sweetness": "dry",
+          "style_tags": "potente;ricco;speziato",
+          "occasion": "meditation"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 15,
+        "id": "56",
+        "name": "Pinot Nero Alto Adige DOC",
+        "sort": "relevance",
+        "score": 4.6,
+        "match_score": 0.5,
+        "price": "54.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "red",
+          "body": "medium",
+          "tannins": "medium_low",
+          "acidity": "high",
+          "alcohol_level": "13.5",
+          "sweetness": "dry",
+          "style_tags": "elegante;frutto rosso;speziato;finezza",
+          "occasion": "important_dinner"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 16,
+        "id": "98",
+        "name": "Priorat DOCa",
+        "sort": "relevance",
+        "score": 4.5667,
+        "match_score": 0.5,
+        "price": "55.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "red",
+          "body": "high",
+          "tannins": "medium_plus",
+          "acidity": "medium",
+          "alcohol_level": "14.5",
+          "sweetness": "secco",
+          "style_tags": "potente;complesso;minerale;longevo",
+          "occasion": "important_dinner"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 17,
+        "id": "77",
+        "name": "Rioja Reserva DOC",
+        "sort": "relevance",
+        "score": 4.5333,
+        "match_score": 0.5,
+        "price": "35.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "red",
+          "body": "medium",
+          "tannins": "medium",
+          "acidity": "medium",
+          "alcohol_level": "13.5",
+          "sweetness": "secco",
+          "style_tags": "elegante;longevo;tradizionale;complesso",
+          "occasion": "dinner;important_dinner"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 18,
+        "id": "54",
+        "name": "Riesling Alsace AOC",
+        "sort": "relevance",
+        "score": 4.5,
+        "match_score": 0.5,
+        "price": "34.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "white",
+          "body": "medium",
+          "tannins": "low",
+          "acidity": "high",
+          "alcohol_level": "12.5",
+          "sweetness": "dry",
+          "style_tags": "elegante;minerale;teso;agrumi",
+          "occasion": "important_dinner"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 19,
+        "id": "107",
+        "name": "Recioto della Valpolicella DOCG",
+        "sort": "relevance",
+        "score": 4.5,
+        "match_score": 0.5,
+        "price": "85.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "red",
+          "body": "high",
+          "tannins": "medium",
+          "acidity": "medium",
+          "alcohol_level": "14.0",
+          "sweetness": "dolce",
+          "style_tags": "dolce;complesso;longevo;iconico",
+          "occasion": "dessert;meditation"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 20,
+        "id": "3",
+        "name": "Taurasi DOCG",
+        "sort": "relevance",
+        "score": 4.4667,
+        "match_score": 0.5,
+        "price": "39.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "red",
+          "body": "high",
+          "tannins": "medium_plus",
+          "acidity": "medium",
+          "alcohol_level": "14.5",
+          "sweetness": "dry",
+          "style_tags": "potente;longevo",
+          "occasion": "important_dinner"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 21,
+        "id": "57",
+        "name": "Rebula Brda",
+        "sort": "relevance",
+        "score": 4.4667,
+        "match_score": 0.5,
+        "price": "42.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "white",
+          "body": "medium",
+          "tannins": "low",
+          "acidity": "high",
+          "alcohol_level": "13.0",
+          "sweetness": "dry",
+          "style_tags": "elegante;minerale;salino;agrumi",
+          "occasion": "important_dinner"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 22,
+        "id": "108",
+        "name": "Montepulciano d'Abruzzo DOC Riserva",
+        "sort": "relevance",
+        "score": 4.4667,
+        "match_score": 0.5,
+        "price": "55.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "red",
+          "body": "high",
+          "tannins": "medium_plus",
+          "acidity": "medium",
+          "alcohol_level": "14.0",
+          "sweetness": "secco",
+          "style_tags": "potente;longevo;tradizionale;austero",
+          "occasion": "important_dinner"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 23,
+        "id": "11",
+        "name": "Barbaresco DOCG",
+        "sort": "relevance",
+        "score": 4.4,
+        "match_score": 0.5,
+        "price": "42.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "red",
+          "body": "high",
+          "tannins": "medium_plus",
+          "acidity": "high",
+          "alcohol_level": "14.0",
+          "sweetness": "dry",
+          "style_tags": "strutturato;elegante;tannico",
+          "occasion": "dinner"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 24,
+        "id": "59",
+        "name": "Cesanese del Piglio DOCG",
+        "sort": "relevance",
+        "score": 4.4,
+        "match_score": 0.5,
+        "price": "34.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "red",
+          "body": "medium",
+          "tannins": "medium",
+          "acidity": "medium",
+          "alcohol_level": "13.5",
+          "sweetness": "dry",
+          "style_tags": "elegante;speziato;frutto rosso;territoriale",
+          "occasion": "important_dinner"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 25,
+        "id": "71",
+        "name": "Aglianico del Vulture DOC",
+        "sort": "relevance",
+        "score": 4.4,
+        "match_score": 0.5,
+        "price": "35.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "red",
+          "body": "high",
+          "tannins": "medium_plus",
+          "acidity": "high",
+          "alcohol_level": "14.0",
+          "sweetness": "secco",
+          "style_tags": "potente;longevo;tannico;austero",
+          "occasion": "important_dinner"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 26,
+        "id": "82",
+        "name": "Trento DOC Brut Riserva",
+        "sort": "relevance",
+        "score": 4.4,
+        "match_score": 0.5,
+        "price": "35.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "white",
+          "body": "medium",
+          "tannins": "low",
+          "acidity": "high",
+          "alcohol_level": "12.5",
+          "sweetness": "secco",
+          "style_tags": "elegante;complesso;persistente;metodo_classico",
+          "occasion": "aperitif;important_dinner"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 27,
+        "id": "105",
+        "name": "Vin Santo del Chianti DOC",
+        "sort": "relevance",
+        "score": 4.4,
+        "match_score": 0.5,
+        "price": "40.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "white",
+          "body": "high",
+          "tannins": "low",
+          "acidity": "medium",
+          "alcohol_level": "15.0",
+          "sweetness": "dolce",
+          "style_tags": "dolce;complesso;longevo;mielato",
+          "occasion": "dessert;meditation"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 28,
+        "id": "16",
+        "name": "Franciacorta DOCG Brut",
+        "sort": "relevance",
+        "score": 4.3667,
+        "match_score": 0.5,
+        "price": "34.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "white",
+          "body": "medium",
+          "tannins": "low",
+          "acidity": "high",
+          "alcohol_level": "12.5",
+          "sweetness": "dry",
+          "style_tags": "elegante;spumante;metodo classico;brut",
+          "occasion": "aperitif"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 29,
+        "id": "31",
+        "name": "Franciacorta DOCG Brut",
+        "sort": "relevance",
+        "score": 4.3667,
+        "match_score": 0.5,
+        "price": "32.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "white",
+          "body": "medium",
+          "tannins": "low",
+          "acidity": "high",
+          "alcohol_level": "12.5",
+          "sweetness": "dry",
+          "style_tags": "elegante;metodo classico;brut;crosta di pane",
+          "occasion": "aperitif"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      },
+      {
+        "rank": 30,
+        "id": "93",
+        "name": "Nerello Mascalese Etna Rosso DOC",
+        "sort": "relevance",
+        "score": 4.3667,
+        "match_score": 0.5,
+        "price": "40.00",
+        "__price_delta": 0.0,
+        "filters": {
+          "foods_req": [],
+          "prestige_req": false,
+          "region_req": null,
+          "grapes_req": [],
+          "color_req": null,
+          "intensity_req": null,
+          "typology_req": {
+            "sparkling": null,
+            "sweetness": null,
+            "tannin": null
+          }
+        },
+        "row_fields": {
+          "color": "red",
+          "body": "medium",
+          "tannins": "medium",
+          "acidity": "high",
+          "alcohol_level": "13.5",
+          "sweetness": "secco",
+          "style_tags": "elegante;minerale;vulcanico;complesso",
+          "occasion": "dinner;important_dinner"
+        },
+        "components": {},
+        "match_breakdown": {
+          "food": 0.0,
+          "structured": 0.0,
+          "keyword": 0.5,
+          "occasion": 0.0,
+          "prestige": 0.0,
+          "elegance": 0.0,
+          "structured_components": 0.0,
+          "foods_req": 0.0,
+          "occasion_req": 0.0,
+          "prestige_req": 0.0,
+          "elegance_req": 0.0,
+          "region_req": 0.0,
+          "grapes_req": 0.0,
+          "color_req": 0.0,
+          "intensity_req": 0.0,
+          "typology_req": 0.0
+        }
+      }
+    ],
+    "delta_vs_top": [
+      {
+        "rank": 2,
+        "id": "60",
+        "name": "Gevrey-Chambertin AOC",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 3,
+        "id": "12",
+        "name": "Barolo DOCG Serralunga d'Alba",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 4,
+        "id": "51",
+        "name": "Pauillac AOC",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 5,
+        "id": "52",
+        "name": "Champagne AOC Special Cuvee",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 6,
+        "id": "53",
+        "name": "Champagne AOC Collection",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 7,
+        "id": "4",
+        "name": "Sagrantino di Montefalco DOCG",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 8,
+        "id": "10",
+        "name": "Barolo DOCG Monforte d'Alba",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 9,
+        "id": "13",
+        "name": "Brunello di Montalcino DOCG",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 10,
+        "id": "55",
+        "name": "Mosel Riesling Kabinett",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 11,
+        "id": "61",
+        "name": "Habemus Lazio IGP",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 12,
+        "id": "79",
+        "name": "Meursault AOC",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 13,
+        "id": "9",
+        "name": "Barolo DOCG Serralunga d'Alba",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 14,
+        "id": "14",
+        "name": "Amarone della Valpolicella DOCG",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 15,
+        "id": "56",
+        "name": "Pinot Nero Alto Adige DOC",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 16,
+        "id": "98",
+        "name": "Priorat DOCa",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 17,
+        "id": "77",
+        "name": "Rioja Reserva DOC",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 18,
+        "id": "54",
+        "name": "Riesling Alsace AOC",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 19,
+        "id": "107",
+        "name": "Recioto della Valpolicella DOCG",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 20,
+        "id": "3",
+        "name": "Taurasi DOCG",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 21,
+        "id": "57",
+        "name": "Rebula Brda",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 22,
+        "id": "108",
+        "name": "Montepulciano d'Abruzzo DOC Riserva",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 23,
+        "id": "11",
+        "name": "Barbaresco DOCG",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 24,
+        "id": "59",
+        "name": "Cesanese del Piglio DOCG",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 25,
+        "id": "71",
+        "name": "Aglianico del Vulture DOC",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 26,
+        "id": "82",
+        "name": "Trento DOC Brut Riserva",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 27,
+        "id": "105",
+        "name": "Vin Santo del Chianti DOC",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 28,
+        "id": "16",
+        "name": "Franciacorta DOCG Brut",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 29,
+        "id": "31",
+        "name": "Franciacorta DOCG Brut",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      },
+      {
+        "rank": 30,
+        "id": "93",
+        "name": "Nerello Mascalese Etna Rosso DOC",
+        "delta_composite_0_1": 0.0,
+        "delta_contrib": {
+          "quality": 0.0,
+          "value": 0.0,
+          "food": 0.0,
+          "match": 0.0
+        }
+      }
+    ],
+    "ranking_rows": [
+      {
+        "rank": 1,
+        "id": "67",
+        "name": "Bolgheri DOC Rosso Superiore",
+        "sort": "relevance",
+        "score": 4.8667,
+        "M": 0.5,
+        "Q": 0.9733,
+        "V": 0.5429,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "180.00",
+        "price_delta": 0.0,
+        "color": "red",
+        "body": "high",
+        "tannins": "medium_plus",
+        "acidity": "medium",
+        "alcohol_level": "14.0",
+        "sweetness": "secco",
+        "style_tags": "elegante;complesso;longevo;iconico",
+        "occasion": "important_dinner",
+        "delta_vs_prev": 0.0
+      },
+      {
+        "rank": 2,
+        "id": "60",
+        "name": "Gevrey-Chambertin AOC",
+        "sort": "relevance",
+        "score": 4.8333,
+        "M": 0.5,
+        "Q": 0.9667,
+        "V": 0.5274,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "210.00",
+        "price_delta": 0.0,
+        "color": "red",
+        "body": "medium",
+        "tannins": "medium_low",
+        "acidity": "high",
+        "alcohol_level": "13.5",
+        "sweetness": "dry",
+        "style_tags": "elegante;finezza;longevo;prestigioso",
+        "occasion": "important_dinner",
+        "delta_vs_prev": 0.0334
+      },
+      {
+        "rank": 3,
+        "id": "12",
+        "name": "Barolo DOCG Serralunga d'Alba",
+        "sort": "relevance",
+        "score": 4.8,
+        "M": 0.5,
+        "Q": 0.96,
+        "V": 0.66,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "65.00",
+        "price_delta": 0.0,
+        "color": "red",
+        "body": "high",
+        "tannins": "medium_plus",
+        "acidity": "medium",
+        "alcohol_level": "14.5",
+        "sweetness": "dry",
+        "style_tags": "strutturato;longevo;speziato",
+        "occasion": "important_dinner",
+        "delta_vs_prev": 0.0333
+      },
+      {
+        "rank": 4,
+        "id": "51",
+        "name": "Pauillac AOC",
+        "sort": "relevance",
+        "score": 4.7667,
+        "M": 0.5,
+        "Q": 0.9533,
+        "V": 0.5561,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "145.00",
+        "price_delta": 0.0,
+        "color": "red",
+        "body": "high",
+        "tannins": "medium_plus",
+        "acidity": "medium",
+        "alcohol_level": "13.5",
+        "sweetness": "dry",
+        "style_tags": "elegante;longevo;complesso;blasone",
+        "occasion": "important_dinner",
+        "delta_vs_prev": 0.0333
+      },
+      {
+        "rank": 5,
+        "id": "52",
+        "name": "Champagne AOC Special Cuvee",
+        "sort": "relevance",
+        "score": 4.7667,
+        "M": 0.5,
+        "Q": 0.9533,
+        "V": 0.6333,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "78.00",
+        "price_delta": 0.0,
+        "color": "white",
+        "body": "medium",
+        "tannins": "low",
+        "acidity": "high",
+        "alcohol_level": "12.0",
+        "sweetness": "brut",
+        "style_tags": "elegante;metodo classico;brut;prestigioso",
+        "occasion": "important_dinner",
+        "delta_vs_prev": 0.0
+      },
+      {
+        "rank": 6,
+        "id": "53",
+        "name": "Champagne AOC Collection",
+        "sort": "relevance",
+        "score": 4.7667,
+        "M": 0.5,
+        "Q": 0.9533,
+        "V": 0.6447,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "72.00",
+        "price_delta": 0.0,
+        "color": "white",
+        "body": "medium",
+        "tannins": "low",
+        "acidity": "high",
+        "alcohol_level": "12.0",
+        "sweetness": "brut",
+        "style_tags": "elegante;metodo classico;brut;prestigioso",
+        "occasion": "important_dinner",
+        "delta_vs_prev": 0.0
+      },
+      {
+        "rank": 7,
+        "id": "4",
+        "name": "Sagrantino di Montefalco DOCG",
+        "sort": "relevance",
+        "score": 4.7,
+        "M": 0.5,
+        "Q": 0.94,
+        "V": 0.7117,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "44.00",
+        "price_delta": 0.0,
+        "color": "red",
+        "body": "high",
+        "tannins": "high",
+        "acidity": "medium",
+        "alcohol_level": "15.0",
+        "sweetness": "dry",
+        "style_tags": "tannico;potente",
+        "occasion": "meditation",
+        "delta_vs_prev": 0.0667
+      },
+      {
+        "rank": 8,
+        "id": "10",
+        "name": "Barolo DOCG Monforte d'Alba",
+        "sort": "relevance",
+        "score": 4.7,
+        "M": 0.5,
+        "Q": 0.94,
+        "V": 0.6331,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "72.00",
+        "price_delta": 0.0,
+        "color": "red",
+        "body": "high",
+        "tannins": "medium_plus",
+        "acidity": "high",
+        "alcohol_level": "14.5",
+        "sweetness": "dry",
+        "style_tags": "strutturato;potente;tannico;complesso",
+        "occasion": "important_dinner",
+        "delta_vs_prev": 0.0
+      },
+      {
+        "rank": 9,
+        "id": "13",
+        "name": "Brunello di Montalcino DOCG",
+        "sort": "relevance",
+        "score": 4.7,
+        "M": 0.5,
+        "Q": 0.94,
+        "V": 0.6831,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "52.00",
+        "price_delta": 0.0,
+        "color": "red",
+        "body": "high",
+        "tannins": "medium_plus",
+        "acidity": "medium",
+        "alcohol_level": "14.0",
+        "sweetness": "dry",
+        "style_tags": "elegante;strutturato;equilibrato;longevo",
+        "occasion": "important_dinner",
+        "delta_vs_prev": 0.0
+      },
+      {
+        "rank": 10,
+        "id": "55",
+        "name": "Mosel Riesling Kabinett",
+        "sort": "relevance",
+        "score": 4.7,
+        "M": 0.5,
+        "Q": 0.94,
+        "V": 0.6966,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "48.00",
+        "price_delta": 0.0,
+        "color": "white",
+        "body": "medium",
+        "tannins": "low",
+        "acidity": "high",
+        "alcohol_level": "8.5",
+        "sweetness": "off_dry",
+        "style_tags": "elegante;teso;minerale;longevo",
+        "occasion": "important_dinner",
+        "delta_vs_prev": 0.0
+      },
+      {
+        "rank": 11,
+        "id": "61",
+        "name": "Habemus Lazio IGP",
+        "sort": "relevance",
+        "score": 4.6667,
+        "M": 0.5,
+        "Q": 0.9333,
+        "V": 0.5957,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "95.00",
+        "price_delta": 0.0,
+        "color": "red",
+        "body": "high",
+        "tannins": "medium_plus",
+        "acidity": "medium",
+        "alcohol_level": "14.5",
+        "sweetness": "dry",
+        "style_tags": "importante;elegante;mediterraneo;prestigioso",
+        "occasion": "important_dinner",
+        "delta_vs_prev": 0.0333
+      },
+      {
+        "rank": 12,
+        "id": "79",
+        "name": "Meursault AOC",
+        "sort": "relevance",
+        "score": 4.6667,
+        "M": 0.5,
+        "Q": 0.9333,
+        "V": 0.5957,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "95.00",
+        "price_delta": 0.0,
+        "color": "white",
+        "body": "medium",
+        "tannins": "low",
+        "acidity": "medium",
+        "alcohol_level": "13.0",
+        "sweetness": "secco",
+        "style_tags": "elegante;complesso;burroso;minerale",
+        "occasion": "important_dinner",
+        "delta_vs_prev": 0.0
+      },
+      {
+        "rank": 13,
+        "id": "9",
+        "name": "Barolo DOCG Serralunga d'Alba",
+        "sort": "relevance",
+        "score": 4.6,
+        "M": 0.5,
+        "Q": 0.92,
+        "V": 0.6362,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "65.00",
+        "price_delta": 0.0,
+        "color": "red",
+        "body": "high",
+        "tannins": "medium_plus",
+        "acidity": "high",
+        "alcohol_level": "14.5",
+        "sweetness": "dry",
+        "style_tags": "strutturato;potente;tannico;longevo",
+        "occasion": "important_dinner",
+        "delta_vs_prev": 0.0667
+      },
+      {
+        "rank": 14,
+        "id": "14",
+        "name": "Amarone della Valpolicella DOCG",
+        "sort": "relevance",
+        "score": 4.6,
+        "M": 0.5,
+        "Q": 0.92,
+        "V": 0.6533,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "58.00",
+        "price_delta": 0.0,
+        "color": "red",
+        "body": "high",
+        "tannins": "medium_plus",
+        "acidity": "low",
+        "alcohol_level": "15.5",
+        "sweetness": "dry",
+        "style_tags": "potente;ricco;speziato",
+        "occasion": "meditation",
+        "delta_vs_prev": 0.0
+      },
+      {
+        "rank": 15,
+        "id": "56",
+        "name": "Pinot Nero Alto Adige DOC",
+        "sort": "relevance",
+        "score": 4.6,
+        "M": 0.5,
+        "Q": 0.92,
+        "V": 0.6645,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "54.00",
+        "price_delta": 0.0,
+        "color": "red",
+        "body": "medium",
+        "tannins": "medium_low",
+        "acidity": "high",
+        "alcohol_level": "13.5",
+        "sweetness": "dry",
+        "style_tags": "elegante;frutto rosso;speziato;finezza",
+        "occasion": "important_dinner",
+        "delta_vs_prev": 0.0
+      },
+      {
+        "rank": 16,
+        "id": "98",
+        "name": "Priorat DOCa",
+        "sort": "relevance",
+        "score": 4.5667,
+        "M": 0.5,
+        "Q": 0.9133,
+        "V": 0.6616,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "55.00",
+        "price_delta": 0.0,
+        "color": "red",
+        "body": "high",
+        "tannins": "medium_plus",
+        "acidity": "medium",
+        "alcohol_level": "14.5",
+        "sweetness": "secco",
+        "style_tags": "potente;complesso;minerale;longevo",
+        "occasion": "important_dinner",
+        "delta_vs_prev": 0.0333
+      },
+      {
+        "rank": 17,
+        "id": "77",
+        "name": "Rioja Reserva DOC",
+        "sort": "relevance",
+        "score": 4.5333,
+        "M": 0.5,
+        "Q": 0.9067,
+        "V": 0.727,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "35.00",
+        "price_delta": 0.0,
+        "color": "red",
+        "body": "medium",
+        "tannins": "medium",
+        "acidity": "medium",
+        "alcohol_level": "13.5",
+        "sweetness": "secco",
+        "style_tags": "elegante;longevo;tradizionale;complesso",
+        "occasion": "dinner;important_dinner",
+        "delta_vs_prev": 0.0334
+      },
+      {
+        "rank": 18,
+        "id": "54",
+        "name": "Riesling Alsace AOC",
+        "sort": "relevance",
+        "score": 4.5,
+        "M": 0.5,
+        "Q": 0.9,
+        "V": 0.7325,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "34.00",
+        "price_delta": 0.0,
+        "color": "white",
+        "body": "medium",
+        "tannins": "low",
+        "acidity": "high",
+        "alcohol_level": "12.5",
+        "sweetness": "dry",
+        "style_tags": "elegante;minerale;teso;agrumi",
+        "occasion": "important_dinner",
+        "delta_vs_prev": 0.0333
+      },
+      {
+        "rank": 19,
+        "id": "107",
+        "name": "Recioto della Valpolicella DOCG",
+        "sort": "relevance",
+        "score": 4.5,
+        "M": 0.5,
+        "Q": 0.9,
+        "V": 0.5878,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "85.00",
+        "price_delta": 0.0,
+        "color": "red",
+        "body": "high",
+        "tannins": "medium",
+        "acidity": "medium",
+        "alcohol_level": "14.0",
+        "sweetness": "dolce",
+        "style_tags": "dolce;complesso;longevo;iconico",
+        "occasion": "dessert;meditation",
+        "delta_vs_prev": 0.0
+      },
+      {
+        "rank": 20,
+        "id": "3",
+        "name": "Taurasi DOCG",
+        "sort": "relevance",
+        "score": 4.4667,
+        "M": 0.5,
+        "Q": 0.8933,
+        "V": 0.7069,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "39.00",
+        "price_delta": 0.0,
+        "color": "red",
+        "body": "high",
+        "tannins": "medium_plus",
+        "acidity": "medium",
+        "alcohol_level": "14.5",
+        "sweetness": "dry",
+        "style_tags": "potente;longevo",
+        "occasion": "important_dinner",
+        "delta_vs_prev": 0.0333
+      },
+      {
+        "rank": 21,
+        "id": "57",
+        "name": "Rebula Brda",
+        "sort": "relevance",
+        "score": 4.4667,
+        "M": 0.5,
+        "Q": 0.8933,
+        "V": 0.6937,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "42.00",
+        "price_delta": 0.0,
+        "color": "white",
+        "body": "medium",
+        "tannins": "low",
+        "acidity": "high",
+        "alcohol_level": "13.0",
+        "sweetness": "dry",
+        "style_tags": "elegante;minerale;salino;agrumi",
+        "occasion": "important_dinner",
+        "delta_vs_prev": 0.0
+      },
+      {
+        "rank": 22,
+        "id": "108",
+        "name": "Montepulciano d'Abruzzo DOC Riserva",
+        "sort": "relevance",
+        "score": 4.4667,
+        "M": 0.5,
+        "Q": 0.8933,
+        "V": 0.6493,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "55.00",
+        "price_delta": 0.0,
+        "color": "red",
+        "body": "high",
+        "tannins": "medium_plus",
+        "acidity": "medium",
+        "alcohol_level": "14.0",
+        "sweetness": "secco",
+        "style_tags": "potente;longevo;tradizionale;austero",
+        "occasion": "important_dinner",
+        "delta_vs_prev": 0.0
+      },
+      {
+        "rank": 23,
+        "id": "11",
+        "name": "Barbaresco DOCG",
+        "sort": "relevance",
+        "score": 4.4,
+        "M": 0.5,
+        "Q": 0.88,
+        "V": 0.6805,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "42.00",
+        "price_delta": 0.0,
+        "color": "red",
+        "body": "high",
+        "tannins": "medium_plus",
+        "acidity": "high",
+        "alcohol_level": "14.0",
+        "sweetness": "dry",
+        "style_tags": "strutturato;elegante;tannico",
+        "occasion": "dinner",
+        "delta_vs_prev": 0.0667
+      },
+      {
+        "rank": 24,
+        "id": "59",
+        "name": "Cesanese del Piglio DOCG",
+        "sort": "relevance",
+        "score": 4.4,
+        "M": 0.5,
+        "Q": 0.88,
+        "V": 0.7186,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "34.00",
+        "price_delta": 0.0,
+        "color": "red",
+        "body": "medium",
+        "tannins": "medium",
+        "acidity": "medium",
+        "alcohol_level": "13.5",
+        "sweetness": "dry",
+        "style_tags": "elegante;speziato;frutto rosso;territoriale",
+        "occasion": "important_dinner",
+        "delta_vs_prev": 0.0
+      },
+      {
+        "rank": 25,
+        "id": "71",
+        "name": "Aglianico del Vulture DOC",
+        "sort": "relevance",
+        "score": 4.4,
+        "M": 0.5,
+        "Q": 0.88,
+        "V": 0.7131,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "35.00",
+        "price_delta": 0.0,
+        "color": "red",
+        "body": "high",
+        "tannins": "medium_plus",
+        "acidity": "high",
+        "alcohol_level": "14.0",
+        "sweetness": "secco",
+        "style_tags": "potente;longevo;tannico;austero",
+        "occasion": "important_dinner",
+        "delta_vs_prev": 0.0
+      },
+      {
+        "rank": 26,
+        "id": "82",
+        "name": "Trento DOC Brut Riserva",
+        "sort": "relevance",
+        "score": 4.4,
+        "M": 0.5,
+        "Q": 0.88,
+        "V": 0.7131,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "35.00",
+        "price_delta": 0.0,
+        "color": "white",
+        "body": "medium",
+        "tannins": "low",
+        "acidity": "high",
+        "alcohol_level": "12.5",
+        "sweetness": "secco",
+        "style_tags": "elegante;complesso;persistente;metodo_classico",
+        "occasion": "aperitif;important_dinner",
+        "delta_vs_prev": 0.0
+      },
+      {
+        "rank": 27,
+        "id": "105",
+        "name": "Vin Santo del Chianti DOC",
+        "sort": "relevance",
+        "score": 4.4,
+        "M": 0.5,
+        "Q": 0.88,
+        "V": 0.6756,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "40.00",
+        "price_delta": 0.0,
+        "color": "white",
+        "body": "high",
+        "tannins": "low",
+        "acidity": "medium",
+        "alcohol_level": "15.0",
+        "sweetness": "dolce",
+        "style_tags": "dolce;complesso;longevo;mielato",
+        "occasion": "dessert;meditation",
+        "delta_vs_prev": 0.0
+      },
+      {
+        "rank": 28,
+        "id": "16",
+        "name": "Franciacorta DOCG Brut",
+        "sort": "relevance",
+        "score": 4.3667,
+        "M": 0.5,
+        "Q": 0.8733,
+        "V": 0.7186,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "34.00",
+        "price_delta": 0.0,
+        "color": "white",
+        "body": "medium",
+        "tannins": "low",
+        "acidity": "high",
+        "alcohol_level": "12.5",
+        "sweetness": "dry",
+        "style_tags": "elegante;spumante;metodo classico;brut",
+        "occasion": "aperitif",
+        "delta_vs_prev": 0.0333
+      },
+      {
+        "rank": 29,
+        "id": "31",
+        "name": "Franciacorta DOCG Brut",
+        "sort": "relevance",
+        "score": 4.3667,
+        "M": 0.5,
+        "Q": 0.8733,
+        "V": 0.7302,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "32.00",
+        "price_delta": 0.0,
+        "color": "white",
+        "body": "medium",
+        "tannins": "low",
+        "acidity": "high",
+        "alcohol_level": "12.5",
+        "sweetness": "dry",
+        "style_tags": "elegante;metodo classico;brut;crosta di pane",
+        "occasion": "aperitif",
+        "delta_vs_prev": 0.0
+      },
+      {
+        "rank": 30,
+        "id": "93",
+        "name": "Nerello Mascalese Etna Rosso DOC",
+        "sort": "relevance",
+        "score": 4.3667,
+        "M": 0.5,
+        "Q": 0.8733,
+        "V": 0.6889,
+        "F": 0.0,
+        "O": 0.0,
+        "I": 0.0,
+        "S": 0.0,
+        "price": "40.00",
+        "price_delta": 0.0,
+        "color": "red",
+        "body": "medium",
+        "tannins": "medium",
+        "acidity": "high",
+        "alcohol_level": "13.5",
+        "sweetness": "secco",
+        "style_tags": "elegante;minerale;vulcanico;complesso",
+        "occasion": "dinner;important_dinner",
+        "delta_vs_prev": 0.0
+      }
+    ]
+  },
+  "timings": {
+    "load_df": 2.8e-05,
+    "filters": 1.259213,
+    "score": 9.4e-05,
+    "sort": 5.1e-05,
+    "llm_explain": 1.150816
+  }
+}
+
+>>> PREFLIGHT: Searching 'frappato'...
+  rank=1 id=92 name=Cerasuolo di Vittoria DOCG price=20.00 score=4.6 match=0.7
+  rank=2 id=64 name=Frappato Sicilia DOC price=18.00 score=4.4333 match=1.0
+
+--- GT-01: "barolo serralunga" ---
+  Expected: Barolo DOCG Serralunga in top 1-2
+Traceback (most recent call last):
+  File "<string>", line 3, in <module>
+    d = json.load(sys.stdin)
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/__init__.py", line 298, in load
+    return loads(fp.read(),
+        cls=cls, object_hook=object_hook,
+        parse_float=parse_float, parse_int=parse_int,
+        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/__init__.py", line 352, in loads
+    return _default_decoder.decode(s)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/decoder.py", line 345, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+  Verdict: ___
+
+--- GT-02: "formaggi erborinati" ---
+  Expected: Vini con food_pairing formaggi in top 3 (Passito, Riesling dolce)
+  #1 id=67 Bolgheri DOC Rosso Superiore | price=180.00 score=5.3167 match=0.7 quality=0.973333
+  #2 id=12 Barolo DOCG Serralunga d'Alba | price=65.00 score=5.25 match=0.7 quality=0.96
+  #3 id=51 Pauillac AOC | price=145.00 score=5.2167 match=0.7 quality=0.953333
+  #4 id=55 Mosel Riesling Kabinett | price=48.00 score=5.15 match=0.7 quality=0.94
+  #5 id=61 Habemus Lazio IGP | price=95.00 score=5.1167 match=0.7 quality=0.933333
+  Verdict: ___
+
+--- GT-03: "franciacorta brut" ---
+  Expected: Franciacorta Brut in top 3
+  #1 id=16 Franciacorta DOCG Brut | price=34.00 score=4.7167 match=1.0 quality=0.873333
+  #2 id=31 Franciacorta DOCG Brut | price=32.00 score=4.7167 match=1.0 quality=0.873333
+  Verdict: ___
+
+--- GT-04: "vino per cena importante" ---
+  Expected: Vini con occasion=important_dinner in top 3 (Barolo, Pauillac, Gevrey)
+  #1 id=67 Bolgheri DOC Rosso Superiore | price=180.00 score=4.8667 match=0.6 quality=0.973333
+  #2 id=60 Gevrey-Chambertin AOC | price=210.00 score=4.8333 match=0.66 quality=0.966667
+  #3 id=12 Barolo DOCG Serralunga d'Alba | price=65.00 score=4.8 match=0.6 quality=0.96
+  #4 id=51 Pauillac AOC | price=145.00 score=4.7667 match=0.66 quality=0.953333
+  #5 id=52 Champagne AOC Special Cuvee | price=78.00 score=4.7667 match=0.64 quality=0.953333
+  Verdict: ___
+
+--- GT-05: "rosso strutturato" ---
+  Expected: Rossi strutturati in top 3 (Barolo, Pauillac, Sagrantino)
+  #1 id=67 Bolgheri DOC Rosso Superiore | price=180.00 score=5.1167 match=0.85 quality=0.973333
+  #2 id=12 Barolo DOCG Serralunga d'Alba | price=65.00 score=5.05 match=0.7 quality=0.96
+  #3 id=51 Pauillac AOC | price=145.00 score=5.0167 match=0.7 quality=0.953333
+  #4 id=4 Sagrantino di Montefalco DOCG | price=44.00 score=4.95 match=1.0 quality=0.94
+  #5 id=10 Barolo DOCG Monforte d'Alba | price=72.00 score=4.95 match=0.85 quality=0.94
+  Verdict: ___
+
+--- GT-06: "bianco fresco" ---
+  Expected: Bianchi freschi in top 3 (Riesling, Vermentino, Chablis)
+  #1 id=52 Champagne AOC Special Cuvee | price=78.00 score=4.7667 match=0.7 quality=0.953333
+  #2 id=53 Champagne AOC Collection | price=72.00 score=4.7667 match=0.7 quality=0.953333
+  #3 id=55 Mosel Riesling Kabinett | price=48.00 score=4.7 match=0.7 quality=0.94
+  #4 id=79 Meursault AOC | price=95.00 score=4.6667 match=0.7 quality=0.933333
+  #5 id=54 Riesling Alsace AOC | price=34.00 score=4.5 match=0.7 quality=0.9
+  Verdict: ___
+
+--- GT-07: "rosso elegante" ---
+  Expected: Gevrey-Chambertin in top 2. Pinot Nero, Barbaresco accettabili
+  #1 id=67 Bolgheri DOC Rosso Superiore | price=180.00 score=4.8667 match=0.875 quality=0.973333
+  #2 id=60 Gevrey-Chambertin AOC | price=210.00 score=4.8333 match=0.875 quality=0.966667
+  #3 id=12 Barolo DOCG Serralunga d'Alba | price=65.00 score=4.8 match=0.4 quality=0.96
+  #4 id=51 Pauillac AOC | price=145.00 score=4.7667 match=0.75 quality=0.953333
+  #5 id=4 Sagrantino di Montefalco DOCG | price=44.00 score=4.7 match=0.525 quality=0.94
+  Verdict: ___
+
+--- GT-08: "rosso elegante per cena importante" ---
+  Expected: Gevrey-Chambertin in top 2 con match > 0.85
+  #1 id=67 Bolgheri DOC Rosso Superiore | price=180.00 score=4.8667 match=0.775 quality=0.973333
+  #2 id=60 Gevrey-Chambertin AOC | price=210.00 score=4.8333 match=0.835 quality=0.966667
+  #3 id=12 Barolo DOCG Serralunga d'Alba | price=65.00 score=4.8 match=0.75 quality=0.96
+  #4 id=51 Pauillac AOC | price=145.00 score=4.7667 match=0.81 quality=0.953333
+  #5 id=4 Sagrantino di Montefalco DOCG | price=44.00 score=4.7 match=0.36 quality=0.94
+  Verdict: ___
+
+--- GT-09: "bianco fresco per cena importante di pesce" ---
+  Expected: Bianchi con food pesce e occasion importante in top 3
+  #1 id=52 Champagne AOC Special Cuvee | price=78.00 score=5.2167 match=0.884 quality=0.953333
+  #2 id=53 Champagne AOC Collection | price=72.00 score=5.2167 match=0.884 quality=0.953333
+  #3 id=55 Mosel Riesling Kabinett | price=48.00 score=5.15 match=0.776 quality=0.94
+  #4 id=79 Meursault AOC | price=95.00 score=5.1167 match=0.818 quality=0.933333
+  #5 id=54 Riesling Alsace AOC | price=34.00 score=4.95 match=0.749 quality=0.9
+  Verdict: ___
+
+--- GT-10: "vino importante" ---
+  Expected: Vini di prestigio in top 3 (Barolo, Pauillac, Gevrey)
+  #1 id=67 Bolgheri DOC Rosso Superiore | price=180.00 score=4.8667 match=0.49 quality=0.973333
+  #2 id=60 Gevrey-Chambertin AOC | price=210.00 score=4.8333 match=0.574 quality=0.966667
+  #3 id=12 Barolo DOCG Serralunga d'Alba | price=65.00 score=4.8 match=0.49 quality=0.96
+  #4 id=51 Pauillac AOC | price=145.00 score=4.7667 match=0.574 quality=0.953333
+  #5 id=52 Champagne AOC Special Cuvee | price=78.00 score=4.7667 match=0.546 quality=0.953333
+  Verdict: ___
+
+--- GT-11: "vino importante di pesce" ---
+  Expected: Bianchi/bollicine di prestigio con food pesce in top 3
+  #1 id=52 Champagne AOC Special Cuvee | price=78.00 score=5.2167 match=0.784 quality=0.953333
+  #2 id=53 Champagne AOC Collection | price=72.00 score=5.2167 match=0.784 quality=0.953333
+  #3 id=55 Mosel Riesling Kabinett | price=48.00 score=5.15 match=0.676 quality=0.94
+  #4 id=79 Meursault AOC | price=95.00 score=5.1167 match=0.718 quality=0.933333
+  #5 id=54 Riesling Alsace AOC | price=34.00 score=4.95 match=0.649 quality=0.9
+  Verdict: ___
+
+--- GT-12: "bottiglia importante" ---
+  Expected: Come GT-10 — vini di prestigio in top 3
+  #1 id=67 Bolgheri DOC Rosso Superiore | price=180.00 score=4.8667 match=0.49 quality=0.973333
+  #2 id=60 Gevrey-Chambertin AOC | price=210.00 score=4.8333 match=0.574 quality=0.966667
+  #3 id=12 Barolo DOCG Serralunga d'Alba | price=65.00 score=4.8 match=0.49 quality=0.96
+  #4 id=51 Pauillac AOC | price=145.00 score=4.7667 match=0.574 quality=0.953333
+  #5 id=52 Champagne AOC Special Cuvee | price=78.00 score=4.7667 match=0.546 quality=0.953333
+  Verdict: ___
+
+--- GT-13: "vino che faccia figura" ---
+  Expected: Come GT-10 — vini di prestigio in top 3
+  #1 id=67 Bolgheri DOC Rosso Superiore | price=180.00 score=4.8667 match=0.49 quality=0.973333
+  #2 id=60 Gevrey-Chambertin AOC | price=210.00 score=4.8333 match=0.574 quality=0.966667
+  #3 id=12 Barolo DOCG Serralunga d'Alba | price=65.00 score=4.8 match=0.49 quality=0.96
+  #4 id=51 Pauillac AOC | price=145.00 score=4.7667 match=0.574 quality=0.953333
+  #5 id=52 Champagne AOC Special Cuvee | price=78.00 score=4.7667 match=0.546 quality=0.953333
+  Verdict: ___
+
+--- GT-14: "vino tannico e strutturato" ---
+  Expected: Sagrantino, Barolo, Taurasi, Brunello in top 5
+  #1 id=4 Sagrantino di Montefalco DOCG | price=44.00 score=4.95 match=0.8033 quality=0.94
+  #2 id=107 Recioto della Valpolicella DOCG | price=85.00 score=4.75 match=0.7 quality=0.9
+  #3 id=81 Malbec Mendoza | price=22.00 score=4.2833 match=0.7 quality=0.806667
+  #4 id=74 Primitivo di Manduria DOP | price=25.00 score=4.1833 match=0.7 quality=0.786667
+  Verdict: ___
+
+--- GT-15: "rosso leggero poco tannico" ---
+  Expected: Gevrey, Pinot Nero, Barbera in top 5. Tannici penalizzati nel match
+  #1 id=64 Frappato Sicilia DOC | price=18.00 score=4.0833 match=0.9 quality=0.766667
+  #2 id=96 Lambrusco di Sorbara DOC | price=10.00 score=3.8167 match=0.7 quality=0.713333
+  #3 id=65 Schiava Alto Adige DOC | price=11.00 score=3.7167 match=0.9 quality=0.693333
+  Verdict: ___
+
+--- GT-16: "rosso elegante non troppo tannico" ---
+  Expected: Gevrey in top 2. Sagrantino penalizzato
+  #1 id=4 Sagrantino di Montefalco DOCG | price=44.00 score=4.7 match=0.41 quality=0.94
+  #2 id=77 Rioja Reserva DOC | price=35.00 score=4.5333 match=0.75 quality=0.906667
+  #3 id=107 Recioto della Valpolicella DOCG | price=85.00 score=4.5 match=0.4 quality=0.9
+  #4 id=59 Cesanese del Piglio DOCG | price=34.00 score=4.4 match=0.8 quality=0.88
+  #5 id=93 Nerello Mascalese Etna Rosso DOC | price=40.00 score=4.3667 match=0.8 quality=0.873333
+  Verdict: ___
+
+--- GT-17: "vino potente per cena importante" ---
+  Expected: Barolo, Pauillac, Amarone, Brunello in top 5
+  #1 id=67 Bolgheri DOC Rosso Superiore | price=180.00 score=5.1167 match=0.75 quality=0.973333
+  #2 id=12 Barolo DOCG Serralunga d'Alba | price=65.00 score=5.05 match=0.75 quality=0.96
+  #3 id=51 Pauillac AOC | price=145.00 score=5.0167 match=0.81 quality=0.953333
+  #4 id=4 Sagrantino di Montefalco DOCG | price=44.00 score=4.95 match=0.335 quality=0.94
+  #5 id=10 Barolo DOCG Monforte d'Alba | price=72.00 score=4.95 match=0.685 quality=0.94
+  Verdict: ___
+
+--- GT-18: "poco tannico" ---
+  Expected: Vini con tannini bassi in top 3
+  #1 id=52 Champagne AOC Special Cuvee | price=78.00 score=4.7667 match=0.7 quality=0.953333
+  #2 id=53 Champagne AOC Collection | price=72.00 score=4.7667 match=0.7 quality=0.953333
+  #3 id=55 Mosel Riesling Kabinett | price=48.00 score=4.7 match=0.7 quality=0.94
+  #4 id=79 Meursault AOC | price=95.00 score=4.6667 match=0.7 quality=0.933333
+  #5 id=54 Riesling Alsace AOC | price=34.00 score=4.5 match=0.7 quality=0.9
+  Verdict: ___
+
+--- GT-19: "vino tannico" ---
+  Expected: Sagrantino, Barolo, Taurasi in top 3
+  #1 id=4 Sagrantino di Montefalco DOCG | price=44.00 score=4.7 match=0.63 quality=0.94
+  #2 id=77 Rioja Reserva DOC | price=35.00 score=4.5333 match=0.7 quality=0.906667
+  #3 id=107 Recioto della Valpolicella DOCG | price=85.00 score=4.5 match=0.7 quality=0.9
+  #4 id=59 Cesanese del Piglio DOCG | price=34.00 score=4.4 match=0.7 quality=0.88
+  #5 id=93 Nerello Mascalese Etna Rosso DOC | price=40.00 score=4.3667 match=0.7 quality=0.873333
+  Verdict: ___
+
+--- GT-20: "vino sotto 20 euro" ---
+  Expected: Vini con price <= 20 in top 3
+  #1 id=23 Chiaretto di Bardolino DOC | price=12.00 score=1.7017 match=-1 quality=0.813333
+  #2 id=36 Verdicchio dei Castelli di Jesi DOC Classico | price=14.50 score=1.6931 match=-1 quality=0.833333
+  #3 id=33 Cerasuolo d'Abruzzo DOC | price=12.50 score=1.6914 match=-1 quality=0.813333
+  #4 id=30 Verdicchio dei Castelli di Jesi DOC Classico | price=14.90 score=1.6867 match=-1 quality=0.833333
+  #5 id=22 Cerasuolo d'Abruzzo DOC | price=16.00 score=1.6702 match=-1 quality=0.833333
+  Verdict: ___
+
+--- GT-21: "nebbiolo" ---
+  Expected: Barolo, Barbaresco, Nebbiolo Langhe in top 3
+  #1 id=12 Barolo DOCG Serralunga d'Alba | price=65.00 score=5.4 match=1.0 quality=0.96
+  #2 id=10 Barolo DOCG Monforte d'Alba | price=72.00 score=5.3 match=0.7 quality=0.94
+  #3 id=9 Barolo DOCG Serralunga d'Alba | price=65.00 score=5.2 match=0.7 quality=0.92
+  #4 id=11 Barbaresco DOCG | price=42.00 score=5.0 match=1.0 quality=0.88
+  #5 id=2 Nebbiolo Langhe DOC | price=18.90 score=4.2 match=1.0 quality=0.72
+  Verdict: ___
+
+--- GT-22: "rosato per aperitivo" ---
+  Expected: Cerasuolo, Chiaretto, Provence Rose in top 3
+  #1 id=22 Cerasuolo d'Abruzzo DOC | price=16.00 score=4.6167 match=0.8 quality=0.833333
+  #2 id=24 Côtes de Provence Rosé AOC | price=18.00 score=4.5833 match=0.75 quality=0.826667
+  #3 id=23 Chiaretto di Bardolino DOC | price=12.00 score=4.5167 match=1.0 quality=0.813333
+  #4 id=33 Cerasuolo d'Abruzzo DOC | price=12.50 score=3.8167 match=0.2275 quality=0.813333
+  #5 id=37 Etna Rosato DOC | price=18.00 score=3.8167 match=0.2275 quality=0.813333
+  Verdict: ___
+
+--- GT-23: "prosecco" ---
+  Expected: Prosecco DOC in top 1
+  #1 id=41 Prosecco DOC Extra Dry | price=11.00 score=4.85 match=1.0 quality=0.78
+  Verdict: ___
+
+--- GT-24: "etna" ---
+  Expected: Etna Rosso, Etna Bianco, Etna Rosato in top 3
+  #1 id=93 Nerello Mascalese Etna Rosso DOC | price=40.00 score=4.3667 match=1.0 quality=0.873333
+  #2 id=26 Etna Bianco DOC | price=26.00 score=4.3 match=1.0 quality=0.86
+  #3 id=42 Passito di Pantelleria DOC | price=32.00 score=4.3 match=0.7 quality=0.86
+  #4 id=15 Etna Rosso DOC | price=29.00 score=4.2667 match=1.0 quality=0.853333
+  #5 id=32 Etna Bianco DOC | price=24.00 score=4.2333 match=1.0 quality=0.846667
+  Verdict: ___
+
+--- GT-25: "vino dolce" ---
+  Expected: Passito di Pantelleria in top 1-2
+  #1 id=107 Recioto della Valpolicella DOCG | price=85.00 score=5.3 match=1.0 quality=0.9
+  #2 id=105 Vin Santo del Chianti DOC | price=40.00 score=5.2 match=0.9 quality=0.88
+  #3 id=106 Moscato di Scanzo DOCG | price=50.00 score=5.1 match=0.9 quality=0.86
+  #4 id=85 Moscato d'Asti DOCG | price=12.00 score=4.6 match=1.0 quality=0.76
+  #5 id=42 Passito di Pantelleria DOC | price=32.00 score=4.4 match=0.335 quality=0.86
+  Verdict: ___
+
+--- GT-26: "voglio stupire" ---
+  Expected: Vini di prestigio in top 3 (Barolo, Pauillac, Gevrey)
+  #1 id=67 Bolgheri DOC Rosso Superiore | price=180.00 score=4.8667 match=0.49 quality=0.973333
+  #2 id=60 Gevrey-Chambertin AOC | price=210.00 score=4.8333 match=0.574 quality=0.966667
+  #3 id=12 Barolo DOCG Serralunga d'Alba | price=65.00 score=4.8 match=0.49 quality=0.96
+  #4 id=51 Pauillac AOC | price=145.00 score=4.7667 match=0.574 quality=0.953333
+  #5 id=52 Champagne AOC Special Cuvee | price=78.00 score=4.7667 match=0.546 quality=0.953333
+  Verdict: ___
+
+=============================================
+ Results saved to: gt_results_20260325_193253.txt
+=============================================
