@@ -2,6 +2,118 @@
 
 **REGOLE FONDAMENTALI DA RISPETTARE SEMPRE**
 
+---
+
+## 🚀 APERTURA SESSIONE OBBLIGATORIA
+
+**ALL'INIZIO DI OGNI SESSIONE, LEGGERE NELL'ORDINE**:
+
+1. **`docs/GROUND_RULES.md`** (questo file) — Regole operative
+2. **`docs/SESSION_HANDOFF_[LAST].md`** — Contesto ultima sessione
+3. **`docs/roadmap/ROADMAP_UFFICIALE_[LAST].md`** — Stato progetto
+4. **`docs/SommelierAI_ProjectContext_[LAST].md`** — Context completo
+5. **`docs/TODO_NEXT_SESSION.md`** — Task prioritari
+
+**Solo DOPO aver letto tutti questi file, iniziare a lavorare.**
+
+---
+
+## 📋 CHIUSURA SESSIONE OBBLIGATORIA
+
+**PRIMA DI CHIUDERE OGNI SESSIONE, CREARE E SALVARE**:
+
+### A) RELEASE_NOTES_vX_X_X.md
+**Path**: `docs/RELEASE_NOTES_vX_X_X.md`
+
+**Contenuto minimo**:
+- Modifiche applicate (feature/fix/refactor)
+- File modificati con descrizione
+- Commit hash + message
+- Test eseguiti (OK/pending)
+- Breaking changes (se presenti)
+- Prossimi passi
+
+### B) ROADMAP Aggiornata
+**Path**: `docs/roadmap/ROADMAP_UFFICIALE_vX.X.md`
+
+**Aggiornare**:
+- Task completati oggi (spostare da "In corso" a "Completato")
+- Nuovi task identificati (aggiungere a backlog)
+- Milestone progress (X/Y task)
+- Metriche attuali (se cambiate)
+
+### C) SESSION_HANDOFF_YYYY-MM-DD.md
+**Path**: `docs/SESSION_HANDOFF_YYYY-MM-DD.md`
+
+**Contenuto minimo**:
+- Contesto veloce (30 secondi - cosa fatto oggi)
+- Stato progetto (backend, iOS, milestone)
+- Blockers/warning
+- File da caricare next session
+- Task prioritari (P0, P1, P2)
+- Note per next developer
+
+### D) TODO_NEXT_SESSION.md
+**Path**: `docs/TODO_NEXT_SESSION.md`
+
+**Aggiornare**:
+- Task completati oggi (rimuovere o marcare ✅)
+- Nuovi task identificati (aggiungere)
+- Priorità riordinate
+
+---
+
+## WORKFLOW APERTURA SESSIONE
+
+```bash
+# 1. Pull latest
+cd ~/sommelier-ai
+git pull
+
+# 2. Verifica clean
+git status  # deve essere clean
+
+# 3. Claude legge 5 file obbligatori (vedi sopra)
+# 4. Claude conferma: "Letti GROUND_RULES, HANDOFF, ROADMAP, CONTEXT, TODO. Pronto."
+# 5. Utente specifica task o Claude propone da TODO_NEXT_SESSION
+# 6. Go!
+```
+
+---
+
+## WORKFLOW CHIUSURA SESSIONE
+
+```bash
+# 1. Verifica tutto committato e pushato
+git status  # deve essere clean
+git log --oneline -5  # verifica commit presente
+
+# 2. Claude genera 4 file obbligatori
+# - RELEASE_NOTES_vX_X_X.md
+# - ROADMAP_UFFICIALE_vX.X.md (aggiornato)
+# - SESSION_HANDOFF_YYYY-MM-DD.md
+# - TODO_NEXT_SESSION.md (aggiornato)
+
+# 3. Claude salva nel progetto
+# - docs/RELEASE_NOTES_vX_X_X.md
+# - docs/roadmap/ROADMAP_UFFICIALE_vX.X.md
+# - docs/SESSION_HANDOFF_YYYY-MM-DD.md
+# - docs/TODO_NEXT_SESSION.md
+
+# 4. Commit documentazione
+git add docs/RELEASE_NOTES_*.md
+git add docs/roadmap/ROADMAP_UFFICIALE_*.md
+git add docs/SESSION_HANDOFF_*.md
+git add docs/TODO_NEXT_SESSION.md
+git commit -m "docs: session YYYY-MM-DD release notes + roadmap update"
+git push
+
+# 5. Conferma con utente
+"✅ Sessione chiusa. Release notes, roadmap, handoff e TODO aggiornati e pushati."
+```
+
+---
+
 ## 1. MOTORE = NO TOUCH
 Il backend search engine (`backend/main.py` - logica ranking, scoring, filtering) si modifica **SOLO** se:
 - Indispensabile per la feature richiesta
@@ -63,5 +175,39 @@ Queste regole esistono perché sono state violate ripetutamente in passato, caus
 - File iOS corrotti
 - Deploy di codice rotto
 - Perdita di tempo dell'utente
+- **Mancanza di continuità tra sessioni**
+- **Documentazione obsoleta o mancante**
 
 **ZERO TOLLERANZA.**
+
+---
+
+## COMMIT MESSAGE CONVENTIONS
+
+```
+feat(scope): descrizione breve
+fix(scope): descrizione breve
+docs: aggiornamento documentazione
+chore: task manutenzione
+test: aggiunta/modifica test
+refactor: refactoring senza cambio funzionalità
+perf: ottimizzazione performance
+```
+
+**Scope**: `ios`, `backend`, `docs`, `build`
+
+---
+
+## PRIORITÀ DECISIONI
+
+1. **Stabilità > Feature**
+2. **Performance > Estetica**
+3. **UX > Complessità tecnica**
+4. **Patch minime > Refactor massivi**
+5. **Test reali > Teoria**
+6. **Documentazione > Velocità**
+7. **Continuità > Velocità**
+
+---
+
+**REGOLA D'ORO**: Leggi, capisci, agisci, documenta. In quest'ordine.
