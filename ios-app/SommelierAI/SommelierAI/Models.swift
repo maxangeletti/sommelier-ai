@@ -50,6 +50,7 @@ struct SearchMeta: Codable {
     var limit: Int?
     var offset: Int?
     var total: Int?
+    var total_count: Int?  // Totale vini disponibili (per paginazione)
     var rank_mode: String?
     var model: String?
     var build_id: String?

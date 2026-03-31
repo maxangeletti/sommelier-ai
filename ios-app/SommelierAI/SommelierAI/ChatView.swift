@@ -634,6 +634,33 @@ struct ChatView: View {
                         )
                         .id("wine:\(msg.id.uuidString):\(g.representativeIndex)")
                     }
+                    
+                    // ✅ PAGINAZIONE: Bottone "Mostra altri"
+                    if let totalCount = msg.totalCount,
+                       let currentLimit = msg.currentLimit,
+                       currentLimit < totalCount,
+                       currentLimit < 20 {
+                        
+                        let remaining = min(totalCount - currentLimit, 5)
+                        
+                        Button(action: {
+                            vm.loadMore(for: msg.id)
+                        }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "arrow.down.circle")
+                                Text("Mostra altri \(remaining) vini")
+                                    .font(.subheadline.weight(.medium))
+                            }
+                            .foregroundStyle(AppColors.primaryWine)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(AppColors.primaryWine.opacity(0.08))
+                            )
+                        }
+                        .padding(.top, 8)
+                    }
                 }
                 .padding(.top, 4)
                 .transition(.opacity)

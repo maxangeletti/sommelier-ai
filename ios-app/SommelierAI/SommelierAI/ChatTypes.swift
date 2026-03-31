@@ -33,12 +33,16 @@ import Foundation
             let role: Role
             var text: String
             var wines: [WineCard]?
+            var totalCount: Int?      // Totale vini disponibili dal backend
+            var currentLimit: Int?    // Quanti vini stiamo mostrando ora
 
-            init(id: UUID = UUID(), role: Role, text: String, wines: [WineCard]? = nil) {
+            init(id: UUID = UUID(), role: Role, text: String, wines: [WineCard]? = nil, totalCount: Int? = nil, currentLimit: Int? = nil) {
                 self.id = id
                 self.role = role
                 self.text = text
                 self.wines = wines
+                self.totalCount = totalCount
+                self.currentLimit = currentLimit
             }
         }
 
@@ -88,7 +92,7 @@ import Foundation
             }
 
             /// Comparator locale per ordinare anche nei Preferiti.
-            /// Nota: la sorgente di verità per l’ordinamento in Preferiti è l’estensione in Models.swift
+            /// Nota: la sorgente di verità per l'ordinamento in Preferiti è l'estensione in Models.swift
             /// (Array where Element == WineCard). Questo less() resta utile come helper generico.
             func less(_ a: WineCard, _ b: WineCard) -> Bool {
                 switch self {

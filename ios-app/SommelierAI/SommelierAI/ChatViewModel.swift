@@ -92,8 +92,8 @@ final class ChatViewModel: ObservableObject {
     // ✅ evita loop quando forziamo selectedSort a .relevance
     private var isAdjustingSort: Bool = false
 
-    // ✅ SORGENTE “BASE” per filtri UI-only (vitigno/prezzo).
-    // Contiene SEMPRE l’ultimo set completo (dopo color guard) dell’ultimo messaggio assistente.
+    // ✅ SORGENTE "BASE" per filtri UI-only (vitigno/prezzo).
+    // Contiene SEMPRE l'ultimo set completo (dopo color guard) dell'ultimo messaggio assistente.
     private var lastAssistantBaseWines: [WineCard] = []
 
     init() {
@@ -171,7 +171,7 @@ final class ChatViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // ✅ filtro vitigno: ricalcola localmente dall’ultimo “base”
+        // ✅ filtro vitigno: ricalcola localmente dall'ultimo "base"
         $selectedGrapeFilter
             .dropFirst()
             .sink { [weak self] _ in
@@ -181,7 +181,7 @@ final class ChatViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // ✅ filtro prezzo max: ricalcola localmente dall’ultimo “base”
+        // ✅ filtro prezzo max: ricalcola localmente dall'ultimo "base"
         $maxPriceFilter
             .dropFirst()
             .sink { [weak self] _ in
@@ -189,7 +189,7 @@ final class ChatViewModel: ObservableObject {
                 self.reapplyLocalFiltersToLastAssistant()
             }
             .store(in: &cancellables)
-        // ✅ filtro colore: ricalcola localmente dall’ultimo “base”
+        // ✅ filtro colore: ricalcola localmente dall'ultimo "base"
         $selectedColorFilter
             .dropFirst()
             .sink { [weak self] _ in
@@ -198,7 +198,7 @@ final class ChatViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // ✅ filtro intensità: ricalcola localmente dall’ultimo “base”
+        // ✅ filtro intensità: ricalcola localmente dall'ultimo "base"
         $selectedIntensityFilter
             .dropFirst()
             .sink { [weak self] _ in
@@ -346,7 +346,7 @@ final class ChatViewModel: ObservableObject {
 
     private func normalizeGrape(_ s: String) -> String {
         s.trimmingCharacters(in: .whitespacesAndNewlines)
-            .replacingOccurrences(of: "’", with: "'")
+            .replacingOccurrences(of: "'", with: "'")
     }
 
     private func extractGrapes(from raw: String?) -> [String] {
@@ -453,7 +453,7 @@ final class ChatViewModel: ObservableObject {
             return
         }
 
-        // 2) fallback robusto: cerca l’ULTIMO messaggio assistente con wines non vuoti
+        // 2) fallback robusto: cerca l'ULTIMO messaggio assistente con wines non vuoti
         if let msg = messages.reversed().first(where: { $0.role == .assistant && (($0.wines?.isEmpty) == false) }),
            let wines = msg.wines,
            !wines.isEmpty {
@@ -588,9 +588,20 @@ final class ChatViewModel: ObservableObject {
                         self.updateGrapeOptions(from: base)
 
                         // ✅ PATCH (Step 4): applica MULTI-FILTRO FINAL (vitigno+prezzo+colore+intensità)
-                        let processed = self.applyAllLocalFilters(base)
+                        let allProcessed = self.applyAllLocalFilters(base)
+                        
+                        // ✅ PAGINAZIONE: Mostra inizialmente solo i primi 10 vini
+                        let initialLimit = 10
+                        let processed = Array(allProcessed.prefix(initialLimit))
+                        
+                        // ✅ PAGINAZIONE: salva totalCount e currentLimit
+                        let totalCount = ev.meta?.total_count ?? base.count
+                        let currentLimit = min(initialLimit, base.count)  // 🔧 FIX: inizia con 10 vini
+                        
                         withAnimation(.easeInOut(duration: 0.18)) {
                             messages[idx].wines = processed
+                            messages[idx].totalCount = totalCount
+                            messages[idx].currentLimit = currentLimit
                         }
 
                         streamTick += 1
@@ -669,9 +680,20 @@ final class ChatViewModel: ObservableObject {
                         self.updateGrapeOptions(from: base)
 
                         // ✅ PATCH (Step 4/5): applica MULTI-FILTRO anche nel commit (no streaming)
-                        let processed = self.applyAllLocalFilters(base)
+                        let allProcessed = self.applyAllLocalFilters(base)
+                        
+                        // ✅ PAGINAZIONE: Mostra inizialmente solo i primi 10 vini
+                        let initialLimit = 10
+                        let processed = Array(allProcessed.prefix(initialLimit))
+                        
+                        // ✅ PAGINAZIONE: salva totalCount e currentLimit
+                        let totalCount = ev.meta?.total_count ?? base.count
+                        let currentLimit = min(initialLimit, base.count)  // 🔧 FIX: inizia con 10 vini
+                        
                         withAnimation(.easeInOut(duration: 0.18)) {
                             messages[idx].wines = processed
+                            messages[idx].totalCount = totalCount
+                            messages[idx].currentLimit = currentLimit
                         }
 
                         // ✅ usa lo STESSO schema anchor della UI: wine:<msgUUID>:0
@@ -718,6 +740,35 @@ final class ChatViewModel: ObservableObject {
             lastAssistantBaseWines = wines
             updateGrapeOptions(from: wines)
         }
+    }
+    
+    // MARK: - Paginazione
+    
+    /// Carica altri 5 vini per il messaggio specificato
+    func loadMore(for messageId: UUID) {
+        guard let msgIndex = messages.firstIndex(where: { $0.id == messageId }),
+              messages.indices.contains(msgIndex),
+              let totalCount = messages[msgIndex].totalCount,
+              let currentLimit = messages[msgIndex].currentLimit,
+              currentLimit < totalCount,
+              currentLimit < 20 else { // Max 20 vini totali
+            return
+        }
+        
+        let newLimit = min(currentLimit + 5, 20, totalCount)
+        
+        // 🔧 FIX: Prendi i primi newLimit vini BASE, poi applica filtri
+        let baseWines = lastAssistantBaseWines
+        let baseSlice = Array(baseWines.prefix(newLimit))
+        let processed = applyAllLocalFilters(baseSlice)
+        
+        withAnimation(.easeInOut(duration: 0.25)) {
+            messages[msgIndex].wines = processed
+            messages[msgIndex].currentLimit = newLimit
+        }
+        
+        streamTick += 1
+        save()
     }
 }
 
