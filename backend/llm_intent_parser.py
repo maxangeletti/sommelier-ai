@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import hashlib
 import httpx
 from typing import Any, Dict, List, Optional
 
@@ -20,6 +21,14 @@ LLM_MODEL = os.getenv("SOMMELIERAI_LLM_MODEL", "claude-haiku-4-5-20251001")  # m
 LLM_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 LLM_TIMEOUT_SEC = float(os.getenv("SOMMELIERAI_LLM_TIMEOUT_SEC", "4.0"))  # fallback veloce se LLM lento
 LLM_MAX_TOKENS = 256  # output strutturato breve, non serve di più
+
+# =========================
+# LLM Reason Cache (Ottimizzazione Costi)
+# =========================
+# Cache in-memory per reason generate. Reset ad ogni deploy.
+# Key: hash(query + top_wine_id) → reason string
+# Risparmio stimato: 80-90% su query ripetute
+REASON_CACHE: Dict[str, str] = {}
 
 # =========================
 # Prompt di sistema
@@ -287,26 +296,25 @@ def generate_personalized_reason(
     top_wine: Optional[Dict[str, Any]] = None
 ) -> str:
     """
-    Step 2: Genera reason personalizzata usando LLM.
+    Step 2: Genera reason personalizzata usando LLM con cache per ottimizzazione costi.
     
     Args:
         query: Query originale dell'utente
         active_signals: Dizionario con i segnali attivi del ranking
-            Es: {
-                "prestige_intent": True,
-                "occasion": "important_dinner",
-                "color": "rosso",
-                "tannin_req": "high",
-                "foods": ["pesce"],
-                ...
-            }
         top_wine: Opzionale - info sul vino top per personalizzare ulteriormente
     
     Returns:
-        Reason personalizzata (str). Fallback a template generico se LLM non disponibile.
+        Reason personalizzata (str). Cache hit se già generata. Fallback a template se LLM non disponibile.
     """
     if not LLM_ENABLED or not LLM_API_KEY or not query.strip():
         return _generate_fallback_reason(active_signals)
+    
+    # ✅ CACHE: Check se reason già generata per questa coppia query+wine
+    wine_id = top_wine.get("id", "") if top_wine else ""
+    cache_key = hashlib.sha256(f"{query}:{wine_id}".encode()).hexdigest()
+    
+    if cache_key in REASON_CACHE:
+        return REASON_CACHE[cache_key]  # ✅ Cache hit - 0 costo API
     
     try:
         # Prepara contesto strutturato per l'LLM
@@ -341,6 +349,8 @@ Genera una spiegazione breve (max 30 parole) di perché questo è il vino giusto
         # Validazione: max 40 parole, min 5 parole
         word_count = len(reason.split())
         if 5 <= word_count <= 40:
+            # ✅ CACHE: Salva reason generata
+            REASON_CACHE[cache_key] = reason
             return reason
         else:
             return _generate_fallback_reason(active_signals)
