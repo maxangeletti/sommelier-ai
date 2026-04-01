@@ -9,10 +9,11 @@
 **ALL'INIZIO DI OGNI SESSIONE, LEGGERE NELL'ORDINE**:
 
 1. **`docs/GROUND_RULES.md`** (questo file) — Regole operative
-2. **`docs/roadmap/SESSION_HANDOFF_[LAST].md`** — Contesto ultima sessione
-3. **`docs/roadmap/ROADMAP_v[LAST].md`** — Stato progetto
-4. **`docs/context/ProjectContext_v[LAST].md`** — Context completo
-5. **`docs/TODO_NEXT_SESSION.md`** — Task prioritari
+2. **`docs/PROJECT_PLAN.md`** — Piano progetto (obiettivi, tempi, rischi)
+3. **`docs/roadmap/SESSION_HANDOFF_[LAST].md`** — Contesto ultima sessione
+4. **`docs/roadmap/ROADMAP_v[LAST].md`** — Stato progetto
+5. **`docs/context/ProjectContext_v[LAST].md`** — Context completo
+6. **`docs/TODO_NEXT_SESSION.md`** — Task prioritari
 
 **Solo DOPO aver letto tutti questi file, iniziare a lavorare.**
 
@@ -20,7 +21,7 @@
 
 ## 📋 CHIUSURA SESSIONE OBBLIGATORIA
 
-**PRIMA DI CHIUDERE OGNI SESSIONE, CREARE E SALVARE**:
+**PRIMA DI CHIUDERE OGNI SESSIONE, CREARE/AGGIORNARE**:
 
 ### A) Release Notes
 **Path**: `docs/releases/vX.X.X.md`
@@ -61,6 +62,17 @@
 - Nuovi task identificati (aggiungere)
 - Priorità riordinate
 
+### E) PROJECT_PLAN.md ⭐ NUOVO
+**Path**: `docs/PROJECT_PLAN.md`
+
+**Aggiornare**:
+- Checklist P0/P1/P2 (marcare ✅ task completati)
+- Prossime 48 ore (aggiornare azioni)
+- Metriche attuali (backend/iOS)
+- Milestone progress (X/Y task)
+- Storico aggiornamenti (aggiungere entry v.X.X)
+- Risk assessment (se cambiato)
+
 ---
 
 ## WORKFLOW APERTURA SESSIONE
@@ -73,8 +85,8 @@ git pull
 # 2. Verifica clean
 git status  # deve essere clean
 
-# 3. Claude legge 5 file obbligatori (vedi sopra)
-# 4. Claude conferma: "Letti GROUND_RULES, HANDOFF, ROADMAP, CONTEXT, TODO. Pronto."
+# 3. Claude legge 6 file obbligatori (vedi sopra)
+# 4. Claude conferma: "Letti GROUND_RULES, PROJECT_PLAN, HANDOFF, ROADMAP, CONTEXT, TODO. Pronto."
 # 5. Utente specifica task o Claude propone da TODO_NEXT_SESSION
 # 6. Go!
 ```
@@ -88,11 +100,12 @@ git status  # deve essere clean
 git status  # deve essere clean
 git log --oneline -5  # verifica commit presente
 
-# 2. Claude genera 4 file obbligatori
+# 2. Claude genera/aggiorna 5 file obbligatori
 # - releases/vX.X.X.md
 # - roadmap/ROADMAP_vX.X.md (aggiornato)
 # - roadmap/SESSION_HANDOFF_YYYY-MM-DD.md
 # - TODO_NEXT_SESSION.md (aggiornato)
+# - PROJECT_PLAN.md (aggiornato) ⭐ NUOVO
 
 # 3. Claude salva nel progetto nelle path corrette
 
@@ -100,11 +113,12 @@ git log --oneline -5  # verifica commit presente
 git add docs/releases/*.md
 git add docs/roadmap/*.md
 git add docs/TODO_NEXT_SESSION.md
-git commit -m "docs: session YYYY-MM-DD release notes + roadmap update"
+git add docs/PROJECT_PLAN.md
+git commit -m "docs: session YYYY-MM-DD - release notes + roadmap + project plan update"
 git push
 
 # 5. Conferma con utente
-"✅ Sessione chiusa. Release notes, roadmap, handoff e TODO aggiornati e pushati."
+"✅ Sessione chiusa. Release notes, roadmap, handoff, TODO e PROJECT PLAN aggiornati e pushati."
 ```
 
 ---
