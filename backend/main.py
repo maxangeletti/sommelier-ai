@@ -649,6 +649,50 @@ def derive_intensity(body: str, tannins: str, alcohol_level: str) -> Optional[st
     return "medium"
 
 
+
+def derive_freshness(acidity: str, sparkling: str, alcohol_level: str) -> Optional[str]:
+    """
+    Deriva livello di freschezza (low/medium/high) da acidity, sparkling, alcohol.
+    Freschezza = acidità + effervescenza - alcol.
+    """
+    # Normalizza acidity
+    acid = _normalize_level(acidity)
+    
+    # Sparkling boost
+    sparkling_boost = 0
+    if "spumante" in _norm_lc(sparkling):
+        sparkling_boost = 1
+    elif "frizzante" in _norm_lc(sparkling):
+        sparkling_boost = 1
+    
+    # Alcohol penalty
+    alc = _parse_float_maybe(alcohol_level)
+    alcohol_penalty = 0
+    if alc is not None:
+        if alc >= 14.0:
+            alcohol_penalty = 1
+        elif alc >= 13.0:
+            alcohol_penalty = 0
+    
+    # Calcola freshness score
+    score = 0
+    if acid == "high":
+        score += 2
+    elif acid == "medium":
+        score += 1
+    
+    score += sparkling_boost
+    score -= alcohol_penalty
+    
+    # Map to low/medium/high
+    if score >= 3:
+        return "high"
+    elif score >= 1:
+        return "medium"
+    else:
+        return "low"
+
+
 # --- D: tipologia (sparkling) derivata + sweetness normalizzata ---
 def derive_sparkling(denomination: str, style_tags: str, name: str, description: str) -> str:
     hay = " ".join([_norm_lc(denomination), _norm_lc(style_tags), _norm_lc(name), _norm_lc(description)])
@@ -1944,6 +1988,15 @@ def _build_wine_card(row: Any, rank: int, score: float, price_delta: float, matc
     if intensity:
         card["intensity"] = intensity
 
+    # freshness derivata (per barra UI Screen 4)
+    freshness = derive_freshness(
+        _norm(getattr(row, "acidity", "")),
+        sparkling or "",
+        _norm(getattr(row, "alcohol_level", "")),
+    )
+    if freshness:
+        card["freshness"] = freshness
+
     # sparkling derivato
     sparkling = derive_sparkling(
         _norm(getattr(row, "denomination", "")),
@@ -2839,6 +2892,32 @@ def get_wine_details(wine_id: str) -> JSONResponse:
     if quality_val > 0:
         wine_dict["reviews_count"] = get_mock_reviews_count(quality_val)
         wine_dict["critic_score"] = get_mock_critic_score(quality_val)
+    
+    # Deriva campi intensity, sparkling, freshness per UI Screen 4
+    intensity = derive_intensity(
+        _norm(getattr(row, "body", "")),
+        _norm(getattr(row, "tannins", "")),
+        _norm(getattr(row, "alcohol_level", "")),
+    )
+    if intensity:
+        wine_dict["intensity"] = intensity
+    
+    sparkling = derive_sparkling(
+        _norm(getattr(row, "denomination", "")),
+        _norm(getattr(row, "style_tags", "")),
+        _norm(getattr(row, "name", "")),
+        _norm(getattr(row, "description", "")),
+    )
+    if sparkling:
+        wine_dict["sparkling"] = sparkling
+    
+    freshness = derive_freshness(
+        _norm(getattr(row, "acidity", "")),
+        sparkling or "",
+        _norm(getattr(row, "alcohol_level", "")),
+    )
+    if freshness:
+        wine_dict["freshness"] = freshness
     
     return JSONResponse({"wine": wine_dict})
 
