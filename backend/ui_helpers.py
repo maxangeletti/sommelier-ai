@@ -145,6 +145,152 @@ def get_aroma_icons(aromas_text: Optional[str]) -> List[Dict[str, str]]:
 
 
 # =========================
+# Food Pairing Icons Mapping
+# =========================
+
+FOOD_PAIRING_ICONS = {
+    # Carne
+    "carne": "🥩",
+    "bistecca": "🥩",
+    "manzo": "🥩",
+    "vitello": "🥩",
+    "filetto": "🥩",
+    "tagliata": "🥩",
+    "grigliata": "🥩",
+    "bbq": "🥩",
+    "arrosto": "🍖",
+    "brasato": "🍖",
+    "stufato": "🍖",
+    "maiale": "🐖",
+    "agnello": "🐑",
+    "selvaggi": "🦌",
+    "selvaggina": "🦌",
+    "cacciagione": "🦌",
+    "cinghiale": "🦌",
+    
+    # Pesce
+    "pesce": "🐟",
+    "pesce_griglia": "🐟",
+    "pesce_crudo": "🍣",
+    "sushi": "🍣",
+    "crudo": "🍣",
+    "tartare": "🍣",
+    "carpaccio": "🍣",
+    "ostriche": "🦪",
+    "frutti_mare": "🦐",
+    "crostacei": "🦐",
+    "gamberi": "🦐",
+    "scampi": "🦐",
+    "aragosta": "🦞",
+    "tonno": "🐟",
+    "salmone": "🐟",
+    
+    # Pasta & Pizza
+    "pasta": "🍝",
+    "spaghetti": "🍝",
+    "tagliatelle": "🍝",
+    "lasagne": "🍝",
+    "pasta_sugo_verdure": "🍝",
+    "pasta_sugo_pomodoro": "🍝",
+    "risotto": "🍚",
+    "pizza": "🍕",
+    
+    # Formaggi
+    "formaggi": "🧀",
+    "formaggio": "🧀",
+    "pecorino": "🧀",
+    "parmigiano": "🧀",
+    "grana": "🧀",
+    "gorgonzola": "🧀",
+    "erborinati": "🧀",
+    
+    # Salumi
+    "salumi": "🥓",
+    "prosciutto": "🥓",
+    "salame": "🥓",
+    "mortadella": "🥓",
+    "speck": "🥓",
+    
+    # Verdure
+    "verdure": "🥗",
+    "vegetariano": "🥗",
+    "insalata": "🥗",
+    "ortaggi": "🥗",
+    
+    # Dolci
+    "dolci": "🍰",
+    "dessert": "🍰",
+    "torta": "🍰",
+    "cioccolato": "🍫",
+    "pasticceria": "🧁",
+    
+    # Contesti
+    "aperitivo": "🥂",
+    "apericena": "🥂",
+    "stuzzichini": "🧀",
+}
+
+
+def get_food_pairing_icons(food_pairings_text: Optional[str]) -> List[Dict[str, str]]:
+    """
+    Estrae food pairings dal testo CSV e restituisce lista con icon mapping.
+    
+    Args:
+        food_pairings_text: Stringa food pairings dal CSV (es. "carne|pesce_griglia|formaggi")
+    
+    Returns:
+        Lista di dict [{"name": "Carne", "icon": "🥩"}, ...]
+        Massimo 4 food pairings per evitare UI clutter
+    
+    Examples:
+        >>> get_food_pairing_icons("carne|pesce_griglia|formaggi")
+        [{"name": "Carne", "icon": "🥩"}, 
+         {"name": "Pesce Griglia", "icon": "🐟"},
+         {"name": "Formaggi", "icon": "🧀"}]
+    """
+    if not food_pairings_text or not isinstance(food_pairings_text, str):
+        return []
+    
+    # Split su pipe o virgola
+    separators = ["|", ",", ";"]
+    foods = [food_pairings_text]
+    for sep in separators:
+        if sep in food_pairings_text:
+            foods = food_pairings_text.split(sep)
+            break
+    
+    # Normalizza
+    foods = [f.strip().lower().replace(" ", "_") for f in foods]
+    
+    result = []
+    seen_icons = set()  # Evita duplicati icon (es. carne + bistecca → 🥩 solo una volta)
+    
+    for food in foods[:4]:  # Max 4 food pairings
+        if not food:
+            continue
+            
+        # Cerca match esatto
+        icon = FOOD_PAIRING_ICONS.get(food)
+        
+        # Se non trovato, cerca match parziale
+        if not icon:
+            for key, val in FOOD_PAIRING_ICONS.items():
+                if food in key or key in food:
+                    icon = val
+                    break
+        
+        # Aggiungi solo se trovato icon e non duplicato
+        if icon and icon not in seen_icons:
+            result.append({
+                "name": food.replace("_", " ").title(),
+                "icon": icon
+            })
+            seen_icons.add(icon)
+    
+    return result
+
+
+# =========================
 # Badge "Ottimo Valore" Logic
 # =========================
 
