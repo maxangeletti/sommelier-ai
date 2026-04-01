@@ -1,35 +1,35 @@
 # TODO Next Session
 
-## PRIORITÀ 0: Test Paginazione Device Reale
-- [ ] Build su iPhone fisico (non simulatore)
-- [ ] Test bottone "Mostra altri X vini" appare/scompare
-- [ ] Test con filtri attivi (vitigno, prezzo)
-- [ ] Test con query <10 risultati (bottone non deve apparire)
-- [ ] Conferma funzionamento corretto
+## ⚠️ PRIORITÀ 0: FIX DEPLOY v1.8.0
+- [ ] **CRITICO**: Verificare ui_helpers.py su GitHub
+- [ ] Se mancante: git add + commit + push
+- [ ] Attendere deploy Render (3-5 min)
+- [ ] Test produzione:
+  - [ ] curl /wine/1/details | grep "food_pairing_icons"
+  - [ ] curl /wine/1/similar?limit=3
+- [ ] Release notes v1.8.0 complete quando test OK
 
-## PRIORITÀ 1: LLM Step 2 - Explain Personalizzato
-- [ ] Design architettura LLM Step 2
-- [ ] Backend: passa segnali ranking attivi all'LLM
-- [ ] LLM genera reason contestuale alla query
-- [ ] Sostituisci template statici
-- [ ] Test su GT-01→GT-26 per qualità explain
-- [ ] Decisione: Haiku vs Sonnet?
+## PRIORITÀ 1: iOS Redesign Phase 2 Complete
+- [ ] Verificare food_pairing_icons in produzione
+- [ ] Verificare llm_status field
+- [ ] Verificare similar wines endpoint
+- [ ] Update ROADMAP con completion
 
-## PRIORITÀ 2: Estetica App
-- [ ] Icona app 1024x1024 (tutte size richieste)
-- [ ] Splash screen
-- [ ] Refinement theme colori AppColors
-- [ ] Decisione: Designer esterno vs AI-generated?
+## PRIORITÀ 2: Performance & Polish
+- [ ] Performance optimization (opzionale)
+- [ ] Test suite completo
+- [ ] iOS integration guide update
 
-## PRIORITÀ 3: Business
-- [ ] Acquisto Apple Developer Account ($99/anno)
-- [ ] Setup TestFlight preparazione
+## PRIORITÀ 3: Device Testing
+- [ ] Build su iPhone fisico
+- [ ] Test bottone "Mostra altri X vini"
+- [ ] Test con filtri attivi
 
 ## Feature Future
-- [ ] Fix backend `total_count` con filtri
-- [ ] Arricchimento KNOWN_GRAPES (14 vitigni)
-- [ ] Analytics setup (Firebase?)
-- [ ] "Cerca vini simili a questo" button
+- [ ] LLM Step 2 enhancement
+- [ ] Icona app + splash screen
+- [ ] Analytics setup
+- [ ] "Cerca vini simili" button
 
 ---
-**Ultima modifica:** 1 Aprile 2026
+**Ultima modifica:** 1 Aprile 2026 21:35
