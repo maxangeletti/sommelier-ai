@@ -62,7 +62,7 @@
 - Nuovi task identificati (aggiungere)
 - Priorità riordinate
 
-### E) PROJECT_PLAN.md ⭐ NUOVO
+### E) PROJECT_PLAN.md
 **Path**: `docs/PROJECT_PLAN.md`
 
 **Aggiornare**:
@@ -105,7 +105,7 @@ git log --oneline -5  # verifica commit presente
 # - roadmap/ROADMAP_vX.X.md (aggiornato)
 # - roadmap/SESSION_HANDOFF_YYYY-MM-DD.md
 # - TODO_NEXT_SESSION.md (aggiornato)
-# - PROJECT_PLAN.md (aggiornato) ⭐ NUOVO
+# - PROJECT_PLAN.md (aggiornato)
 
 # 3. Claude salva nel progetto nelle path corrette
 
@@ -177,6 +177,34 @@ Dopo modifiche:
 
 ---
 
+## 7. WORKFLOW EFFICIENZA ⭐ NUOVO
+
+**Regole per ridurre friction e migliorare efficienza:**
+
+### A) NON Ripetere Ground Rules
+- Workflow (backup, release notes, commit, test) è IMPLICITO
+- Non serve che l'utente ripeta ogni volta
+- Claude lo applica automaticamente
+
+### B) NO "Siparietto Accesso"
+- Claude legge direttamente filesystem locale senza dire "non posso"
+- Se serve qualcosa da remoto (GitHub) → chiede UNA VOLTA esplicitamente
+- NO pre-spiegazioni ripetitive su cosa può/non può fare
+
+### C) File Pesanti - Workflow Semplificato
+- File >1000 righe: utente fornisce → Claude modifica → restituisce
+- File <1000 righe: Claude modifica direttamente filesystem
+- NO discussioni preventive su dimensione file
+
+### D) Istruzioni Sequenziali
+- 1 azione → output → 1 azione successiva
+- NO blocchi concatenati di istruzioni che dipendono da output intermedi
+- Aspettare conferma utente tra step dipendenti
+
+**Queste regole valgono per TUTTE le sessioni future.**
+
+---
+
 **VIOLAZIONE DI QUESTE REGOLE = SESSIONE FALLITA**
 
 Queste regole esistono perché sono state violate ripetutamente in passato, causando:
@@ -186,6 +214,7 @@ Queste regole esistono perché sono state violate ripetutamente in passato, caus
 - Perdita di tempo dell'utente
 - **Mancanza di continuità tra sessioni**
 - **Documentazione obsoleta o mancante**
+- **Friction inutile e ripetitivo**
 
 **ZERO TOLLERANZA.**
 
@@ -216,7 +245,8 @@ perf: ottimizzazione performance
 5. **Test reali > Teoria**
 6. **Documentazione > Velocità**
 7. **Continuità > Velocità**
+8. **Efficienza > Spiegazioni** ⭐ NUOVO
 
 ---
 
-**REGOLA D'ORO**: Leggi, capisci, agisci, documenta. In quest'ordine.
+**REGOLA D'ORO**: Leggi, capisci, agisci, documenta. In quest'ordine. Senza friction.
