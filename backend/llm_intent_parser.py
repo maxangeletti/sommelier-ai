@@ -436,3 +436,147 @@ def _generate_fallback_reason(signals: Dict[str, Any]) -> str:
         return " ".join(parts)
     else:
         return "Selezione basata su qualità e caratteristiche del vino"
+
+
+# =========================
+# LLM Tasting Notes Cache
+# =========================
+TASTING_NOTES_CACHE: Dict[str, str] = {}
+
+
+# =========================
+# Step 3: Tasting Notes Dettagliate
+# =========================
+
+TASTING_NOTES_SYSTEM_PROMPT = """Sei un sommelier AIS che scrive note di degustazione professionali.
+Ricevi i dati di un vino e generi una descrizione dettagliata della degustazione (60-80 parole) in italiano.
+
+La descrizione deve includere:
+- Esame visivo (colore, consistenza, limpidezza)
+- Esame olfattivo (bouquet primario, secondario, terziario se presente)
+- Esame gustativo (struttura, equilibrio, persistenza, finale)
+- Tono professionale ma accessibile
+
+Esempi:
+
+Barolo DOCG 2018:
+"Vino fermo rosso di gran corpo. La possente Alcolicità è ben bilanciata dalla Tannicità e dall'Intenso-Persistente finale al palato e lunghissimo al naso. Il passaggio in botte si sente decisamente intenso e il finale è estremamente persistente."
+
+Franciacorta Brut:
+"Spumante elegante con perlage fine e persistente. Al naso note delicate di fiori bianchi, agrumi e lieviti nobili. In bocca fresco e minerale, con acidità vivace che bilancia perfettamente la morbidezza. Finale pulito e persistente con richiami di mandorla."
+
+Verdicchio Classico:
+"Bianco fermo di buona struttura. Colore giallo paglierino con riflessi verdolini. Profumi intensi di frutta bianca, fiori di campo e note minerali. Palato fresco e sapido, ottimo equilibrio tra morbidezza e acidità. Finale ammandorlato caratteristico."
+
+Restituisci SOLO il testo delle note, senza introduzioni."""
+
+
+def generate_tasting_notes(wine: Dict[str, Any]) -> str:
+    """
+    Step 3: Genera note di degustazione dettagliate (60-80 parole) per schermata dettaglio.
+    
+    Args:
+        wine: Dizionario completo del vino con tutti i campi disponibili
+    
+    Returns:
+        Tasting notes dettagliate. Cache hit se già generate. Fallback a description CSV se LLM non disponibile.
+    """
+    if not LLM_ENABLED or not LLM_API_KEY:
+        # Fallback: usa description da CSV se disponibile
+        return wine.get("description", "Note di degustazione non disponibili.")
+    
+    # ✅ CACHE: Check se notes già generate per questo vino
+    wine_id = str(wine.get("id", ""))
+    cache_key = hashlib.sha256(f"tasting:{wine_id}".encode()).hexdigest()
+    
+    if cache_key in TASTING_NOTES_CACHE:
+        return TASTING_NOTES_CACHE[cache_key]  # ✅ Cache hit
+    
+    try:
+        # Prepara contesto vino per LLM
+        wine_context = _format_wine_for_tasting_notes(wine)
+        
+        user_message = f"""Vino da descrivere:
+{wine_context}
+
+Genera note di degustazione professionali (60-80 parole) seguendo la metodologia AIS."""
+
+        with httpx.Client(timeout=LLM_TIMEOUT_SEC) as client:
+            response = client.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "x-api-key": LLM_API_KEY,
+                    "anthropic-version": "2023-06-01",
+                    "content-type": "application/json",
+                },
+                json={
+                    "model": LLM_MODEL,
+                    "max_tokens": 300,  # notes più lunghe di reason
+                    "system": TASTING_NOTES_SYSTEM_PROMPT,
+                    "messages": [{"role": "user", "content": user_message}],
+                },
+            )
+        response.raise_for_status()
+        data = response.json()
+        notes = data["content"][0]["text"].strip()
+        
+        # Validazione: 40-120 parole (più permissivo per tasting notes)
+        word_count = len(notes.split())
+        if 40 <= word_count <= 120:
+            # ✅ CACHE: Salva notes generate
+            TASTING_NOTES_CACHE[cache_key] = notes
+            return notes
+        else:
+            # Fallback a CSV description
+            return wine.get("description", "Note di degustazione non disponibili.")
+    
+    except Exception:
+        # Fallback a CSV description
+        return wine.get("description", "Note di degustazione non disponibili.")
+
+
+def _format_wine_for_tasting_notes(wine: Dict[str, Any]) -> str:
+    """Formatta dati vino per generazione tasting notes."""
+    lines = []
+    
+    # Info base
+    if wine.get("name"):
+        lines.append(f"- Nome: {wine['name']}")
+    if wine.get("producer"):
+        lines.append(f"- Produttore: {wine['producer']}")
+    if wine.get("denomination"):
+        lines.append(f"- Denominazione: {wine['denomination']}")
+    if wine.get("region"):
+        lines.append(f"- Regione: {wine['region']}")
+    if wine.get("grapes"):
+        lines.append(f"- Vitigni: {wine['grapes']}")
+    
+    # Caratteristiche tecniche
+    if wine.get("color"):
+        lines.append(f"- Colore: {wine['color']}")
+    if wine.get("sparkling"):
+        lines.append(f"- Tipologia: {wine['sparkling']}")
+    if wine.get("sweetness"):
+        lines.append(f"- Dolcezza: {wine['sweetness']}")
+    
+    # Parametri strutturali (da CSV)
+    if wine.get("alcohol_content"):
+        lines.append(f"- Gradazione: {wine['alcohol_content']}%")
+    if wine.get("acidity"):
+        lines.append(f"- Acidità: {wine['acidity']}")
+    if wine.get("tannin"):
+        lines.append(f"- Tannini: {wine['tannin']}")
+    if wine.get("intensity"):
+        lines.append(f"- Intensità: {wine['intensity']}")
+    if wine.get("body"):
+        lines.append(f"- Corpo: {wine['body']}")
+    
+    # Aromi/descrittori
+    if wine.get("aromas"):
+        lines.append(f"- Aromi: {wine['aromas']}")
+    
+    # Description esistente (se disponibile, come riferimento)
+    if wine.get("description"):
+        lines.append(f"- Note esistenti: {wine['description'][:100]}...")
+    
+    return "\n".join(lines) if lines else "- Dati vino limitati"

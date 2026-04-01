@@ -16,7 +16,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 
 # LLM intent parser (dual-step: parse + explain)
-from llm_intent_parser import parse_intent_with_llm, generate_personalized_reason
+from llm_intent_parser import parse_intent_with_llm, generate_personalized_reason, generate_tasting_notes
+from ui_helpers import should_show_value_badge, get_aroma_icons, get_mock_reviews_count, get_mock_critic_score
 
 
 # =========================
@@ -1963,6 +1964,18 @@ def _build_wine_card(row: Any, rank: int, score: float, price_delta: float, matc
 
     card["__price_delta"] = round(float(price_delta), 4)
 
+    
+    # UI Helpers: aromi icons, value badge, mock data
+    aromas_text = _norm(getattr(row, "aromas", ""))
+    if aromas_text:
+        card["aroma_icons"] = get_aroma_icons(aromas_text)
+    
+    # Quality-based mock data per UI
+    quality_val = _parse_float_maybe(_norm(getattr(row, "quality", "")))
+    if quality_val > 0:
+        card["reviews_count"] = get_mock_reviews_count(quality_val)
+        card["critic_score"] = get_mock_critic_score(quality_val)
+    
     return card
 
 def _apply_sort(cards: List[Dict[str, Any]], sort: str, value_intent: bool = False) -> List[Dict[str, Any]]:
@@ -2420,6 +2433,10 @@ def run_search(
         
         # Sostituisci reason statica con quella personalizzata
         sorted_cards[0]["reason"] = personalized_reason
+        
+        # ✅ UI Badge: "Ottimo Valore" per tutti i vini
+        for card in sorted_cards:
+            card["show_value_badge"] = should_show_value_badge(card, active_signals)
     
     timings["llm_explain"] = round(time.perf_counter() - t0, 6)
     t0 = time.perf_counter()
@@ -2780,6 +2797,51 @@ def get_suggestions() -> JSONResponse:
     return JSONResponse({"suggestions": suggestions})
 
 # --- CLI: normalize CSV ---
+
+
+# =========================
+# Wine Details Endpoint
+# =========================
+
+@app.get("/wine/{wine_id}/details")
+def get_wine_details(wine_id: str) -> JSONResponse:
+    """
+    Endpoint per dettaglio vino completo con tasting notes LLM.
+    """
+    df = get_wines_df()
+    wine_row = df[df["id"] == wine_id]
+    
+    if wine_row.empty:
+        return JSONResponse({"error": "Wine not found"}, status_code=404)
+    
+    row = wine_row.iloc[0]
+    wine_dict = {
+        "id": _norm(getattr(row, "id", "")),
+        "name": _norm(getattr(row, "name", "")),
+        "producer": _norm(getattr(row, "producer", "")),
+        "region": _norm(getattr(row, "region", "")),
+        "denomination": _norm(getattr(row, "denomination", "")),
+        "vintage": _norm(getattr(row, "vintage", "")),
+        "grapes": _norm(getattr(row, "grape_varieties", "")),
+        "aromas": _norm(getattr(row, "aromas", "")),
+        "food_pairings": _norm(getattr(row, "food_pairings", "")),
+        "quality": _norm(getattr(row, "quality", "")),
+        "price": _price_effective(row),
+    }
+    
+    wine_dict["tasting_notes"] = generate_tasting_notes(wine_dict)
+    
+    aromas_text = wine_dict.get("aromas", "")
+    if aromas_text:
+        wine_dict["aroma_icons"] = get_aroma_icons(aromas_text)
+    
+    quality_val = _parse_float_maybe(wine_dict.get("quality", ""))
+    if quality_val > 0:
+        wine_dict["reviews_count"] = get_mock_reviews_count(quality_val)
+        wine_dict["critic_score"] = get_mock_critic_score(quality_val)
+    
+    return JSONResponse({"wine": wine_dict})
+
 if __name__ == "__main__":
     import sys
     import pandas as pd
