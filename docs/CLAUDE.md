@@ -1,7 +1,20 @@
 # CLAUDE.md — Riferimento Rapido
 
-**Versione**: 1.0  
+**Versione**: 1.1  
 **Aggiornato**: 1 Aprile 2026
+
+---
+
+## 🚀 AUTO-BOOTSTRAP (NUOVO!)
+
+**Quando l'utente dice "ripartiamo da dove abbiamo lasciato":**
+
+1. Leggi automaticamente `STARTUP.md` per istruzioni complete
+2. Esegui bootstrap sequenza (6 file)
+3. Mostra stato progetto + proponi task P0
+4. **NON chiedere conferma, AGISCI**
+
+**Trigger phrases**: "ripartiamo", "continua", "nuova sessione", "bootstrap", "reload", "riprendiamo", "andiamo avanti"
 
 ---
 
@@ -9,13 +22,14 @@
 
 ```
 docs/
-├── GROUND_RULES.md           ← Regole operative (LEGGI SEMPRE)
+├── STARTUP.md                ← 🆕 AUTO-BOOTSTRAP (leggi all'inizio)
+├── GROUND_RULES.md           ← Regole operative
 ├── PROJECT_PLAN.md           ← Piano progetto (obiettivi, tempi, rischi)
 ├── TODO_NEXT_SESSION.md      ← Task immediati
 ├── CLAUDE.md                 ← Questo file (reference rapido)
 │
 ├── context/
-│   └── ProjectContext_v1.4.md   ← Context completo progetto
+│   └── ProjectContext_v1.4.md
 │
 ├── releases/
 │   ├── v1.5.0.md
@@ -28,59 +42,50 @@ docs/
 │
 └── technical/
     ├── RANKING_TEST_MATRIX_v2_1.md
-    ├── RAPPORTO_COLLAUDO_DEFINITIVO.md
-    ├── MATCH_DEBUGGER_v1.3.md
-    ├── PATCH_GT24_GT26.md
     └── test-results/
-        ├── gt_results_FINAL_v2.txt
-        └── gt_runner.sh
 ```
 
 ---
 
-## 🚀 QUICK START NUOVA SESSIONE
+## 🔄 WORKFLOW SESSIONE
 
-### 1. Leggi (in ordine):
-1. `GROUND_RULES.md`
-2. `PROJECT_PLAN.md`
-3. `roadmap/SESSION_HANDOFF_[LAST].md`
-4. `roadmap/ROADMAP_v[LAST].md`
-5. `context/ProjectContext_v[LAST].md`
-6. `TODO_NEXT_SESSION.md`
+### Apertura (AUTOMATICA con "ripartiamo")
+```
+1. Leggi STARTUP.md
+2. Esegui bootstrap (6 file in ordine)
+3. Mostra stato + proponi task
+4. Aspetta decisione utente
+```
 
-### 2. Conferma:
-"Letti GROUND_RULES, PROJECT_PLAN, HANDOFF, ROADMAP, CONTEXT, TODO. Pronto."
+### Durante Lavoro
+```
+1. Segui GROUND_RULES (sempre)
+2. Test before push (sempre)
+3. Backup prima modifiche critiche
+4. Documenta mentre lavori
+```
 
-### 3. Proponi:
-Identifica task P0 da `TODO_NEXT_SESSION.md` o chiedi all'utente
-
----
-
-## 📋 CHIUSURA SESSIONE
-
-### File da creare/aggiornare:
-1. `releases/vX.X.X.md` (nuovo)
-2. `roadmap/ROADMAP_vX.X.md` (aggiornato)
-3. `roadmap/SESSION_HANDOFF_YYYY-MM-DD.md` (nuovo)
-4. `TODO_NEXT_SESSION.md` (aggiornato)
-5. `PROJECT_PLAN.md` (aggiornato) ⭐
-
-### Commit:
-```bash
-git add docs/
-git commit -m "docs: session YYYY-MM-DD - release notes + roadmap + project plan update"
-git push
+### Chiusura (MANUALE - utente dice "chiudiamo")
+```
+1. Crea/aggiorna 5 file:
+   - releases/vX.X.X.md
+   - roadmap/ROADMAP_vX.X.md
+   - roadmap/SESSION_HANDOFF_YYYY-MM-DD.md
+   - TODO_NEXT_SESSION.md
+   - PROJECT_PLAN.md
+2. Commit + push
+3. Conferma chiusura
 ```
 
 ---
 
 ## ⚠️ REGOLE CRITICHE
 
-1. **NO TOUCH MOTORE** — Mai modificare ranking engine senza approval esplicita
+1. **NO TOUCH MOTORE** — Mai modificare ranking engine senza approval
 2. **BACKUP OBBLIGATORIO** — Prima di modifiche critiche
 3. **TEST BEFORE PUSH** — Mai pushare codice non testato
 4. **NO CAZZATE** — Se fallisce, dirlo subito
-5. **DOCUMENTA SEMPRE** — Aggiorna PROJECT_PLAN.md ad ogni sessione
+5. **STARTUP.md PRIORITARIO** — Sempre primo file da leggere
 
 ---
 
@@ -96,7 +101,8 @@ git push
 
 ## 📞 HELP
 
-**File più importanti**:
+**Quick access**:
+- Bootstrap? → `STARTUP.md` 🆕
 - Regole? → `GROUND_RULES.md`
 - Piano? → `PROJECT_PLAN.md`
 - Task? → `TODO_NEXT_SESSION.md`
@@ -106,4 +112,4 @@ git push
 
 ---
 
-*File di riferimento per Claude — Non modificare senza motivo*
+*File di riferimento per Claude v1.1 — Auto-bootstrap abilitato*
