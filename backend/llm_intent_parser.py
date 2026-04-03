@@ -8,7 +8,6 @@ from __future__ import annotations
 import json
 import os
 import re
-import hashlib
 import httpx
 from typing import Any, Dict, List, Optional
 
@@ -21,14 +20,6 @@ LLM_MODEL = os.getenv("SOMMELIERAI_LLM_MODEL", "claude-haiku-4-5-20251001")  # m
 LLM_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 LLM_TIMEOUT_SEC = float(os.getenv("SOMMELIERAI_LLM_TIMEOUT_SEC", "4.0"))  # fallback veloce se LLM lento
 LLM_MAX_TOKENS = 256  # output strutturato breve, non serve di più
-
-# =========================
-# LLM Reason Cache (Ottimizzazione Costi)
-# =========================
-# Cache in-memory per reason generate. Reset ad ogni deploy.
-# Key: hash(query + top_wine_id) → reason string
-# Risparmio stimato: 80-90% su query ripetute
-REASON_CACHE: Dict[str, str] = {}
 
 # =========================
 # Prompt di sistema
@@ -66,9 +57,6 @@ Regole:
 - "cena da amici che amano la Francia" → region: loira o borgogna (scegli il più probabile), occasion: dinner
 - "vino da meditazione potente" → occasion: meditation, style: potente
 - "ho già preso il pesce, abbino la carne" → foods: ["carne"] (ignora ciò che è già stato ordinato)
-- CRITICO: NON inferire vitigni da denominazioni! "barolo" NON deve produrre grapes: ["nebbiolo"], "brunello" NON deve produrre ["sangiovese"]. Estrai "grapes" SOLO se l'utente nomina esplicitamente il vitigno (es. "un nebbiolo", "vino di sangiovese").
-- CRITICO: NON inferire region da denominazioni specifiche! "barolo", "brunello", "chianti", "franciacorta" sono denominazioni che saranno matchate tramite keyword, NON tramite filtro region. Estrai "region" SOLO se l'utente dice esplicitamente la regione (es. "vino del piemonte", "un toscano").
-- CRITICO: NON inferire color da denominazioni! "barolo", "brunello", "chianti" sono denominazioni rosse note, ma NON estrarre color=rosso. Estrai "color" SOLO se l'utente dice esplicitamente il colore (es. "rosso", "bianco", "rosato").
 - Non inventare valori. Se non sei sicuro, usa null.
 """
 
@@ -260,73 +248,70 @@ def merge_intent(llm_intent: Dict[str, Any], rule_based: Dict[str, Any]) -> Dict
 # Step 2: Explain Personalizzato
 # =========================
 
-EXPLAIN_SYSTEM_PROMPT = """Sei un sommelier esperto che spiega perché un vino è la scelta giusta.
-Ricevi la query dell'utente e i segnali di ranking che hanno guidato la selezione.
-Genera una spiegazione breve (max 30 parole) in italiano naturale e conversazionale.
+EXPLAIN_SYSTEM_PROMPT = """Sei un sommelier esperto italiano.
+Genera una reason breve (max 15 parole) che spiega perché questo vino è rilevante per la query dell'utente.
 
-La spiegazione deve:
-- Essere contestuale alla query specifica dell'utente
-- Menzionare i segnali chiave che giustificano la scelta
-- Evitare tecnicismi eccessivi e underscore
-- Usare un tono caldo ma professionale
+Usa un tono naturale, professionale ma accessibile. Enfatizza gli aspetti che l'utente sta cercando.
+
+Regole:
+- Massimo 15 parole
+- Tono naturale, non tecnico
+- Enfatizza i match attivi (eleganza, occasione, food pairing, struttura, etc.)
+- Non ripetere nome del vino
+- Non usare gergo enologico difficile
 
 Esempi:
 Query: "vino elegante per cena importante"
-Signals: prestige_intent=true, occasion=important_dinner, color=rosso, elegant_intent=true
-→ "Un rosso prestigioso perfetto per occasioni formali, con eleganza e grande finezza"
+Vino: Gevrey-Chambertin
+→ "Un Borgogna raffinato perfetto per occasioni formali, elegante e di grande finezza"
+
+Query: "rosso strutturato"
+Vino: Barolo
+→ "Piemonte prestigioso con tannini importanti e struttura verticale"
 
 Query: "bianco fresco per pesce"
-Signals: color=bianco, foods=["pesce"], style=fresco
-→ "Bianco fresco e minerale, ideale per esaltare i sapori delicati del pesce"
-
-Query: "vino tannico e strutturato"
-Signals: tannin_req=high, intensity_req=high, color=rosso
-→ "Rosso potente e tannico, con struttura importante e grande persistenza"
-
-Query: "voglio stupire"
-Signals: prestige_intent=true
-→ "Una bottiglia di grande prestigio che lascerà il segno"
-
-Restituisci SOLO il testo della spiegazione, senza introduzioni o commenti."""
+Vino: Vermentino
+→ "Fresco e sapido, ideale per crostacei e piatti di mare"
+"""
 
 
-def generate_personalized_reason(
+def generate_reason_with_llm(
     query: str,
-    active_signals: Dict[str, Any],
-    top_wine: Optional[Dict[str, Any]] = None
+    wine_name: str,
+    wine_region: str,
+    wine_description: str,
+    ranking_signals: Dict[str, Any],
 ) -> str:
     """
-    Step 2: Genera reason personalizzata usando LLM con cache per ottimizzazione costi.
+    Genera una reason personalizzata contestuale alla query dell'utente.
     
     Args:
-        query: Query originale dell'utente
-        active_signals: Dizionario con i segnali attivi del ranking
-        top_wine: Opzionale - info sul vino top per personalizzare ulteriormente
+        query: Query utente originale
+        wine_name: Nome del vino
+        wine_region: Regione del vino
+        wine_description: Descrizione del CSV (fallback)
+        ranking_signals: Dict con segnali attivi (prestige_intent, occasion, color, etc.)
     
     Returns:
-        Reason personalizzata (str). Cache hit se già generata. Fallback a template se LLM non disponibile.
+        Reason personalizzata, oppure wine_description se LLM non disponibile
     """
     if not LLM_ENABLED or not LLM_API_KEY or not query.strip():
-        return _generate_fallback_reason(active_signals)
+        return wine_description or ""
     
-    # ✅ CACHE: Check se reason già generata per questa coppia query+wine
-    wine_id = top_wine.get("id", "") if top_wine else ""
-    cache_key = hashlib.sha256(f"{query}:{wine_id}".encode()).hexdigest()
+    # Costruisci contesto per LLM
+    signals_text = _format_signals_for_llm(ranking_signals)
     
-    if cache_key in REASON_CACHE:
-        return REASON_CACHE[cache_key]  # ✅ Cache hit - 0 costo API
-    
-    try:
-        # Prepara contesto strutturato per l'LLM
-        signals_text = _format_signals_for_llm(active_signals, top_wine)
-        
-        user_message = f"""Query utente: "{query}"
+    user_prompt = f"""Query utente: "{query}"
+
+Vino: {wine_name}
+Regione: {wine_region}
 
 Segnali di ranking attivi:
 {signals_text}
 
-Genera una spiegazione breve (max 30 parole) di perché questo è il vino giusto."""
-
+Genera una reason breve (max 15 parole) che spiega perché questo vino è rilevante."""
+    
+    try:
         with httpx.Client(timeout=LLM_TIMEOUT_SEC) as client:
             response = client.post(
                 "https://api.anthropic.com/v1/messages",
@@ -337,171 +322,134 @@ Genera una spiegazione breve (max 30 parole) di perché questo è il vino giusto
                 },
                 json={
                     "model": LLM_MODEL,
-                    "max_tokens": 150,  # reason breve
+                    "max_tokens": 100,  # Reason breve
                     "system": EXPLAIN_SYSTEM_PROMPT,
-                    "messages": [{"role": "user", "content": user_message}],
+                    "messages": [{"role": "user", "content": user_prompt}],
                 },
             )
         response.raise_for_status()
         data = response.json()
         reason = data["content"][0]["text"].strip()
         
-        # Validazione: max 40 parole, min 5 parole
-        word_count = len(reason.split())
-        if 5 <= word_count <= 40:
-            # ✅ CACHE: Salva reason generata
-            REASON_CACHE[cache_key] = reason
-            return reason
-        else:
-            return _generate_fallback_reason(active_signals)
-    
+        # Cleanup: rimuovi virgolette se presenti
+        reason = reason.strip('"').strip("'")
+        
+        return reason
+        
     except Exception:
-        # Fallback silenzioso
-        return _generate_fallback_reason(active_signals)
+        # Fallback graceful: usa descrizione CSV
+        return wine_description or ""
 
 
-def _format_signals_for_llm(signals: Dict[str, Any], top_wine: Optional[Dict[str, Any]]) -> str:
-    """Formatta i segnali attivi in testo leggibile per l'LLM."""
-    lines = []
-    
-    if signals.get("color"):
-        lines.append(f"- Colore: {signals['color']}")
-    if signals.get("prestige_intent"):
-        lines.append("- Intento: prestigio/importanza")
-    if signals.get("elegant_intent"):
-        lines.append("- Intento: eleganza")
-    if signals.get("occasion"):
-        lines.append(f"- Occasione: {signals['occasion']}")
-    if signals.get("foods"):
-        lines.append(f"- Abbinamento: {', '.join(signals['foods'])}")
-    if signals.get("style"):
-        lines.append(f"- Stile: {signals['style']}")
-    if signals.get("tannin_req"):
-        lines.append(f"- Tannicità richiesta: {signals['tannin_req']}")
-    if signals.get("intensity_req"):
-        lines.append(f"- Intensità richiesta: {signals['intensity_req']}")
-    if signals.get("region"):
-        lines.append(f"- Regione: {signals['region']}")
-    if signals.get("grapes"):
-        lines.append(f"- Vitigni: {', '.join(signals['grapes'])}")
-    if signals.get("sparkling"):
-        lines.append(f"- Tipologia: {signals['sparkling']}")
-    if signals.get("sweetness"):
-        lines.append(f"- Dolcezza: {signals['sweetness']}")
-    
-    if top_wine:
-        if top_wine.get("name"):
-            lines.append(f"- Vino selezionato: {top_wine['name']}")
-        if top_wine.get("region"):
-            lines.append(f"- Provenienza: {top_wine['region']}")
-    
-    return "\n".join(lines) if lines else "- Nessun segnale specifico"
-
-
-def _generate_fallback_reason(signals: Dict[str, Any]) -> str:
-    """Template fallback se LLM non disponibile."""
+def _format_signals_for_llm(signals: Dict[str, Any]) -> str:
+    """Formatta i segnali di ranking in testo leggibile per LLM."""
     parts = []
     
+    if signals.get("color_req"):
+        parts.append(f"- Colore: {signals['color_req']}")
+    
+    if signals.get("region"):
+        parts.append(f"- Regione richiesta: {signals['region']}")
+    
     if signals.get("prestige_intent"):
-        parts.append("Vino di prestigio")
-    elif signals.get("elegant_intent"):
-        parts.append("Vino elegante")
+        parts.append("- Vino prestigioso/importante")
     
-    if signals.get("color"):
-        color_map = {"rosso": "Rosso", "bianco": "Bianco", "rosato": "Rosato"}
-        parts.append(color_map.get(signals["color"], "Vino"))
+    if signals.get("elegance_intent"):
+        parts.append("- Eleganza richiesta")
     
-    if signals.get("style"):
-        parts.append(signals["style"])
+    if signals.get("occasion_intent"):
+        parts.append(f"- Occasione: {signals['occasion_intent']}")
     
-    if signals.get("tannin_req") == "high":
-        parts.append("con tannini importanti")
-    elif signals.get("tannin_req") == "low":
-        parts.append("con tannini morbidi")
+    if signals.get("foods_req"):
+        parts.append(f"- Abbinamenti cibo: {', '.join(signals['foods_req'])}")
     
-    if signals.get("foods"):
-        foods_str = ", ".join(signals["foods"])
-        parts.append(f"ideale per {foods_str}")
+    if signals.get("intensity_req"):
+        parts.append(f"- Intensità richiesta: {signals['intensity_req']}")
     
-    if signals.get("occasion"):
-        occasion_map = {
-            "aperitif": "per aperitivo",
-            "dinner": "per cena",
-            "important_dinner": "per occasioni importanti",
-            "meditation": "da meditazione",
-        }
-        parts.append(occasion_map.get(signals["occasion"], ""))
+    if signals.get("tannin_req"):
+        parts.append(f"- Tannicità richiesta: {signals['tannin_req']}")
     
-    if parts:
-        return " ".join(parts)
-    else:
-        return "Selezione basata su qualità e caratteristiche del vino"
+    if signals.get("style_intent"):
+        parts.append(f"- Stile: {signals['style_intent']}")
+    
+    if signals.get("value_intent"):
+        parts.append("- Rapporto qualità/prezzo importante")
+    
+    return "\n".join(parts) if parts else "- Nessun segnale specifico"
 
 
 # =========================
-# LLM Tasting Notes Cache
-# =========================
-TASTING_NOTES_CACHE: Dict[str, str] = {}
-
-
-# =========================
-# Step 3: Tasting Notes Dettagliate
+# Step 3: Tasting Notes (Note di Degustazione)
 # =========================
 
-TASTING_NOTES_SYSTEM_PROMPT = """Sei un sommelier AIS che scrive note di degustazione professionali.
-Ricevi i dati di un vino e generi una descrizione dettagliata della degustazione (60-80 parole) in italiano.
+TASTING_NOTES_SYSTEM_PROMPT = """Sei un sommelier esperto italiano.
+Genera note di degustazione dettagliate (60-80 parole) per questo vino.
 
-La descrizione deve includere:
-- Esame visivo (colore, consistenza, limpidezza)
-- Esame olfattivo (bouquet primario, secondario, terziario se presente)
-- Esame gustativo (struttura, equilibrio, persistenza, finale)
+Struttura ideale:
+1. Aspetto visivo (colore, consistenza)
+2. Profilo olfattivo (aromi primari, secondari, terziari)
+3. Gusto (struttura, equilibrio, persistenza)
+4. Considerazioni finali (quando berlo, abbinamenti)
+
+Regole:
+- 60-80 parole totali
 - Tono professionale ma accessibile
+- Usa terminologia sommelier corretta ma comprensibile
+- Enfatizza caratteristiche distintive del vino
+- Considera la query utente per contestualizzare
 
-Esempi:
-
-Barolo DOCG 2018:
-"Vino fermo rosso di gran corpo. La possente Alcolicità è ben bilanciata dalla Tannicità e dall'Intenso-Persistente finale al palato e lunghissimo al naso. Il passaggio in botte si sente decisamente intenso e il finale è estremamente persistente."
-
-Franciacorta Brut:
-"Spumante elegante con perlage fine e persistente. Al naso note delicate di fiori bianchi, agrumi e lieviti nobili. In bocca fresco e minerale, con acidità vivace che bilancia perfettamente la morbidezza. Finale pulito e persistente con richiami di mandorla."
-
-Verdicchio Classico:
-"Bianco fermo di buona struttura. Colore giallo paglierino con riflessi verdolini. Profumi intensi di frutta bianca, fiori di campo e note minerali. Palato fresco e sapido, ottimo equilibrio tra morbidezza e acidità. Finale ammandorlato caratteristico."
-
-Restituisci SOLO il testo delle note, senza introduzioni."""
+Esempio:
+"Rubino intenso con riflessi granato. Al naso emergono note di ciliegia matura, spezie dolci e un tocco di cuoio. 
+In bocca è potente e strutturato, con tannini nobili e persistenza notevole. L'acidità vivace bilancia 
+perfettamente la morbidezza. Un vino da meditazione, ideale con brasati e formaggi stagionati. 
+Pronto ora ma con ottimo potenziale di invecchiamento."
+"""
 
 
-def generate_tasting_notes(wine: Dict[str, Any]) -> str:
+def generate_tasting_notes_with_llm(
+    query: str,
+    wine_name: str,
+    wine_region: str,
+    wine_grapes: str,
+    wine_vintage: str,
+    wine_description: str,
+    wine_specs: Dict[str, Any],
+) -> str:
     """
-    Step 3: Genera note di degustazione dettagliate (60-80 parole) per schermata dettaglio.
+    Genera note di degustazione dettagliate (60-80 parole) per la schermata dettaglio vino.
     
     Args:
-        wine: Dizionario completo del vino con tutti i campi disponibili
+        query: Query utente originale
+        wine_name: Nome del vino
+        wine_region: Regione del vino
+        wine_grapes: Vitigni
+        wine_vintage: Annata
+        wine_description: Descrizione CSV (fallback)
+        wine_specs: Dict con specs (body, tannins, acidity, alcohol_level, etc.)
     
     Returns:
-        Tasting notes dettagliate. Cache hit se già generate. Fallback a description CSV se LLM non disponibile.
+        Tasting notes dettagliate, oppure wine_description se LLM non disponibile
     """
     if not LLM_ENABLED or not LLM_API_KEY:
-        # Fallback: usa description da CSV se disponibile
-        return wine.get("description", "Note di degustazione non disponibili.")
+        return wine_description or ""
     
-    # ✅ CACHE: Check se notes già generate per questo vino
-    wine_id = str(wine.get("id", ""))
-    cache_key = hashlib.sha256(f"tasting:{wine_id}".encode()).hexdigest()
+    # Costruisci contesto per LLM
+    specs_text = "\n".join([f"- {k}: {v}" for k, v in wine_specs.items() if v])
     
-    if cache_key in TASTING_NOTES_CACHE:
-        return TASTING_NOTES_CACHE[cache_key]  # ✅ Cache hit
+    user_prompt = f"""Query utente: "{query}"
+
+Vino: {wine_name}
+Regione: {wine_region}
+Vitigni: {wine_grapes}
+Annata: {wine_vintage}
+
+Caratteristiche tecniche:
+{specs_text}
+
+Genera note di degustazione dettagliate (60-80 parole) in tono professionale ma accessibile."""
     
     try:
-        # Prepara contesto vino per LLM
-        wine_context = _format_wine_for_tasting_notes(wine)
-        
-        user_message = f"""Vino da descrivere:
-{wine_context}
-
-Genera note di degustazione professionali (60-80 parole) seguendo la metodologia AIS."""
-
-        with httpx.Client(timeout=LLM_TIMEOUT_SEC) as client:
+        with httpx.Client(timeout=6.0) as client:  # Timeout più lungo per testo lungo
             response = client.post(
                 "https://api.anthropic.com/v1/messages",
                 headers={
@@ -511,72 +459,100 @@ Genera note di degustazione professionali (60-80 parole) seguendo la metodologia
                 },
                 json={
                     "model": LLM_MODEL,
-                    "max_tokens": 300,  # notes più lunghe di reason
+                    "max_tokens": 256,  # Tasting notes più lunghe
                     "system": TASTING_NOTES_SYSTEM_PROMPT,
-                    "messages": [{"role": "user", "content": user_message}],
+                    "messages": [{"role": "user", "content": user_prompt}],
                 },
             )
         response.raise_for_status()
         data = response.json()
         notes = data["content"][0]["text"].strip()
         
-        # Validazione: 40-120 parole (più permissivo per tasting notes)
-        word_count = len(notes.split())
-        if 40 <= word_count <= 120:
-            # ✅ CACHE: Salva notes generate
-            TASTING_NOTES_CACHE[cache_key] = notes
-            return notes
-        else:
-            # Fallback a CSV description
-            return wine.get("description", "Note di degustazione non disponibili.")
-    
+        # Cleanup: rimuovi virgolette se presenti
+        notes = notes.strip('"').strip("'")
+        
+        return notes
+        
     except Exception:
-        # Fallback a CSV description
-        return wine.get("description", "Note di degustazione non disponibili.")
+        # Fallback graceful: usa descrizione CSV
+        return wine_description or ""
 
 
-def _format_wine_for_tasting_notes(wine: Dict[str, Any]) -> str:
-    """Formatta dati vino per generazione tasting notes."""
-    lines = []
+# =========================
+# Integrazione in run_search: patch minima
+# =========================
+
+# Questo è lo snippet da inserire in run_search() in main.py
+# SUBITO DOPO: q = _norm(query)
+# E PRIMA DI: price_info = parse_price(q)
+
+INTEGRATION_SNIPPET = '''
+    # --- LLM Intent Layer (nuovo) ---
+    # Chiama il layer LLM per normalizzare query ambigue/laterali.
+    # Graceful degradation: se LLM non disponibile, tutto continua come prima.
+    from llm_intent_parser import parse_intent_with_llm, merge_intent
     
-    # Info base
-    if wine.get("name"):
-        lines.append(f"- Nome: {wine['name']}")
-    if wine.get("producer"):
-        lines.append(f"- Produttore: {wine['producer']}")
-    if wine.get("denomination"):
-        lines.append(f"- Denominazione: {wine['denomination']}")
-    if wine.get("region"):
-        lines.append(f"- Regione: {wine['region']}")
-    if wine.get("grapes"):
-        lines.append(f"- Vitigni: {wine['grapes']}")
+    llm_intent = parse_intent_with_llm(q)
     
-    # Caratteristiche tecniche
-    if wine.get("color"):
-        lines.append(f"- Colore: {wine['color']}")
-    if wine.get("sparkling"):
-        lines.append(f"- Tipologia: {wine['sparkling']}")
-    if wine.get("sweetness"):
-        lines.append(f"- Dolcezza: {wine['sweetness']}")
+    # I parser rule-based girano comunque (invariati)
+    price_info = parse_price(q)
+    region = parse_region(q) or llm_intent.get("region")
+    grapes_req = parse_grapes(q) or llm_intent.get("grapes", [])
+    aromas_req = parse_aromas(q)
+    intensity_req = parse_intensity_request(q)
+    typology_req = parse_typology_request(q)
     
-    # Parametri strutturali (da CSV)
-    if wine.get("alcohol_content"):
-        lines.append(f"- Gradazione: {wine['alcohol_content']}%")
-    if wine.get("acidity"):
-        lines.append(f"- Acidità: {wine['acidity']}")
-    if wine.get("tannin"):
-        lines.append(f"- Tannini: {wine['tannin']}")
-    if wine.get("intensity"):
-        lines.append(f"- Intensità: {wine['intensity']}")
-    if wine.get("body"):
-        lines.append(f"- Corpo: {wine['body']}")
+    # Foods: unione rule-based + LLM
+    foods_rule = parse_food_request(q)
+    foods_llm = llm_intent.get("foods", [])
+    foods_req = sorted(set(foods_rule) | set(foods_llm))
     
-    # Aromi/descrittori
-    if wine.get("aromas"):
-        lines.append(f"- Aromi: {wine['aromas']}")
+    color_req = parse_color_request(q) or llm_intent.get("color")
+    value_intent = parse_value_intent(q) or llm_intent.get("value_intent", False)
+    style_intent = parse_style_intent(q)
     
-    # Description esistente (se disponibile, come riferimento)
-    if wine.get("description"):
-        lines.append(f"- Note esistenti: {wine['description'][:100]}...")
+    # Occasion: LLM arricchisce se rule-based non ha trovato nulla
+    occasion_intent = parse_occasion_intent(q) or llm_intent.get("occasion")
     
-    return "\n".join(lines) if lines else "- Dati vino limitati"
+    # Prestige/elegance: OR logico (basta uno dei due a rilevarlo)
+    prestige_intent = parse_prestige_intent(q) or llm_intent.get("prestige_intent", False)
+    elegance_intent = (
+        bool(re.search(r"\\b(elegante|elegant|finezza|raffinato|raffinata)\\b", _norm_lc(q)))
+        or llm_intent.get("elegant_intent", False)
+    )
+    # --- Fine LLM Intent Layer ---
+'''
+
+# =========================
+# Test cases: query che il parser attuale non gestisce
+# =========================
+
+TEST_QUERIES = [
+    # Query ambigue/laterali — rompono il rule-based
+    "qualcosa di importante per mia suocera",
+    "voglio stupire",
+    "cena da amici che amano la Francia",
+    "aperitivo estivo ma non banale",
+    "ho già preso il pesce, cosa abbino alla carne?",
+    "vino da portare come regalo",
+    "qualcosa di elegante ma non troppo costoso",
+    "un vino che faccia colpo",
+    # Query che il rule-based gestisce già (devono restare invariate)
+    "rosso elegante",
+    "bianco fresco per cena importante di pesce",
+    "Barolo di Serralunga",
+    "spumante brut sotto 25 euro",
+]
+
+if __name__ == "__main__":
+    print("=== SommelierAI LLM Intent Parser — Test ===\n")
+    print(f"LLM_ENABLED: {LLM_ENABLED}")
+    print(f"LLM_MODEL: {LLM_MODEL}")
+    print(f"API_KEY present: {'YES' if LLM_API_KEY else 'NO — set ANTHROPIC_API_KEY'}\n")
+
+    for q in TEST_QUERIES:
+        print(f"Query: '{q}'")
+        intent = parse_intent_with_llm(q)
+        # Mostra solo i campi non-vuoti
+        active = {k: v for k, v in intent.items() if v and v != [] and v != False}
+        print(f"  → {json.dumps(active, ensure_ascii=False)}\n")
