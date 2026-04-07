@@ -2469,6 +2469,7 @@ def run_search(
             "grapes": grapes_req,
             "sparkling": typology_req.get("sparkling") if typology_req else None,
             "sweetness": typology_req.get("sweetness") if typology_req else None,
+            "value_intent": value_intent,  # ✅ AGGIUNTO
         }
         
         # Info vino top per contestualizzare la reason
