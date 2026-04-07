@@ -1988,16 +1988,7 @@ def _build_wine_card(row: Any, rank: int, score: float, price_delta: float, matc
     if intensity:
         card["intensity"] = intensity
 
-    # freshness derivata (per barra UI Screen 4)
-    freshness = derive_freshness(
-        _norm(getattr(row, "acidity", "")),
-        sparkling or "",
-        _norm(getattr(row, "alcohol_level", "")),
-    )
-    if freshness:
-        card["freshness"] = freshness
-
-    # sparkling derivato
+    # sparkling derivato (PRIMA di usarlo in freshness)
     sparkling = derive_sparkling(
         _norm(getattr(row, "denomination", "")),
         _norm(getattr(row, "style_tags", "")),
@@ -2006,6 +1997,15 @@ def _build_wine_card(row: Any, rank: int, score: float, price_delta: float, matc
     )
     if sparkling:
         card["sparkling"] = sparkling
+
+    # freshness derivata (per barra UI Screen 4)
+    freshness = derive_freshness(
+        _norm(getattr(row, "acidity", "")),
+        sparkling or "",
+        _norm(getattr(row, "alcohol_level", "")),
+    )
+    if freshness:
+        card["freshness"] = freshness
 
     # sweetness normalizzata
     sw = normalize_sweetness(_norm(getattr(row, "sweetness", "")))
