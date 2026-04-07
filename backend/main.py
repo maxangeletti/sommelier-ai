@@ -15,12 +15,16 @@ from fastapi import FastAPI, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 
+# LLM intent parser (dual-step: parse + explain)
+from llm_intent_parser import parse_intent_with_llm, generate_personalized_reason, generate_tasting_notes
+from ui_helpers import should_show_value_badge, get_aroma_icons, get_mock_reviews_count, get_mock_critic_score
+
 
 # =========================
 # Build signature (anti-confusione / anti-regressione)
 # =========================
 
-BUILD_ID = "SommelierAI v0.2 STABILE + A/B/D (CSV schema real) + cache-safe 2026-02-17"
+BUILD_ID = "SommelierAI v0.2 STABILE + A/B/D (CSV schema real) + cache-safe 2026-03-25-v1.6.0"
 
 
 # =========================
@@ -289,7 +293,7 @@ def parse_price(query: str) -> Dict[str, Any]:
     if re.search(r"\b(euro|€)\b", q):
         m7 = re.search(r"(\d{1,3})", q)
         if m7:
-            # fallback “50 euro” => target con delta più permissivo (coerente con "intorno a")
+            # fallback "50 euro" => target con delta più permissivo (coerente con "intorno a")
             return {"target": float(m7.group(1)), "delta": 10.0, "mode": "target"}
 
     return {"mode": "none"}
@@ -311,11 +315,42 @@ def parse_region(query: str) -> Optional[str]:
 
 # --- B: vitigni (match su query -> filtro su grape_varieties) ---
 KNOWN_GRAPES = [
+    # Italiani principali
     "sangiovese", "nebbiolo", "barbera", "montepulciano", "primitivo", "aglianico",
-    "nero d'avola", "negroamaro", "corvina", "glera", "vermentino",
-    "chardonnay", "sauvignon", "sauvignon blanc", "pinot noir",
-    "cabernet sauvignon", "cabernet franc", "merlot", "syrah", "shiraz",
-    "grenache", "riesling", "chenin blanc", "malbec", "tempranillo",
+    "nero d'avola", "negroamaro", "corvina", "corvinone", "rondinella", "molinaro",
+    "glera", "vermentino",
+    "sagrantino", "dolcetto", "arneis", "grignolino", "lagrein", "cannonau",
+    
+    # Bianchi italiani
+    "trebbiano", "verdicchio", "fiano", "greco", "grechetto", "garganega", "pecorino",
+    "cortese", "turbiana", "friulano", "ribolla gialla", "pigato", "vernaccia",
+    "malvasia", "moscato bianco", "moscato di scanzo",
+    
+    # Sicilia e Sud
+    "nerello mascalese", "nerello cappuccio", "frappato", "carricante", "gaglioppo",
+    "zibibbo", "grillo", "catarratto",
+    
+    # Valle d'Aosta e Alto Adige
+    "petit rouge", "prie blanc", "schiava", "lagrein",
+    
+    # Friuli e confine est
+    "vitovska", "rebula",
+    
+    # Emilia
+    "lambrusco di sorbara",
+    
+    # Lazio
+    "cesanese", "procanico",
+    
+    # Bianchi aromatici
+    "gewurztraminer", "albarino",
+    
+    # Internazionali
+    "chardonnay", "sauvignon", "sauvignon blanc", "pinot noir", "pinot nero", "pinot meunier",
+    "cabernet sauvignon", "cabernet franc", "merlot", "petit verdot",
+    "syrah", "shiraz", "grenache", "garnacha", "carignan", "cinsault",
+    "riesling", "chenin blanc", "malbec", "tempranillo", "graciano", "carinena",
+    "touriga nacional", "touriga franca", "tinta roriz",
 ]
 
 
@@ -341,27 +376,6 @@ AROMA_KEYWORDS = {
     "minerale": ["minerale", "pietra focaia", "gesso", "salino", "iodato"],
     "balsamico": ["balsamico", "menta", "eucalipto", "resina"],
 }
-
-
-def derive_aromas(description: str) -> List[str]:
-    """
-    Estrae aromi canonici dal campo description.
-    Ritorna lista di aromi trovati (es. ["agrumi", "minerale", "fiori"]).
-    """
-    if not description:
-        return []
-    
-    desc_lower = description.lower()
-    found_aromas = []
-    
-    for canonical, variants in AROMA_KEYWORDS.items():
-        for variant in variants:
-            # Match parziale: "spezie dolci" deve matchare "spezie"
-            if re.search(r'\b' + re.escape(variant) + r'\w*\b', desc_lower):
-                found_aromas.append(canonical)
-                break  # Una volta trovato il canonical, passa al prossimo
-    
-    return sorted(set(found_aromas))
 
 
 # --- v1.0: Food pairing intent (match cibo-vino) ---
@@ -635,6 +649,50 @@ def derive_intensity(body: str, tannins: str, alcohol_level: str) -> Optional[st
     return "medium"
 
 
+
+def derive_freshness(acidity: str, sparkling: str, alcohol_level: str) -> Optional[str]:
+    """
+    Deriva livello di freschezza (low/medium/high) da acidity, sparkling, alcohol.
+    Freschezza = acidità + effervescenza - alcol.
+    """
+    # Normalizza acidity
+    acid = _normalize_level(acidity)
+    
+    # Sparkling boost
+    sparkling_boost = 0
+    if "spumante" in _norm_lc(sparkling):
+        sparkling_boost = 1
+    elif "frizzante" in _norm_lc(sparkling):
+        sparkling_boost = 1
+    
+    # Alcohol penalty
+    alc = _parse_float_maybe(alcohol_level)
+    alcohol_penalty = 0
+    if alc is not None:
+        if alc >= 14.0:
+            alcohol_penalty = 1
+        elif alc >= 13.0:
+            alcohol_penalty = 0
+    
+    # Calcola freshness score
+    score = 0
+    if acid == "high":
+        score += 2
+    elif acid == "medium":
+        score += 1
+    
+    score += sparkling_boost
+    score -= alcohol_penalty
+    
+    # Map to low/medium/high
+    if score >= 3:
+        return "high"
+    elif score >= 1:
+        return "medium"
+    else:
+        return "low"
+
+
 # --- D: tipologia (sparkling) derivata + sweetness normalizzata ---
 def derive_sparkling(denomination: str, style_tags: str, name: str, description: str) -> str:
     hay = " ".join([_norm_lc(denomination), _norm_lc(style_tags), _norm_lc(name), _norm_lc(description)])
@@ -671,6 +729,7 @@ def parse_typology_request(query: str) -> Dict[str, Optional[str]]:
 
     sparkling: Optional[str] = None
     sweetness: Optional[str] = None
+    tannin: Optional[str] = None
 
     # sparkling keywords
     if re.search(r"\bspumante\b", q) or re.search(r"\bchampagne\b", q) or re.search(r"\bprosecco\b", q):
@@ -697,7 +756,20 @@ def parse_typology_request(query: str) -> Dict[str, Optional[str]]:
         if sweetness is None:
             sweetness = "secco"
 
-    return {"sparkling": sparkling, "sweetness": sweetness}
+    # ✅ AIS Tannin levels (5 livelli) - ORDINE IMPORTANTE: più specifici prima
+    if re.search(r"\bpoco\s+tannico\b|\btannini\s+leggeri\b", q):
+        tannin = "low"
+    elif re.search(r"\btannico\s+morbido\b|\bmorbido\b.*\btannic", q):
+        tannin = "low-medium"
+    elif re.search(r"\btannico\s+aggressivo\b|\baggressivo\b.*\btannic", q):
+        tannin = "very_high"
+    elif re.search(r"\bmolto\s+tannico\b|\btannicissimo\b", q):
+        tannin = "high"
+    elif re.search(r"\btannico\b", q):
+        # "tannico" senza qualificatori → medium-high
+        tannin = "medium-high"
+
+    return {"sparkling": sparkling, "sweetness": sweetness, "tannin": tannin}
 
 
 # --- Intent: "qualità/prezzo" SOLO su richiesta utente ---
@@ -823,7 +895,7 @@ def _filter_by_color(df: pd.DataFrame, color_req: Optional[str]) -> pd.DataFrame
     for c in cols:
         series = df[c].astype(str).map(_norm_lc)
         m = series.apply(lambda x: any(tok in _re.split(r"[\s,;|/]+", x) for tok in accepted))
-        mask = m if mask is None else (mask | m)
+        m_bool = m.astype(bool); mask = m_bool if mask is None else (mask | m_bool)
 
     return df.loc[mask] if mask is not None else df
 
@@ -864,11 +936,12 @@ def _filter_new_A_B_D(
                 mask = mask | lc.str.contains(re.escape(_norm_lc(v)), na=False)
         df = df.loc[mask]
 
-    # D) typology: derived sparkling + normalized sweetness
+    # D) typology: derived sparkling + normalized sweetness + tannin
     sp_req = typology_req.get("sparkling")
     sw_req = typology_req.get("sweetness")
+    tannin_req = typology_req.get("tannin")
 
-    if sp_req or sw_req or intensity_req:
+    if sp_req or sw_req or intensity_req or tannin_req:
         # compute derived columns on the fly (vectorized apply is fine at this scale; dataset is cached)
         derived_sp = df.apply(
             lambda r: derive_sparkling(r.get("denomination", ""), r.get("style_tags", ""), r.get("name", ""), r.get("description", "")),
@@ -877,9 +950,27 @@ def _filter_new_A_B_D(
         derived_sw = df["sweetness"].astype(str).map(normalize_sweetness)
 
         if sp_req:
-            df = df.loc[derived_sp.eq(sp_req)]
+            # ✅ FIX: "frizzante" query includes both frizzante AND spumante (both effervescent)
+            if sp_req == "frizzante":
+                df = df.loc[derived_sp.isin(["frizzante", "spumante"])]
+            else:
+                df = df.loc[derived_sp.eq(sp_req)]
         if sw_req:
             df = df.loc[derived_sw.eq(sw_req)]
+        
+        # ✅ Tannin filter (AIS 5 levels)
+        if tannin_req:
+            # Map CSV tannins (low/medium/high) to AIS levels
+            tannin_map = {
+                "low": ["low"],
+                "low-medium": ["low", "medium"],
+                "medium-high": ["medium", "high"],
+                "high": ["high"],
+                "very_high": ["high"]  # very_high = highest tannins (Sagrantino, Nebbiolo)
+            }
+            allowed_levels = tannin_map.get(tannin_req, [])
+            if allowed_levels:
+                df = df.loc[df["tannins"].isin(allowed_levels)]
 
     # A) intensity: derived from body/tannins/alcohol_level
     if intensity_req:
@@ -1187,11 +1278,11 @@ def _score_row_a9v2_composite(
 
     # ✅ se l'utente chiede "qualità/prezzo" aumentiamo il peso Value (V) in modo controllato
     if boosts.get("value_intent"):
-        Wq = 0.26
-        Wv = 0.20
-        Wf = 0.30
-        Wo = 0.11
-        Wi = 0.03
+        Wq = 0.20  # ridotto da 0.26
+        Wv = 0.50  # AUMENTATO da 0.20 a 0.50 - value diventa dominante
+        Wf = 0.20  # ridotto da 0.30
+        Wo = 0.07  # ridotto da 0.11
+        Wi = 0.03  # invariato
 
     # normalizza pesi base (senza match)
     Wsum = (Wq + Wv + Wf + Wo + Wi) or 1.0
@@ -1358,6 +1449,13 @@ def _keyword_match_score(row: Any, query: str) -> float:
         _norm_lc(getattr(row, "region", "")),
         _norm_lc(getattr(row, "description", "")),
     ])
+    
+    # Check full phrase match first (e.g., "barolo serralunga")
+    q_norm = _norm_lc(query)
+    if q_norm in hay:
+        return 1.0
+    
+    # Fallback: token-by-token matching
     hits = 0
     for t in toks:
         if t in hay:
@@ -1413,6 +1511,8 @@ def _structured_match_components(
     if typology_req:
         sp_req = typology_req.get("sparkling")
         sw_req = typology_req.get("sweetness")
+        tannin_req = typology_req.get("tannin")
+        
         if sp_req:
             sp = derive_sparkling(
                 _norm(getattr(row, "denomination", "")),
@@ -1424,6 +1524,23 @@ def _structured_match_components(
         if sw_req:
             sw = normalize_sweetness(_norm(getattr(row, "sweetness", ""))) or ""
             comps["sweetness"] = 1.0 if _norm_lc(sw) == _norm_lc(sw_req) else 0.0
+        
+        # ✅ Tannin matching (AIS 5 levels)
+        if tannin_req:
+            wine_tannin = _norm_lc(getattr(row, "tannins", ""))
+            # Exact match gets full score
+            if tannin_req == "very_high" and wine_tannin == "high":
+                comps["tannin"] = 1.0  # very_high = high tannins wines
+            elif tannin_req == "high" and wine_tannin == "high":
+                comps["tannin"] = 1.0
+            elif tannin_req == "medium-high" and wine_tannin in ("medium", "high"):
+                comps["tannin"] = 1.0 if wine_tannin == "medium" else 0.8
+            elif tannin_req == "low-medium" and wine_tannin in ("low", "medium"):
+                comps["tannin"] = 1.0 if wine_tannin == "low" else 0.8
+            elif tannin_req == "low" and wine_tannin == "low":
+                comps["tannin"] = 1.0
+            else:
+                comps["tannin"] = 0.0
 
     return comps
 
@@ -1667,7 +1784,7 @@ def _ui_highlights_for_relevance_v2(components: Dict[str, Any]) -> List[str]:
     A1 Budget highlights:
       - 3 slot totali
       - priorità: Match (se forte) → (Quality/Value) → (Occasione/Intensità)
-      - evita “riempimento” con badge deboli
+      - evita "riempimento" con badge deboli
     Compatibile con:
       - chiavi "M/Q/V/O/I"
       - chiavi "__match_score_ui/__quality_score/__value_score/__other_score/__intensity_score"
@@ -1722,7 +1839,7 @@ def _ui_highlights_for_relevance_v2(components: Dict[str, Any]) -> List[str]:
         v_strength = 1.0
 
     # Se entrambi forti (>=2.0) aggiungili entrambi.
-    # Se uno è forte e l’altro borderline, preferisci il forte.
+    # Se uno è forte e l'altro borderline, preferisci il forte.
     # Se entrambi borderline, prendi quello con score più alto.
     if q_label and v_label:
         if q_strength >= 2.0 and v_strength >= 2.0:
@@ -1797,15 +1914,7 @@ def _normalize_color_detail_output(row: Any) -> str:
 
     return ""
 
-def _build_wine_card(
-    row: Any, 
-    rank: int, 
-    score: float, 
-    price_delta: float, 
-    match_score: float = 0.0,
-    query: str = "",
-    ranking_signals: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+def _build_wine_card(row: Any, rank: int, score: float, price_delta: float, match_score: float = 0.0) -> Dict[str, Any]:
     # prezzo mostrato: preferiamo price_avg, fallback price_min
     pr = _price_effective(row)
     price_str = ""
@@ -1826,33 +1935,13 @@ def _build_wine_card(
         tags_parts.append(b)
 
     tags = ", ".join([t for t in tags_parts if t])
-    
-    # ✅ LLM Step 2: Reason personalizzata (se query e segnali disponibili)
-    reason_default = _norm(getattr(row, "description", ""))
-    reason = reason_default
-    
-    if query and ranking_signals:
-        from llm_intent_parser import generate_reason_with_llm
-        try:
-            reason_llm = generate_reason_with_llm(
-                query=query,
-                wine_name=_norm(getattr(row, "name", "")),
-                wine_region=_norm(getattr(row, "region", "")),
-                wine_description=reason_default,
-                ranking_signals=ranking_signals,
-            )
-            if reason_llm and reason_llm.strip():
-                reason = reason_llm
-        except Exception:
-            # Fallback silenzioso: usa descrizione CSV
-            pass
 
     card: Dict[str, Any] = {
         # base
         "id": _norm(getattr(row, "id", "")),
         "name": _norm(getattr(row, "name", "")),
         "price": price_str,
-        "reason": reason,
+        "reason": _norm(getattr(row, "description", "")),  # fallback utile; puoi cambiarlo dopo se vuoi
         "purchase_url": _norm(getattr(row, "purchase_url", "")),
         "tags": tags,
         "rank": rank,
@@ -1899,6 +1988,15 @@ def _build_wine_card(
     if intensity:
         card["intensity"] = intensity
 
+    # freshness derivata (per barra UI Screen 4)
+    freshness = derive_freshness(
+        _norm(getattr(row, "acidity", "")),
+        sparkling or "",
+        _norm(getattr(row, "alcohol_level", "")),
+    )
+    if freshness:
+        card["freshness"] = freshness
+
     # sparkling derivato
     sparkling = derive_sparkling(
         _norm(getattr(row, "denomination", "")),
@@ -1914,19 +2012,23 @@ def _build_wine_card(
     if sw:
         card["sweetness"] = sw
 
-    # ✅ Aromas: derivati da description
-    description = _norm(getattr(row, "description", ""))
-    aromas = derive_aromas(description)
-    if aromas:
-        card["aromas"] = aromas  # Lista di canonical aromas
+    # aroma: non essendoci lista strutturata, non la mettiamo come campo "aromas"
+    # (il requisito "sentori" è gestito come filtro su description)
 
     card["__price_delta"] = round(float(price_delta), 4)
-    
-    # ✅ Badge "Ottimo Valore": mostra se value_score > 0.75 o value_intent presente
-    value_score = ranking_signals.get("__value_score", 0.0) if ranking_signals else 0.0
-    value_intent = ranking_signals.get("value_intent", False) if ranking_signals else False
-    card["ottimo_valore"] = (value_score > 0.75) or value_intent
 
+    
+    # UI Helpers: aromi icons, value badge, mock data
+    aromas_text = _norm(getattr(row, "aromas", ""))
+    if aromas_text:
+        card["aroma_icons"] = get_aroma_icons(aromas_text)
+    
+    # Quality-based mock data per UI
+    quality_val = _parse_float_maybe(_norm(getattr(row, "quality", "")))
+    if quality_val > 0:
+        card["reviews_count"] = get_mock_reviews_count(quality_val)
+        card["critic_score"] = get_mock_critic_score(quality_val)
+    
     return card
 
 def _apply_sort(cards: List[Dict[str, Any]], sort: str, value_intent: bool = False) -> List[Dict[str, Any]]:
@@ -2077,43 +2179,81 @@ def run_search(
     limit = _clamp(int(limit or MAX_RESULTS_DEFAULT), 1, MAX_RESULTS_CAP)
     q = _norm(query)
     
+    # --- LLM Intent Layer Step 1: Parse ---
+    llm_intent = parse_intent_with_llm(q)
+    
     price_info = parse_price(q)
-    region = parse_region(q)
+    region = parse_region(q) or llm_intent.get("region")
 
     # A/B/D requests
-    grapes_req = parse_grapes(q)
+    grapes_req = parse_grapes(q) or llm_intent.get("grapes", [])
     aromas_req = parse_aromas(q)
     intensity_req = parse_intensity_request(q)
     typology_req = parse_typology_request(q)
-    foods_req = parse_food_request(q)
+    
+    # Foods: unione rule-based + LLM
+    foods_rule = parse_food_request(q)
+    foods_llm = llm_intent.get("foods", [])
+    foods_req = sorted(set(foods_rule) | set(foods_llm))
 
-
-    color_req = parse_color_request(q)
+    color_req = parse_color_request(q) or llm_intent.get("color")
 
     # VALUE intent (solo se richiesto dall'utente)
-    value_intent = parse_value_intent(q)
+    value_intent = parse_value_intent(q) or llm_intent.get("value_intent", False)
 
     # ✅ Opzione 2: se l'utente chiede qualità/prezzo e non ha scelto un sort specifico, usa relevance_v2
     if value_intent and (not sort or sort == "relevance"):
         sort = "relevance_v2"
 
     style_intent = parse_style_intent(q)
-    occasion_intent = parse_occasion_intent(q)
-    prestige_intent = parse_prestige_intent(q)
-    elegance_intent = bool(re.search(r"\b(elegante|elegant|finezza|raffinato|raffinata)\b", _norm_lc(q)))
+    
+    # Occasion: LLM arricchisce se rule-based non ha trovato nulla
+    occasion_intent = parse_occasion_intent(q) or llm_intent.get("occasion")
+    # DEBUG: check Barolo pre-filter
+    if "barolo" in q.lower():
+        barolo_pre = df[df["name"].str.contains("Barolo", case=False, na=False)]
+    prestige_intent = parse_prestige_intent(q) or llm_intent.get("prestige_intent", False)
+    elegance_intent = (
+        bool(re.search(r"\b(elegante|elegant|finezza|raffinato|raffinata)\b", _norm_lc(q)))
+        or llm_intent.get("elegant_intent", False)
+    )
 
     filtered = df
 
     # price filter
     filtered = _filter_by_price(filtered, price_info)
 
-    # region filter (match in region/zone/denomination/country)
+    # region filter (match in region/zone/denomination/country) - OR logic
     if region:
+        mask = pd.Series([False] * len(filtered), index=filtered.index)
         for col in ["region", "zone", "denomination", "country"]:
-            filtered = _filter_by_text_contains(filtered, col, region)
+            if col in filtered.columns:
+                v = _norm_lc(region)
+                mask |= filtered[col].astype(str).str.lower().str.contains(v, na=False)
+        filtered = filtered.loc[mask]
+        filtered = filtered.loc[mask]
+
+    # Tannin → color rosso implicito (tannino è rilevante solo per rossi)
+    if typology_req.get("tannin") and not color_req:
+        color_req = "rosso"
 
     # color filter (bianco/rosso/rosato)
     filtered = _filter_by_color(filtered, color_req)
+
+    # Keyword filter: se query matcha esattamente una denominazione, mostra SOLO quella
+    keyword_matches = []
+    for idx, row in filtered.iterrows():
+        name_lower = str(row.get('name', '')).lower()
+        denom_lower = str(row.get('denomination', '')).lower()
+        q_lower = q.lower().strip()
+        
+        # Match esatto su name o denomination
+        if q_lower in name_lower or q_lower in denom_lower:
+            keyword_matches.append(idx)
+    
+    # Se ci sono match esatti, mostra SOLO quelli
+    if len(keyword_matches) > 0 and len(keyword_matches) < len(filtered):
+        filtered = filtered.loc[keyword_matches]
     # A/B/D filters
     filtered = _filter_new_A_B_D(filtered, grapes_req, aromas_req, intensity_req, typology_req)
     timings["filters"] = round(time.perf_counter() - t0, 6)
@@ -2190,30 +2330,8 @@ def run_search(
 
         else:
             s, pdlt = _score_row(r, price_info, boosts, value_intent=value_intent)
-        
-        # ✅ Prepara segnali di ranking per LLM explain personalizzato
-        ranking_signals = {
-            "color_req": color_req,
-            "region": region,
-            "prestige_intent": prestige_intent,
-            "elegance_intent": elegance_intent,
-            "occasion_intent": occasion_intent,
-            "foods_req": foods_req,
-            "intensity_req": intensity_req,
-            "tannin_req": typology_req.get("tannin"),
-            "style_intent": style_intent,
-            "value_intent": value_intent,
-        }
 
-        card = _build_wine_card(
-            r, 
-            rank=0, 
-            score=s, 
-            price_delta=pdlt, 
-            match_score=mscore,
-            query=query,  # ✅ Pass query originale per LLM
-            ranking_signals=ranking_signals,  # ✅ Pass segnali per LLM
-        )
+        card = _build_wine_card(r, rank=0, score=s, price_delta=pdlt, match_score=mscore)
         
         # ✅ Assegna match_breakdown flattenato (MAI il dict originale)
         card["match_breakdown"] = flatten_mbd
@@ -2309,11 +2427,72 @@ def run_search(
             debug_map[cid] = dbg
             timings["score"] = round(time.perf_counter() - t0, 6)
             t0 = time.perf_counter()
+    
+    # Salva count totale PRIMA del limit
+    total_count = len(scored)
     sorted_cards = _apply_sort(scored, sort, value_intent=value_intent)[:limit]
     timings["sort"] = round(time.perf_counter() - t0, 6)
     t0 = time.perf_counter()
     for i, c in enumerate(sorted_cards, start=1):
         c["rank"] = i
+    
+    # --- LLM Intent Layer Step 2: Explain ---
+    # Genera reason personalizzata per il vino top-ranked
+    if sorted_cards:
+        # Estrai tannin_req dalla query (parser veloce)
+        tannin_req = None
+        q_lc = _norm_lc(q)
+        # Pattern LOW: negazioni esplicite (poco/non/senza + tannico)
+        if re.search(r"\b(poco|non|senza)\s+(tannic|tannin)", q_lc):
+            tannin_req = "low"
+        # Pattern LOW: tannini + aggettivo morbido/basso/delicato
+        elif re.search(r"\btannin[oi]\s+(bass[oi]|morbid[oi]|delicat[oi]|legg?er[oi])\b", q_lc):
+            tannin_req = "low"
+        # Pattern HIGH: tannico/astringente (dopo aver escluso i LOW)
+        elif re.search(r"\b(tannic[oi]|astringent[ei])\b", q_lc):
+            tannin_req = "high"
+        # Pattern HIGH: tannini + aggettivo forte (alti/importanti/marcati)
+        elif re.search(r"\btannin[oi]\s+(alt[oi]|important[ei]|marcati|evident[ei])\b", q_lc):
+            tannin_req = "high"
+        
+        # Raccogliere segnali attivi dal ranking
+        active_signals = {
+            "color": color_req,
+            "prestige_intent": prestige_intent,
+            "elegant_intent": elegance_intent,
+            "occasion": occasion_intent,
+            "foods": foods_req,
+            "style": style_intent.get("style") if style_intent else None,
+            "tannin_req": tannin_req,
+            "intensity_req": intensity_req,
+            "region": region,
+            "grapes": grapes_req,
+            "sparkling": typology_req.get("sparkling") if typology_req else None,
+            "sweetness": typology_req.get("sweetness") if typology_req else None,
+        }
+        
+        # Info vino top per contestualizzare la reason
+        top_wine_info = {
+            "name": sorted_cards[0].get("name"),
+            "region": sorted_cards[0].get("region"),
+        }
+        
+        # Genera reason personalizzata
+        personalized_reason = generate_personalized_reason(
+            query=q,
+            active_signals=active_signals,
+            top_wine=top_wine_info
+        )
+        
+        # Sostituisci reason statica con quella personalizzata
+        sorted_cards[0]["reason"] = personalized_reason
+        
+        # ✅ UI Badge: "Ottimo Valore" per tutti i vini
+        for card in sorted_cards:
+            card["show_value_badge"] = should_show_value_badge(card, active_signals)
+    
+    timings["llm_explain"] = round(time.perf_counter() - t0, 6)
+    t0 = time.perf_counter()
 
     meta = {
         "build_id": BUILD_ID,
@@ -2335,6 +2514,7 @@ def run_search(
             "value_intent": value_intent,
         },
         "count": len(sorted_cards),
+        "total_count": total_count,
         "timestamp": int(_now()),
     }
     if explain:
@@ -2657,120 +2837,6 @@ def get_stats() -> JSONResponse:
     return JSONResponse(payload)
 
 
-@app.get("/wine/{wine_id}/similar")
-def get_similar_wines(wine_id: str, limit: int = 3) -> JSONResponse:
-    """
-    Endpoint per "Gli Imperdibili": top 3 vini stessa denomination.
-    
-    Args:
-        wine_id: ID del vino corrente
-        limit: Numero max vini simili (default 3)
-    
-    Returns:
-        {"similar_wines": [wine_card, ...]}
-    """
-    try:
-        wine_id_int = int(wine_id)
-    except ValueError:
-        return JSONResponse({"error": "Invalid wine_id"}, status_code=400)
-    
-    df = get_wines_df()
-    wine_row = df[df["id"] == str(wine_id_int)]
-    
-    if wine_row.empty:
-        return JSONResponse({"error": "Wine not found"}, status_code=404)
-    
-    row = wine_row.iloc[0]
-    denomination = _norm(getattr(row, "denomination", ""))
-    
-    if not denomination:
-        return JSONResponse({"similar_wines": []})
-    
-    # Trova vini stessa denomination, escludi vino corrente
-    similar_df = df[
-        (df["denomination"].astype(str).str.lower() == denomination.lower()) &
-        (df["id"] != str(wine_id_int))
-    ]
-    
-    # Ordina per quality desc
-    similar_df = similar_df.copy()
-    similar_df["quality"] = pd.to_numeric(similar_df["quality"], errors="coerce")
-    similar_df = similar_df.sort_values(by="quality", ascending=False, na_position="last")
-    
-    # Prendi top N
-    similar_df = similar_df.head(limit)
-    
-    # Build cards
-    similar_wines = []
-    for idx, sim_row in similar_df.iterrows():
-        card = _build_wine_card(
-            row=sim_row,
-            rank=0,  # Non serve rank per simili
-            score=float(getattr(sim_row, "quality", 0.0) or 0.0),
-            price_delta=0.0,
-            match_score=0.0,
-        )
-        similar_wines.append(card)
-    
-    return JSONResponse({"similar_wines": similar_wines})
-
-
-@app.get("/wine/{wine_id}/tasting_notes")
-def get_tasting_notes(wine_id: str, query: str = "") -> JSONResponse:
-    """
-    Endpoint per generare tasting notes LLM (60-80 parole) per dettaglio vino.
-    Chiamato quando user clicca "Più dettagli" in Screen 3.
-    
-    Args:
-        wine_id: ID del vino
-        query: Query utente originale (opzionale, per contestualizzare)
-    
-    Returns:
-        {"tasting_notes": str, "wine_id": str}
-    """
-    try:
-        wine_id_int = int(wine_id)
-    except ValueError:
-        return JSONResponse({"error": "Invalid wine_id"}, status_code=400)
-    
-    # Trova vino nel dataset
-    df = get_wines_df()
-    wine_row = df[df["id"] == str(wine_id_int)]
-    
-    if wine_row.empty:
-        return JSONResponse({"error": "Wine not found"}, status_code=404)
-    
-    row = wine_row.iloc[0]
-    
-    # Prepara specs per LLM
-    wine_specs = {
-        "body": _norm(getattr(row, "body", "")),
-        "tannins": _norm(getattr(row, "tannins", "")),
-        "acidity": _norm(getattr(row, "acidity", "")),
-        "alcohol_level": _norm(getattr(row, "alcohol_level", "")),
-        "color": _norm(getattr(row, "color", "")),
-        "color_detail": _normalize_color_detail_output(row),
-    }
-    
-    # Chiama LLM Step 3
-    from llm_intent_parser import generate_tasting_notes_with_llm
-    
-    tasting_notes = generate_tasting_notes_with_llm(
-        query=query or "",
-        wine_name=_norm(getattr(row, "name", "")),
-        wine_region=_norm(getattr(row, "region", "")),
-        wine_grapes=_norm(getattr(row, "grape_varieties", "")),
-        wine_vintage=_norm(getattr(row, "vintage", "")),
-        wine_description=_norm(getattr(row, "description", "")),
-        wine_specs=wine_specs,
-    )
-    
-    return JSONResponse({
-        "wine_id": wine_id,
-        "tasting_notes": tasting_notes,
-    })
-
-
 @app.get("/suggestions")
 def get_suggestions() -> JSONResponse:
     suggestions = [
@@ -2784,6 +2850,77 @@ def get_suggestions() -> JSONResponse:
     return JSONResponse({"suggestions": suggestions})
 
 # --- CLI: normalize CSV ---
+
+
+# =========================
+# Wine Details Endpoint
+# =========================
+
+@app.get("/wine/{wine_id}/details")
+def get_wine_details(wine_id: str) -> JSONResponse:
+    """
+    Endpoint per dettaglio vino completo con tasting notes LLM.
+    """
+    df = get_wines_df()
+    wine_row = df[df["id"] == wine_id]
+    
+    if wine_row.empty:
+        return JSONResponse({"error": "Wine not found"}, status_code=404)
+    
+    row = wine_row.iloc[0]
+    wine_dict = {
+        "id": _norm(getattr(row, "id", "")),
+        "name": _norm(getattr(row, "name", "")),
+        "producer": _norm(getattr(row, "producer", "")),
+        "region": _norm(getattr(row, "region", "")),
+        "denomination": _norm(getattr(row, "denomination", "")),
+        "vintage": _norm(getattr(row, "vintage", "")),
+        "grapes": _norm(getattr(row, "grape_varieties", "")),
+        "aromas": _norm(getattr(row, "aromas", "")),
+        "food_pairings": _norm(getattr(row, "food_pairings", "")),
+        "quality": _norm(getattr(row, "quality", "")),
+        "price": _price_effective(row),
+    }
+    
+    wine_dict["tasting_notes"] = generate_tasting_notes(wine_dict)
+    
+    aromas_text = wine_dict.get("aromas", "")
+    if aromas_text:
+        wine_dict["aroma_icons"] = get_aroma_icons(aromas_text)
+    
+    quality_val = _parse_float_maybe(wine_dict.get("quality", ""))
+    if quality_val > 0:
+        wine_dict["reviews_count"] = get_mock_reviews_count(quality_val)
+        wine_dict["critic_score"] = get_mock_critic_score(quality_val)
+    
+    # Deriva campi intensity, sparkling, freshness per UI Screen 4
+    intensity = derive_intensity(
+        _norm(getattr(row, "body", "")),
+        _norm(getattr(row, "tannins", "")),
+        _norm(getattr(row, "alcohol_level", "")),
+    )
+    if intensity:
+        wine_dict["intensity"] = intensity
+    
+    sparkling = derive_sparkling(
+        _norm(getattr(row, "denomination", "")),
+        _norm(getattr(row, "style_tags", "")),
+        _norm(getattr(row, "name", "")),
+        _norm(getattr(row, "description", "")),
+    )
+    if sparkling:
+        wine_dict["sparkling"] = sparkling
+    
+    freshness = derive_freshness(
+        _norm(getattr(row, "acidity", "")),
+        sparkling or "",
+        _norm(getattr(row, "alcohol_level", "")),
+    )
+    if freshness:
+        wine_dict["freshness"] = freshness
+    
+    return JSONResponse({"wine": wine_dict})
+
 if __name__ == "__main__":
     import sys
     import pandas as pd
