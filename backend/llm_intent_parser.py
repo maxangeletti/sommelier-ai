@@ -527,6 +527,137 @@ INTEGRATION_SNIPPET = '''
 # Test cases: query che il parser attuale non gestisce
 # =========================
 
+# =========================
+# LLM Step 2: Explain (reason personalizzata)
+# =========================
+
+def generate_personalized_reason(
+    query: str,
+    active_signals: Dict[str, Any],
+    top_wine: Dict[str, str]
+) -> str:
+    """
+    Genera una reason personalizzata per il vino top-ranked.
+    Usa LLM solo se abilitato, altrimenti fallback testuale.
+    """
+    if not LLM_ENABLED or not LLM_API_KEY:
+        # Fallback senza LLM
+        return f"{top_wine.get('name', 'Questo vino')} rappresenta un'ottima scelta per la tua richiesta."
+    
+    # Costruisci prompt contestuale
+    signals_text = ""
+    if active_signals.get("color"):
+        signals_text += f"Colore: {active_signals['color']}. "
+    if active_signals.get("region"):
+        signals_text += f"Regione: {active_signals['region']}. "
+    if active_signals.get("foods"):
+        signals_text += f"Abbinamento: {', '.join(active_signals['foods'])}. "
+    if active_signals.get("occasion"):
+        signals_text += f"Occasione: {active_signals['occasion']}. "
+    if active_signals.get("prestige_intent"):
+        signals_text += "Bottiglia importante/premium richiesta. "
+    if active_signals.get("elegant_intent"):
+        signals_text += "Stile elegante/raffinato richiesto. "
+    
+    prompt = f"""Query utente: "{query}"
+Segnali attivi: {signals_text}
+Vino raccomandato: {top_wine.get('name')} ({top_wine.get('region')})
+
+Scrivi una frase di massimo 25 parole che spieghi perché questo vino è perfetto per la richiesta.
+Sii specifico, evita frasi generiche. Menziona un dettaglio chiave del vino o dell'abbinamento."""
+    
+    try:
+        response = httpx.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": LLM_API_KEY,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json={
+                "model": LLM_MODEL,
+                "max_tokens": 128,
+                "messages": [{"role": "user", "content": prompt}]
+            },
+            timeout=LLM_TIMEOUT_SEC,
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            text = "".join([c.get("text", "") for c in data.get("content", []) if c.get("type") == "text"])
+            return text.strip() or f"{top_wine.get('name')} rappresenta un'ottima scelta."
+        else:
+            return f"{top_wine.get('name')} rappresenta un'ottima scelta per la tua richiesta."
+    
+    except Exception:
+        return f"{top_wine.get('name')} rappresenta un'ottima scelta per la tua richiesta."
+
+
+# =========================
+# LLM Step 3: Tasting Notes
+# =========================
+
+def generate_tasting_notes(wine_dict: Dict[str, Any]) -> str:
+    """
+    Genera tasting notes descrittive per WineDetailView.
+    Fallback: costruisce note sintetiche dai metadati.
+    """
+    if not LLM_ENABLED or not LLM_API_KEY:
+        # Fallback senza LLM: costruisci nota sintetica
+        name = wine_dict.get("name", "Questo vino")
+        region = wine_dict.get("region", "")
+        grapes = wine_dict.get("grapes", "")
+        aromas = wine_dict.get("aromas", "")
+        
+        parts = [f"{name}"]
+        if region:
+            parts.append(f"dalla regione {region}")
+        if grapes:
+            parts.append(f"prodotto con uve {grapes}")
+        if aromas:
+            parts.append(f"presenta sentori di {aromas}")
+        
+        return " ".join(parts) + "."
+    
+    # Prompt LLM per tasting notes
+    prompt = f"""Scrivi tasting notes professionali (60-80 parole) per:
+
+Vino: {wine_dict.get('name', '')}
+Regione: {wine_dict.get('region', '')}
+Uve: {wine_dict.get('grapes', '')}
+Sentori: {wine_dict.get('aromas', '')}
+Abbinamenti: {wine_dict.get('food_pairings', '')}
+
+Stile: descrittivo ma accessibile, come un sommelier che parla a un appassionato.
+Focus: vista, olfatto, gusto, chiusura. Evita frasi generiche."""
+    
+    try:
+        response = httpx.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": LLM_API_KEY,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json={
+                "model": LLM_MODEL,
+                "max_tokens": 256,
+                "messages": [{"role": "user", "content": prompt}]
+            },
+            timeout=LLM_TIMEOUT_SEC,
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            text = "".join([c.get("text", "") for c in data.get("content", []) if c.get("type") == "text"])
+            return text.strip() or f"{wine_dict.get('name')} è un vino di carattere."
+        else:
+            return f"{wine_dict.get('name')} è un vino di carattere dalla regione {wine_dict.get('region', '')}."
+    
+    except Exception:
+        return f"{wine_dict.get('name')} è un vino di carattere dalla regione {wine_dict.get('region', '')}."
+
+
 TEST_QUERIES = [
     # Query ambigue/laterali — rompono il rule-based
     "qualcosa di importante per mia suocera",
