@@ -271,15 +271,9 @@ final class ChatViewModel: ObservableObject {
             }
         }()
 
-        switch displaySort {
-        case .price_asc, .price_desc:
-            var seen = Set<String>()
-            let unique = priceFiltered.filter { seen.insert($0.id).inserted }
-            return unique.sorted { displaySort.less($0, $1) }
-
-        default:
-            return priceFiltered
-        }
+        // ✅ FIX: NON re-sortare MAI - usa sempre l'ordine del backend
+        // Il backend già ordina correttamente in base al sort mode
+        return priceFiltered
     }
 
     // ✅ Guard locale prezzo: DISABILITATO (backend è source of truth)
@@ -572,7 +566,8 @@ final class ChatViewModel: ObservableObject {
                             messages[idx].text = gotAnyWine ? "Ecco i migliori risultati:" : "Nessun vino trovato per questa ricerca. Prova con termini diversi."
                         }
 
-                        // ✅ base = risultati completi (dopo color guard)
+                        // 🔧 FIX RANKING BUG: USA SOLO i risultati dal backend (già ordinati correttamente)
+                        // NON usare messages[idx].wines che è stato popolato durante streaming in ordine casuale
                         let base: [WineCard] = {
                             if let finalResults = ev.results {
                                 return finalResults.filter { passesLocalColorGuard($0, query: query) }
@@ -580,7 +575,9 @@ final class ChatViewModel: ObservableObject {
                             if let finalWines = ev.wines {
                                 return finalWines.filter { passesLocalColorGuard($0, query: query) }
                             }
-                            return (messages[idx].wines ?? []).filter { passesLocalColorGuard($0, query: query) }
+                            // ❌ FALLBACK RIMOSSO: messages[idx].wines in ordine sbagliato
+                            // Se il backend non ritorna results/wines, meglio array vuoto
+                            return []
                         }()
 
                         // ✅ salva sorgente base + aggiorna opzioni vitigno
@@ -666,6 +663,8 @@ final class ChatViewModel: ObservableObject {
                                 : bt
                         }
 
+                        // 🔧 FIX RANKING BUG: USA SOLO i risultati dal backend (già ordinati correttamente)
+                        // NON usare bufferedWines che sono in ordine di streaming casuale
                         let base: [WineCard] = {
                             if let finalResults = ev.results {
                                 return finalResults.filter { passesLocalColorGuard($0, query: query) }
@@ -673,7 +672,9 @@ final class ChatViewModel: ObservableObject {
                             if let finalWines = ev.wines {
                                 return finalWines.filter { passesLocalColorGuard($0, query: query) }
                             }
-                            return bufferedWines.filter { passesLocalColorGuard($0, query: query) }
+                            // ❌ FALLBACK RIMOSSO: bufferedWines in ordine sbagliato
+                            // Se il backend non ritorna results/wines, meglio array vuoto
+                            return []
                         }()
 
                         self.lastAssistantBaseWines = base
@@ -773,7 +774,13 @@ final class ChatViewModel: ObservableObject {
 }
 
 /*
- Nota rapida (non cambio ora)
+ 🔧 FIX RANKING BUG (2026-04-03):
+ - Rimosso fallback a bufferedWines e messages[idx].wines nel blocco `final`
+ - Questi array contenevano vini in ordine di streaming casuale, non ordinati dal backend
+ - Ora usa SOLO ev.results o ev.wines che arrivano dal backend già ordinati correttamente
+ - Se il backend non ritorna results/wines, mostra array vuoto invece di dati in ordine sbagliato
+ 
+ Note precedenti:
  - FIX sheet vitigno vuota: aggiunta prepareGrapeSheetOptions() + rebuild opzioni in load().
  - Multi-filtro: applyAllLocalFilters applicato in LIVE + FINAL + COMMIT (patch minime).
  - Nessun refactor, solo patch minime.

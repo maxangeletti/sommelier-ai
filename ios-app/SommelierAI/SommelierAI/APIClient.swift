@@ -32,7 +32,7 @@ import Foundation
 
 final class APIClient {
     private let baseURL = URL(string: "https://sommelier-ai.onrender.com")!
-    private let timeout: TimeInterval = 60
+    private let timeout: TimeInterval = 120
 
     private struct SuggestionsResponse: Decodable {
         let suggestions: [String]
@@ -43,13 +43,13 @@ final class APIClient {
         var req = URLRequest(url: baseURL.appendingPathComponent("/search"))
         req.httpMethod = "POST"
         req.timeoutInterval = timeout
+        req.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData  // ✅ DISABILITA CACHE
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         var body: [String: Any] = [
             "query": query,
             "sort": sortMode,
-            "limit": 20,
-            "explain": true
+            "limit": 20
         ]
 
         #if DEBUG
@@ -89,8 +89,7 @@ final class APIClient {
         var items: [URLQueryItem] = [
             URLQueryItem(name: "query", value: query),
             URLQueryItem(name: "sort", value: sortMode),
-            URLQueryItem(name: "limit", value: String(limit)),
-            URLQueryItem(name: "explain", value: "true")
+            URLQueryItem(name: "limit", value: String(limit))
         ]
 
         #if DEBUG
@@ -104,6 +103,7 @@ final class APIClient {
         var req = URLRequest(url: url)
         req.httpMethod = "GET"
         req.timeoutInterval = timeout
+        req.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData  // ✅ DISABILITA CACHE
         req.setValue("text/event-stream", forHTTPHeaderField: "Accept")
         req.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
 
@@ -252,6 +252,55 @@ final class APIClient {
         let url = baseURL.appendingPathComponent("/suggestions")
         let (data, _) = try await URLSession.shared.data(from: url)
         return try JSONDecoder().decode(SuggestionsResponse.self, from: data).suggestions
+    }
+    
+    // MARK: - Tasting Notes (LLM Step 3)
+    /// Chiama GET /wine/{id}/tasting_notes per ottenere note degustazione LLM
+    func getTastingNotes(wineId: String, query: String = "") async throws -> String {
+        var components = URLComponents(url: baseURL.appendingPathComponent("/wine/\(wineId)/tasting_notes"), resolvingAgainstBaseURL: false)!
+        if !query.isEmpty {
+            components.queryItems = [URLQueryItem(name: "query", value: query)]
+        }
+        
+        guard let url = components.url else {
+            throw URLError(.badURL)
+        }
+        
+        let (data, resp) = try await URLSession.shared.data(from: url)
+        guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+        
+        struct TastingNotesResponse: Decodable {
+            let wine_id: String
+            let tasting_notes: String
+        }
+        
+        let decoded = try JSONDecoder().decode(TastingNotesResponse.self, from: data)
+        return decoded.tasting_notes
+    }
+    
+    // MARK: - Similar Wines (Gli Imperdibili)
+    /// Chiama GET /wine/{id}/similar per ottenere vini simili (stessa denomination)
+    func getSimilarWines(wineId: String, limit: Int = 3) async throws -> [WineCard] {
+        var components = URLComponents(url: baseURL.appendingPathComponent("/wine/\(wineId)/similar"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [URLQueryItem(name: "limit", value: String(limit))]
+        
+        guard let url = components.url else {
+            throw URLError(.badURL)
+        }
+        
+        let (data, resp) = try await URLSession.shared.data(from: url)
+        guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+        
+        struct SimilarWinesResponse: Decodable {
+            let similar_wines: [WineCard]
+        }
+        
+        let decoded = try JSONDecoder().decode(SimilarWinesResponse.self, from: data)
+        return decoded.similar_wines
     }
 }
 

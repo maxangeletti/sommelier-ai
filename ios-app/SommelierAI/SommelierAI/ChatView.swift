@@ -48,6 +48,9 @@ struct ChatView: View {
     @State private var expandedSuggestion: String? = nil
     @State private var suggestionsSeed: Int = 0
     @State private var forceScrollToBottomTick: Int = 0
+    
+    // ✅ Check per query pendente da WelcomeView
+    @State private var hasCheckedPendingQuery = false
 
     // ✅ Sheets filtri
     @State private var showGrapeSheet: Bool = false
@@ -475,7 +478,24 @@ struct ChatView: View {
             .padding(12)
         }
         .background(AppColors.backgroundPrimary)
-        .onAppear { vm.attachTierStore(tierStore) }
+        .onAppear {
+            vm.attachTierStore(tierStore)
+            
+            // ✅ Check per query pendente da WelcomeView
+            if !hasCheckedPendingQuery {
+                hasCheckedPendingQuery = true
+                if let pendingQuery = UserDefaults.standard.string(forKey: "pendingSearchQuery") {
+                    inputText = pendingQuery
+                    UserDefaults.standard.removeObject(forKey: "pendingSearchQuery")
+                    // Triggera ricerca automaticamente
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        vm.send(pendingQuery)
+                        forceScrollToBottomTick += 1
+                        inputText = ""
+                    }
+                }
+            }
+        }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -822,8 +842,23 @@ struct ChatView: View {
             }
 
             HStack(spacing: 6) {
+                // ✅ Badge "Ottimo Valore" (priorità massima)
+                if wine.ottimo_valore == true {
+                    HStack(spacing: 4) {
+                        Image(systemName: "star.fill")
+                            .font(.caption2)
+                        Text("Ottimo Valore")
+                            .font(.caption.weight(.semibold))
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.green)
+                    .clipShape(Capsule())
+                }
+                
                 if let highlights = wine.ui_highlights, !highlights.isEmpty {
-                    ForEach(Array(highlights.prefix(3)), id: \.self) { h in
+                    ForEach(Array(highlights.prefix(wine.ottimo_valore == true ? 2 : 3)), id: \.self) { h in
                         badgeLight(h)
                     }
                 } else {
@@ -834,11 +869,6 @@ struct ChatView: View {
                     if wine.reason.lowercased().contains("cena") ||
                         wine.reason.lowercased().contains("importante") {
                         badge("Ideale cena importante")
-                    }
-
-                    if let score = wine.score, score > 4.4,
-                       let price = wine.price, price < 35 {
-                        badge("Top qualità/prezzo")
                     }
                 }
             }
@@ -870,41 +900,35 @@ struct ChatView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
             }
+            
+            // ✅ Aromi (icons + text)
+            if let aromas = wine.aromas, !aromas.isEmpty {
+                HStack(spacing: 8) {
+                    ForEach(Array(aromas.prefix(4)), id: \.self) { aroma in
+                        HStack(spacing: 4) {
+                            Image(systemName: aromaIcon(for: aroma))
+                                .font(.caption2)
+                                .foregroundStyle(AppColors.primaryWine)
+                            Text(aroma.capitalized)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .padding(.top, 4)
+            }
 
-            // ✅ UI-C: bottone espandi/collassa
-            let isExpanded = expandedWineIDs.contains(wine.id)
-            Button {
-                if isExpanded { expandedWineIDs.remove(wine.id) }
-                else { expandedWineIDs.insert(wine.id) }
+            // ✅ UI-C: NavigationLink al dettaglio
+            NavigationLink {
+                WineDetailView(wine: wine, userQuery: vm.messages.last(where: { $0.role == .user })?.text ?? "")
             } label: {
                 HStack {
-                    Text(isExpanded ? "Meno dettagli" : "Più dettagli")
+                    Text("Vedi dettaglio completo")
                         .font(.caption).foregroundStyle(AppColors.accentWine)
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                    Image(systemName: "chevron.right")
                         .font(.caption2).foregroundStyle(AppColors.accentWine)
                 }
             }.buttonStyle(.plain)
-
-            if isExpanded {
-                let judge = judgementsInline(wine)
-                if !judge.isEmpty {
-                    Text(judge)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                }
-
-                if let url = wine.purchase_url, let u = URL(string: url) {
-                    Link("Apri link acquisto", destination: u)
-                        .font(.footnote)
-                }
-
-                if let tags = wine.tags, !tags.isEmpty {
-                    Text(tags.filter { !["red","white","rose","rosso","bianco","rosato","ruby_red","ruby red","low","medium","high","fermo","secco","dolce","amabile","frizzante","spumante","straw yellow","straw_yellow","sparkling","sweet"].contains($0.lowercased()) }.map { $0.replacingOccurrences(of: "_", with: " ") }.joined(separator: " • "))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
         }
         .padding(12)
         .background(AppColors.cardBackground)
@@ -1097,6 +1121,23 @@ struct ChatView: View {
         guard unique.count > 1 else { return nil }
         let joined = unique.map(String.init).joined(separator: " • ")
         return "Annate disponibili: \(joined)"
+    }
+    
+    // MARK: - Aroma Icon Mapping
+    private func aromaIcon(for aroma: String) -> String {
+        switch aroma.lowercased() {
+        case "agrumi": return "leaf.fill"
+        case "frutta rossa": return "heart.fill"
+        case "frutta nera": return "circle.fill"
+        case "fiori": return "sparkles"
+        case "spezie": return "flame.fill"
+        case "vaniglia": return "moon.fill"
+        case "tostato": return "cup.and.saucer.fill"
+        case "erbaceo": return "leaf"
+        case "minerale": return "mountain.2.fill"
+        case "balsamico": return "wind"
+        default: return "circle"
+        }
     }
 }
 

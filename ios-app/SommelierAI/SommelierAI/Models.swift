@@ -56,6 +56,13 @@ struct SearchMeta: Codable {
     var build_id: String?
 }
 
+// MARK: - AromaIcon
+
+struct AromaIcon: Codable, Hashable {
+    var name: String
+    var icon: String
+}
+
 // MARK: - WineCard
 
 struct WineCard: Identifiable, Codable, Hashable {
@@ -95,8 +102,18 @@ struct WineCard: Identifiable, Codable, Hashable {
 
     var grapes: String?
     var intensity: String?
+    var sparkling: String?             // ✅ NEW: tipo frizzante (fermo/spumante/frizzante)
+    var freshness: String?             // ✅ NEW: freschezza (low/medium/high)
+    var sweetness: String?             // ✅ NEW: dolcezza (secco/abboccato/dolce)
     var food_pairings: [String]?
     var tags: [String]?
+    var aromas: [String]?              // ✅ NEW: aromi derivati da backend
+    var aroma_icons: [AromaIcon]?      // ✅ NEW: icone aromi con emoji
+    var ottimo_valore: Bool?           // ✅ NEW: badge "Ottimo Valore" (LEGACY)
+    var show_value_badge: Bool?        // ✅ NEW: badge "Ottimo Valore" (NUOVO)
+    var tasting_notes: String?         // ✅ NEW: note degustazione LLM (lazy load)
+    var reviews_count: Int?            // ✅ NEW: numero recensioni (mock)
+    var critic_score: Int?             // ✅ NEW: punteggio critico (mock)
 
     // MARK: Ratings
 
@@ -105,6 +122,7 @@ struct WineCard: Identifiable, Codable, Hashable {
     // MARK: Explainability
 
     var ui_highlights: [String]?
+    var match_explanation: [String]?   // ✅ NEW: spiegazione match (array di stringhe)
     var match_breakdown: [String: Double]?
     var explain: [String]?
     var __components: [String: Double]?
@@ -131,10 +149,19 @@ struct WineCard: Identifiable, Codable, Hashable {
         case vintage
         case color
         case grapes, intensity
+        case sparkling, freshness, sweetness  // ✅ NEW
         case food_pairings
         case tags
+        case aromas              // ✅ NEW
+        case aroma_icons         // ✅ NEW
+        case ottimo_valore       // ✅ NEW (LEGACY)
+        case show_value_badge    // ✅ NEW
+        case tasting_notes       // ✅ NEW
+        case reviews_count       // ✅ NEW
+        case critic_score        // ✅ NEW
         case rating_overall
         case ui_highlights
+        case match_explanation   // ✅ NEW
         case match_breakdown
         case quality, balance, persistence, color_detail
         case explain
@@ -172,13 +199,24 @@ struct WineCard: Identifiable, Codable, Hashable {
 
         grapes = try c.decodeIfPresent(String.self, forKey: .grapes)
         intensity = try c.decodeIfPresent(String.self, forKey: .intensity)
+        sparkling = try c.decodeIfPresent(String.self, forKey: .sparkling)  // ✅ NEW
+        freshness = try c.decodeIfPresent(String.self, forKey: .freshness)  // ✅ NEW
+        sweetness = try c.decodeIfPresent(String.self, forKey: .sweetness)  // ✅ NEW
 
         food_pairings = Self.decodeStringListRelaxed(c, .food_pairings)
         tags = Self.decodeStringListRelaxed(c, .tags)
+        aromas = try c.decodeIfPresent([String].self, forKey: .aromas)  // ✅ NEW
+        aroma_icons = try c.decodeIfPresent([AromaIcon].self, forKey: .aroma_icons)  // ✅ NEW
+        ottimo_valore = try c.decodeIfPresent(Bool.self, forKey: .ottimo_valore)  // ✅ NEW (LEGACY)
+        show_value_badge = try c.decodeIfPresent(Bool.self, forKey: .show_value_badge)  // ✅ NEW
+        tasting_notes = try c.decodeIfPresent(String.self, forKey: .tasting_notes)  // ✅ NEW
+        reviews_count = try c.decodeIfPresent(Int.self, forKey: .reviews_count)  // ✅ NEW
+        critic_score = try c.decodeIfPresent(Int.self, forKey: .critic_score)  // ✅ NEW
 
         rating_overall = Self.decodeDoubleRelaxed(c, .rating_overall)
 
         ui_highlights = try c.decodeIfPresent([String].self, forKey: .ui_highlights)
+        match_explanation = try c.decodeIfPresent([String].self, forKey: .match_explanation)  // ✅ NEW
         explain = Self.decodeStringListRelaxed(c, .explain)
         match_breakdown = try c.decodeIfPresent([String: Double].self, forKey: .match_breakdown)
 
@@ -186,7 +224,9 @@ struct WineCard: Identifiable, Codable, Hashable {
         balance = try c.decodeIfPresent(String.self, forKey: .balance)
         persistence = try c.decodeIfPresent(String.self, forKey: .persistence)
         color_detail = try c.decodeIfPresent(String.self, forKey: .color_detail)
-        __components = try c.decodeIfPresent([String: Double].self, forKey: .__components)
+        
+        // ✅ ROBUST: Ignora __components se il formato non corrisponde (debug-only field)
+        __components = try? c.decodeIfPresent([String: Double].self, forKey: .__components)
 
         // ✅ Fallbacks (requested)
         // 1) Match: use whichever field is present to avoid fake 0% in UI.

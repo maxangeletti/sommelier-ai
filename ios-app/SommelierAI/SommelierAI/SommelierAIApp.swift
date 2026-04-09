@@ -46,7 +46,7 @@ struct SommelierAIApp: App {
             ContentView()
                 .tint(Color(red: 0.45, green: 0.05, blue: 0.15))
                 .environmentObject(favoritesStore)
-                .environmentObject(tierStore)          // ✅ NEW
+                .environmentObject(tierStore)
         }
     }
 }
