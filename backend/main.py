@@ -732,7 +732,7 @@ def parse_typology_request(query: str) -> Dict[str, Optional[str]]:
     tannin: Optional[str] = None
 
     # sparkling keywords
-    if re.search(r"\bspumante\b", q) or re.search(r"\bchampagne\b", q) or re.search(r"\bprosecco\b", q):
+    if re.search(r"\bspumante\b", q) or re.search(r"\bchampagne\b", q) or re.search(r"\bprosecco\b", q) or re.search(r"\bbollicine\b", q) or re.search(r"\bfranciacorta\b", q):
         sparkling = "spumante"
     elif re.search(r"\bfrizzante\b", q):
         sparkling = "frizzante"
