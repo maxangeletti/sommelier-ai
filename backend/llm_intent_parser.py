@@ -57,6 +57,9 @@ Regole:
 - "cena da amici che amano la Francia" → region: loira o borgogna (scegli il più probabile), occasion: dinner
 - "vino da meditazione potente" → occasion: meditation, style: potente
 - "ho già preso il pesce, abbino la carne" → foods: ["carne"] (ignora ciò che è già stato ordinato)
+- "bollicine italiane" → sparkling: "spumante", region: "italia"
+- "spumante" / "franciacorta" / "prosecco" / "champagne" → sparkling: "spumante"
+- "frizzante" → sparkling: "frizzante"
 - Non inventare valori. Se non sei sicuro, usa null.
 """
 
@@ -673,6 +676,10 @@ TEST_QUERIES = [
     "bianco fresco per cena importante di pesce",
     "Barolo di Serralunga",
     "spumante brut sotto 25 euro",
+    # ✅ TEST: Bollicine fix
+    "bollicine italiane",
+    "franciacorta",
+    "prosecco",
 ]
 
 if __name__ == "__main__":
