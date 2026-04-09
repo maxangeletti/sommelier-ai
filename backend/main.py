@@ -2229,8 +2229,17 @@ def run_search(
         for col in ["region", "zone", "denomination", "country"]:
             if col in filtered.columns:
                 v = _norm_lc(region)
+                # ✅ Normalize country aliases (italia→italy, francia→france, etc.)
+                if col == "country":
+                    country_aliases = {
+                        "italia": "italy",
+                        "francia": "france",
+                        "spagna": "spain",
+                        "germania": "germany",
+                        "portogallo": "portugal"
+                    }
+                    v = country_aliases.get(v, v)
                 mask |= filtered[col].astype(str).str.lower().str.contains(v, na=False)
-        filtered = filtered.loc[mask]
         filtered = filtered.loc[mask]
 
     # Tannin → color rosso implicito (tannino è rilevante solo per rossi)
