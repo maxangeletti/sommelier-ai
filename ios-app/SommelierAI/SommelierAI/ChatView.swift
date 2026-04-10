@@ -80,7 +80,7 @@ struct ChatView: View {
     // ✅ FIX (chirurgico): niente nesting, icona sempre visibile
     private var grapeSymbolName: String { "leaf" }
 
-    // ✅ Count vini attualmente mostrati nell’ultimo messaggio assistente (post-filtri)
+    // ✅ Count vini attualmente mostrati nell'ultimo messaggio assistente (post-filtri)
     private var displayedWineCount: Int {
         guard let msg = vm.messages.last(where: { $0.role == .assistant }),
               let wines = msg.wines else { return 0 }
@@ -690,135 +690,137 @@ struct ChatView: View {
     }
 // TRANCHE 2/2
     private func wineRow(_ wine: WineCard) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 6) {
+            // Nome vino
+            Text(wine.name)
+                .font(.subheadline.weight(.semibold))
+                .lineLimit(2)
+            
+            // Producer + denomination
+            if let producer = wine.producer, !producer.isEmpty {
+                Text("\(producer) · \(wine.denomination ?? "")")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
 
-            HStack(alignment: .top) {
+                // ✅ Overall bar (coerente col rank in sort=relevance) + Match label separata
+                let rawMatch = (wine.match_score ?? wine.__match_score) ?? 0.0
+                let matchClamped = max(0.0, min(1.0, rawMatch))
+                let overallClamped = max(0.0, min(1.0, (wine.score ?? 0) / 5.0))
 
-                VStack(alignment: .leading, spacing: 6) {
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(Color.gray.opacity(0.18))
+                            .frame(height: 6)
 
-                    HStack(spacing: 8) {
-                        Text(wine.name)
-                            .font(.headline)
-
-                        if let rank = wine.rank {
-                            Text("#\(rank)")
-                                .font(.caption)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 2)
-                                .background(rank == 1 ? Color.blue.opacity(0.18) : Color.gray.opacity(0.15))
-                                .clipShape(Capsule())
-                        }
+                        Capsule()
+                            .fill(AppColors.accentWine)
+                            .frame(width: geo.size.width * overallClamped, height: 6)
                     }
+                }
+                .frame(height: 6)
+                .padding(.top, 2)
 
-                    // ✅ Overall bar (coerente col rank in sort=relevance) + Match label separata
-                    let rawMatch = (wine.match_score ?? wine.__match_score) ?? 0.0
-                    let matchClamped = max(0.0, min(1.0, rawMatch))
-                    let overallClamped = max(0.0, min(1.0, (wine.score ?? 0) / 5.0))
+                HStack(spacing: 12) {
 
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            Capsule()
-                                .fill(Color.gray.opacity(0.18))
-                                .frame(height: 6)
+                    HStack(spacing: 6) {
+                        Image(systemName: "chart.bar.fill")
+                            .font(.caption.weight(.semibold))
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundStyle(AppColors.accentWine)
 
-                            Capsule()
-                                .fill(AppColors.accentWine)
-                                .frame(width: geo.size.width * overallClamped, height: 6)
-                        }
+                        Text("Overall \(Int(overallClamped * 100))%")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
                     }
-                    .frame(height: 6)
-                    .padding(.top, 2)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.gray.opacity(0.10))
+                    .clipShape(Capsule())
 
-                    HStack(spacing: 12) {
-
+                    // Match: mostrato solo se > 0, ma con stile più evidente
+                    if rawMatch > 0.0001 {
                         HStack(spacing: 6) {
-                            Image(systemName: "chart.bar.fill")
+                            Image(systemName: "scope")
                                 .font(.caption.weight(.semibold))
                                 .symbolRenderingMode(.hierarchical)
-                                .foregroundStyle(AppColors.accentWine)
+                                .foregroundStyle(.blue)
 
-                            Text("Overall \(Int(overallClamped * 100))%")
+                            Text("Match \(Int(matchClamped * 100))%")
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(.secondary)
                         }
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(Color.gray.opacity(0.10))
+                        .background(Color.blue.opacity(0.10))
                         .clipShape(Capsule())
+                    }
+                }
 
-                        // Match: mostrato solo se > 0, ma con stile più evidente
-                        if rawMatch > 0.0001 {
-                            HStack(spacing: 6) {
-                                Image(systemName: "scope")
-                                    .font(.caption.weight(.semibold))
-                                    .symbolRenderingMode(.hierarchical)
-                                    .foregroundStyle(.blue)
+                // ✅ Short reason del match (solo primi 3 vini)
+                if (wine.rank ?? 0) <= 3 {
+                    Text(topReasonLabel(for: wine))
+                        .font(.caption)
+                        .italic()
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .padding(.top, 2)
+                }
 
-                                Text("Match \(Int(matchClamped * 100))%")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.secondary)
-                            }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.blue.opacity(0.10))
-                            .clipShape(Capsule())
-                        }
+                HStack(spacing: 10) {
+                    if let p = wine.price {
+                        Text(String(format: "€%.2f", p))
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(AppColors.accentWine)
                     }
 
-                    HStack(spacing: 10) {
-                        if let p = wine.price {
-                            Text(String(format: "€%.2f", p))
-                                .font(.headline.weight(.semibold))
-                                .foregroundStyle(AppColors.accentWine)
-                        }
+                    if let r = wine.rating_overall, r > 0 {
+                        let clamped = max(0, min(5, r))
+                        let full = Int(clamped.rounded(.down))
+                        let hasHalf = (clamped - Double(full)) >= 0.5
+                        let colorFilled = Color(red: 0.95, green: 0.82, blue: 0.35) // paglierino tenue
 
-                        if let r = wine.rating_overall, r > 0 {
-                            let clamped = max(0, min(5, r))
-                            let full = Int(clamped.rounded(.down))
-                            let hasHalf = (clamped - Double(full)) >= 0.5
-                            let colorFilled = Color(red: 0.95, green: 0.82, blue: 0.35) // paglierino tenue
-
-                            HStack(spacing: 3) {
-                                ForEach(0..<5, id: \.self) { i in
-                                    if i < full {
-                                        Image(systemName: "star.fill")
-                                            .foregroundStyle(colorFilled)
-                                    } else if i == full && hasHalf {
-                                        Image(systemName: "star.leadinghalf.filled")
-                                            .foregroundStyle(colorFilled)
-                                    } else {
-                                        Image(systemName: "star")
-                                            .foregroundStyle(Color.gray.opacity(0.35))
-                                    }
+                        HStack(spacing: 3) {
+                            ForEach(0..<5, id: \.self) { i in
+                                if i < full {
+                                    Image(systemName: "star.fill")
+                                        .foregroundStyle(colorFilled)
+                                } else if i == full && hasHalf {
+                                    Image(systemName: "star.leadinghalf.filled")
+                                        .foregroundStyle(colorFilled)
+                                } else {
+                                    Image(systemName: "star")
+                                        .foregroundStyle(Color.gray.opacity(0.35))
                                 }
-                                Text(String(format: "%.1f", r))
                             }
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            Text(String(format: "%.1f", r))
                         }
-                    }
-
-                    // ✅ DEBUG: SEMPRE fuori dal prezzo/stelle (così non sballa layout e non dipende dal prezzo)
-                    if rankingDebugMode {
-                        HStack(spacing: 8) {
-                            Text("match: \((wine.match_score ?? wine.__match_score ?? 0), specifier: "%.2f")")
-                            Text("overall: \(((wine.score ?? 0)/5.0), specifier: "%.2f")")
-                            Text("value: \((wine.__value_score ?? 0), specifier: "%.2f")")
-                            Text("semantic: \((wine.__components?["__semantic_boost"] ?? 0), specifier: "%.2f")")
-                        }
-                        .font(.caption2)
-                        .foregroundStyle(.gray)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     }
                 }
 
-                Spacer()
-
-                Button {
-                    favoritesStore.toggle(wine)
-                } label: {
-                    Image(systemName: favoritesStore.isFavorite(wine) ? "heart.fill" : "heart")
-                        .foregroundStyle(favoritesStore.isFavorite(wine) ? .red : .secondary)
+                // ✅ DEBUG: SEMPRE fuori dal prezzo/stelle (così non sballa layout e non dipende dal prezzo)
+                if rankingDebugMode {
+                    HStack(spacing: 8) {
+                        Text("match: \((wine.match_score ?? wine.__match_score ?? 0), specifier: "%.2f")")
+                        Text("overall: \(((wine.score ?? 0)/5.0), specifier: "%.2f")")
+                        Text("value: \((wine.__value_score ?? 0), specifier: "%.2f")")
+                        Text("semantic: \((wine.__components?["__semantic_boost"] ?? 0), specifier: "%.2f")")
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(.gray)
                 }
+
+            Spacer()
+
+            Button {
+                favoritesStore.toggle(wine)
+            } label: {
+                Image(systemName: favoritesStore.isFavorite(wine) ? "heart.fill" : "heart")
+                    .foregroundStyle(favoritesStore.isFavorite(wine) ? .red : .secondary)
             }
 
             let metaTop = metaLineTop(wine)
@@ -873,62 +875,71 @@ struct ChatView: View {
                 }
             }
             
-            // ✅ Explain Mode B: se presente, mostra solo la prima riga; altrimenti fallback su reason
-            if let explain = wine.explain,
-               let firstExplain = explain.first,
-               !firstExplain.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                Text(firstExplain)
-                    .font(.footnote)
+            // ✅ Perché questo vino (con etichetta)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Perché questo vino")
+                    .font(.caption2.weight(.semibold))
                     .foregroundStyle(.secondary)
-                    .lineLimit(2)
-            } else {
-                Text(wine.reason)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(3)
+                    .tracking(0.5)
+                
+                // Explain Mode B: se presente, mostra prime 2 righe da LLM; altrimenti fallback su reason
+                if let explain = wine.explain,
+                   let firstExplain = explain.first,
+                   !firstExplain.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Text(firstExplain)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                } else {
+                    Text(wine.reason)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
             }
             
-            if wine.rank == 1 && ((wine.explain ?? []).isEmpty) {
+            if (wine.rank ?? 0) == 1 && ((wine.explain ?? []).isEmpty) {
                 Text("Scelto come miglior match per la tua richiesta")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
 
             if let pairings = wine.food_pairings, !pairings.isEmpty {
-                Text("🍽 " + pairings.map { $0.replacingOccurrences(of: "_", with: " ").capitalized }.joined(separator: " • "))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-            }
-            
-            // ✅ Aromi (icons + text)
-            if let aromas = wine.aromas, !aromas.isEmpty {
-                HStack(spacing: 8) {
-                    ForEach(Array(aromas.prefix(4)), id: \.self) { aroma in
-                        HStack(spacing: 4) {
-                            Image(systemName: aromaIcon(for: aroma))
-                                .font(.caption2)
-                                .foregroundStyle(AppColors.primaryWine)
-                            Text(aroma.capitalized)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Abbinamenti")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    
+                    HStack(spacing: 6) {
+                        ForEach(Array(pairings.prefix(3)), id: \.self) { pairing in
+                            Text(pairing.replacingOccurrences(of: "_", with: " ").capitalized)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.gray.opacity(0.1))
+                                .clipShape(Capsule())
                         }
                     }
                 }
-                .padding(.top, 4)
             }
+            
+            // ❌ AROMI RIMOSSI dalla lista - devono apparire solo nella scheda del vino singolo (WineDetailView)
 
-            // ✅ UI-C: NavigationLink al dettaglio
-            NavigationLink {
-                WineDetailView(wine: wine, userQuery: vm.messages.last(where: { $0.role == .user })?.text ?? "")
-            } label: {
-                HStack {
-                    Text("Vedi dettaglio completo")
-                        .font(.caption).foregroundStyle(AppColors.accentWine)
-                    Image(systemName: "chevron.right")
-                        .font(.caption2).foregroundStyle(AppColors.accentWine)
-                }
-            }.buttonStyle(.plain)
+            // ✅ UI-C: NavigationLink al dettaglio (SPOSTATO A DESTRA + FONT PIÙ GRANDE)
+            HStack {
+                Spacer()
+                NavigationLink {
+                    WineDetailView(wine: wine, userQuery: vm.messages.last(where: { $0.role == .user })?.text ?? "")
+                } label: {
+                    HStack(spacing: 4) {
+                        Text("Più dettagli")
+                            .font(.subheadline).foregroundStyle(AppColors.accentWine)
+                        Image(systemName: "chevron.right")
+                            .font(.caption2).foregroundStyle(AppColors.accentWine)
+                    }
+                }.buttonStyle(.plain)
+            }
         }
         .padding(12)
         .background(AppColors.cardBackground)
@@ -976,7 +987,7 @@ struct ChatView: View {
             .clipShape(Capsule())
     }
 
-    // ✅ Badge “light” per explainability (ui_highlights)
+    // ✅ Badge "light" per explainability (ui_highlights)
     @ViewBuilder
     private func badgeLight(_ text: String) -> some View {
         Text(text)
@@ -1018,9 +1029,11 @@ struct ChatView: View {
         }
 
         // 🍷 Struttura
-        if query.contains("struttur"),
-           wine.intensity?.lowercased() == "high" {
-            return "🍷 Profilo potente e strutturato"
+        if query.contains("struttur") {
+            let intensityIta = WineLocalizer.intensity(wine.intensity)
+            if intensityIta.lowercased() == "alta" {
+                return "🍷 Profilo potente e strutturato"
+            }
         }
 
         // 💰 Prezzo/Valore
@@ -1123,21 +1136,53 @@ struct ChatView: View {
         return "Annate disponibili: \(joined)"
     }
     
-    // MARK: - Aroma Icon Mapping
-    private func aromaIcon(for aroma: String) -> String {
-        switch aroma.lowercased() {
-        case "agrumi": return "leaf.fill"
-        case "frutta rossa": return "heart.fill"
-        case "frutta nera": return "circle.fill"
-        case "fiori": return "sparkles"
-        case "spezie": return "flame.fill"
-        case "vaniglia": return "moon.fill"
-        case "tostato": return "cup.and.saucer.fill"
-        case "erbaceo": return "leaf"
-        case "minerale": return "mountain.2.fill"
-        case "balsamico": return "wind"
-        default: return "circle"
+    // ❌ aromaIcon rimosso - aromi mostrati solo in WineDetailView con aromaEmoji
+    
+    // ✅ Emoji per food pairings
+    private func pairingEmoji(for pairing: String) -> String {
+        let p = pairing.lowercased()
+        
+        if p.contains("carne") || p.contains("steak") || p.contains("beef") {
+            return "🥩"
         }
+        if p.contains("selvaggina") || p.contains("game") {
+            return "🦌"
+        }
+        if p.contains("formag") || p.contains("cheese") {
+            return "🧀"
+        }
+        if p.contains("pesce") || p.contains("fish") || p.contains("seafood") {
+            return "🐟"
+        }
+        if p.contains("crostace") || p.contains("shellfish") || p.contains("gamberi") || p.contains("aragosta") {
+            return "🦞"
+        }
+        if p.contains("mollusc") || p.contains("oyster") || p.contains("ostriche") || p.contains("cozze") {
+            return "🦪"
+        }
+        if p.contains("sushi") {
+            return "🍣"
+        }
+        if p.contains("pasta") {
+            return "🍝"
+        }
+        if p.contains("pizza") {
+            return "🍕"
+        }
+        if p.contains("barbecue") || p.contains("grill") {
+            return "🍖"
+        }
+        if p.contains("aperitiv") || p.contains("cocktail") {
+            return "🥂"
+        }
+        if p.contains("dessert") || p.contains("dolc") {
+            return "🍰"
+        }
+        if p.contains("vegetarian") || p.contains("verdur") {
+            return "🥗"
+        }
+        
+        return "🍽"
     }
 }
 
