@@ -2012,8 +2012,13 @@ def _build_wine_card(row: Any, rank: int, score: float, price_delta: float, matc
     if sw:
         card["sweetness"] = sw
 
-    # aroma: non essendoci lista strutturata, non la mettiamo come campo "aromas"
-    # (il requisito "sentori" è gestito come filtro su description)
+    # ✅ AROMAS: parse comma-separated list from CSV
+    aromas_raw = _norm(getattr(row, "aromas", ""))
+    if aromas_raw:
+        # Split by comma and clean
+        aromas_list = [a.strip() for a in aromas_raw.split(",") if a.strip()]
+        if aromas_list:
+            card["aromas"] = aromas_list
 
     card["__price_delta"] = round(float(price_delta), 4)
 
