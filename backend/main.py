@@ -1964,8 +1964,8 @@ def _build_wine_card(row: Any, rank: int, score: float, price_delta: float, matc
         "occasion": _norm(getattr(row, "occasion", "")),
     }
 
-    # opzionali: quality/balance/persistence
-    for k in ["quality", "balance", "persistence"]:
+    # opzionali: quality/balance/persistence/tannins/acidity
+    for k in ["quality", "balance", "persistence", "tannins", "acidity"]:
         v = _norm(getattr(row, k, ""))
         if v:
             card[k] = v
@@ -2889,6 +2889,8 @@ def get_wine_details(wine_id: str) -> JSONResponse:
         "aromas": _norm(getattr(row, "aromas", "")),
         "food_pairings": _norm(getattr(row, "food_pairings", "")),
         "quality": _norm(getattr(row, "quality", "")),
+        "tannins": _norm(getattr(row, "tannins", "")),
+        "acidity": _norm(getattr(row, "acidity", "")),
         "price": _price_effective(row),
     }
     
