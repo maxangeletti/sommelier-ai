@@ -395,6 +395,8 @@ struct WineDetailView: View {
         let normalized = aroma.lowercased().trimmingCharacters(in: .whitespaces)
         
         // Frutta
+        if normalized.contains("frutta nera") || normalized.contains("frutta_nera") { return "🍇" } // 💡 NUOVO: frutta nera generica
+        if normalized.contains("uva") || normalized.contains("grape") { return "🍇" } // 💡 NUOVO: uva/uva nera
         if normalized.contains("ciliegi") || normalized.contains("cherry") { return "🍒" }
         if normalized.contains("fragol") || normalized.contains("strawberry") { return "🍓" }
         if normalized.contains("lampon") || normalized.contains("raspberry") { return "🥝" }
@@ -416,6 +418,7 @@ struct WineDetailView: View {
         if normalized.contains("fiori") || normalized.contains("floral") { return "🌸" }
         
         // Spezie & Erbe
+        if normalized.contains("spezi") || normalized.contains("spice") { return "🌶️" } // 💡 NUOVO: spezie generiche
         if normalized.contains("pepe") || normalized.contains("pepper") { return "🌶️" }
         if normalized.contains("cannella") || normalized.contains("cinnamon") { return "🥤" }
         if normalized.contains("chiodi") || normalized.contains("clove") { return "✨" }
@@ -474,32 +477,7 @@ struct WineDetailExpandedView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 
-                // Aromi
-                if let aromas = wine.aromas, !aromas.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Profilo aromatico")
-                            .font(.headline)
-                        
-                        FlowLayout(spacing: 12) {
-                            ForEach(aromas, id: \.self) { aroma in
-                                HStack(spacing: 6) {
-                                    Image(systemName: aromaIcon(for: aroma))
-                                        .font(.callout)
-                                        .foregroundStyle(AppColors.primaryWine)
-                                    Text(aroma.capitalized)
-                                        .font(.subheadline)
-                                }
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .background(Color.gray.opacity(0.1))
-                                .clipShape(Capsule())
-                            }
-                        }
-                    }
-                    .padding()
-                    .background(AppColors.cardBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                }
+                // ❌ Profilo aromatico RIMOSSO per richiesta utente
                 
                 // Tasting Notes
                 VStack(alignment: .leading, spacing: 12) {
@@ -524,31 +502,7 @@ struct WineDetailExpandedView: View {
                 .background(AppColors.cardBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 
-                // 🍒 SEZIONE SENTORI (con icone emoji)
-                if let aromas = wine.aromas, !aromas.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("SENTORI")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .tracking(1)
-                        
-                        HStack(spacing: 16) {
-                            ForEach(Array(aromas.prefix(4)), id: \.self) { aroma in
-                                VStack(spacing: 4) {
-                                    Text(aromaEmoji(for: aroma))
-                                        .font(.system(size: 32))
-                                    Text(aroma.capitalized)
-                                        .font(.caption2)
-                                        .foregroundStyle(.secondary)
-                                        .lineLimit(1)
-                                }
-                            }
-                        }
-                    }
-                    .padding()
-                    .background(AppColors.cardBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                }
+                // ❌ SENTORI RIMOSSI per richiesta utente
                 
                 // Similar Wines
                 if !similarWines.isEmpty {
