@@ -133,6 +133,9 @@ struct WineCard: Identifiable, Codable, Hashable {
     var balance: String?
     var persistence: String?
     var color_detail: String?
+    var tannins: String?          // ✅ NEW: tannicità (low/medium/high)
+    var acidity: String?           // ✅ NEW: acidità (low/medium/high)
+    var alcohol_level: String?     // ✅ NEW: livello alcolico (low/medium/high)
 
     // MARK: CodingKeys
 
@@ -164,6 +167,9 @@ struct WineCard: Identifiable, Codable, Hashable {
         case match_explanation   // ✅ NEW
         case match_breakdown
         case quality, balance, persistence, color_detail
+        case tannins             // ✅ NEW
+        case acidity             // ✅ NEW
+        case alcohol_level       // ✅ NEW
         case explain
         case __components
     }
@@ -224,6 +230,9 @@ struct WineCard: Identifiable, Codable, Hashable {
         balance = try c.decodeIfPresent(String.self, forKey: .balance)
         persistence = try c.decodeIfPresent(String.self, forKey: .persistence)
         color_detail = try c.decodeIfPresent(String.self, forKey: .color_detail)
+        tannins = try c.decodeIfPresent(String.self, forKey: .tannins)  // ✅ NEW
+        acidity = try c.decodeIfPresent(String.self, forKey: .acidity)  // ✅ NEW
+        alcohol_level = try c.decodeIfPresent(String.self, forKey: .alcohol_level)  // ✅ NEW
         
         // ✅ ROBUST: Ignora __components se il formato non corrisponde (debug-only field)
         __components = try? c.decodeIfPresent([String: Double].self, forKey: .__components)
