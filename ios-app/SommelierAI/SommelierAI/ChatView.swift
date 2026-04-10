@@ -886,12 +886,28 @@ struct ChatView: View {
                 if let explain = wine.explain,
                    let firstExplain = explain.first,
                    !firstExplain.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    Text(firstExplain)
+                    // ✅ Rimuovi markdown (# ## ### ** ecc.)
+                    let cleanText = firstExplain
+                        .replacingOccurrences(of: "# ", with: "")
+                        .replacingOccurrences(of: "## ", with: "")
+                        .replacingOccurrences(of: "### ", with: "")
+                        .replacingOccurrences(of: "**", with: "")
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    
+                    Text(cleanText)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
                 } else {
-                    Text(wine.reason)
+                    // ✅ Rimuovi markdown anche da reason
+                    let cleanReason = wine.reason
+                        .replacingOccurrences(of: "# ", with: "")
+                        .replacingOccurrences(of: "## ", with: "")
+                        .replacingOccurrences(of: "### ", with: "")
+                        .replacingOccurrences(of: "**", with: "")
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    
+                    Text(cleanReason)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)

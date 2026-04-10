@@ -588,7 +588,16 @@ Sii specifico, evita frasi generiche. Menziona un dettaglio chiave del vino o de
         if response.status_code == 200:
             data = response.json()
             text = "".join([c.get("text", "") for c in data.get("content", []) if c.get("type") == "text"])
-            return text.strip() or f"{top_wine.get('name')} rappresenta un'ottima scelta."
+            text = text.strip()
+            
+            # ✅ Filtro placeholder LLM: se risponde con "# Raccomandazione" o simili, usa fallback
+            if not text or text.lower() in ["# raccomandazione", "#raccomandazione", "raccomandazione"]:
+                return f"{top_wine.get('name')} rappresenta un'ottima scelta per la tua richiesta."
+            
+            # Rimuovi eventuali markdown residui
+            text = text.replace("# ", "").replace("## ", "").replace("### ", "").replace("**", "")
+            
+            return text or f"{top_wine.get('name')} rappresenta un'ottima scelta."
         else:
             return f"{top_wine.get('name')} rappresenta un'ottima scelta per la tua richiesta."
     
