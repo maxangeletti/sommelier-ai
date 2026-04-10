@@ -53,6 +53,7 @@ final class ChatViewModel: ObservableObject {
     @Published var streamTick: Int = 0
     @Published var didStartNewMessageTick: Int = 0
     @Published var suggestions: [String] = []
+    @Published var didYouMeanSuggestions: [String] = []  // ✅ Suggerimenti fuzzy quando pochi risultati
 
     // ✅ Banner temporaneo quando forziamo sort
     @Published var forcedSortMessage: String? = nil
@@ -583,6 +584,13 @@ final class ChatViewModel: ObservableObject {
                         // ✅ salva sorgente base + aggiorna opzioni vitigno
                         self.lastAssistantBaseWines = base
                         self.updateGrapeOptions(from: base)
+                        
+                        // ✅ Leggi suggerimenti fuzzy dal backend
+                        if let suggestions = ev.meta?.did_you_mean, !suggestions.isEmpty {
+                            self.didYouMeanSuggestions = suggestions
+                        } else {
+                            self.didYouMeanSuggestions = []
+                        }
 
                         // ✅ PATCH (Step 4): applica MULTI-FILTRO FINAL (vitigno+prezzo+colore+intensità)
                         let allProcessed = self.applyAllLocalFilters(base)

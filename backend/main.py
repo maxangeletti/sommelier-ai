@@ -98,6 +98,60 @@ def _parse_float_maybe(v: Any) -> Optional[float]:
 def _clamp(n: int, lo: int, hi: int) -> int:
     return max(lo, min(n, hi))
 
+# =========================
+# Fuzzy matching per suggerimenti
+# =========================
+
+def _levenshtein(s1: str, s2: str) -> int:
+    """Calcola distanza di Levenshtein tra due stringhe."""
+    if len(s1) < len(s2):
+        return _levenshtein(s2, s1)
+    if len(s2) == 0:
+        return len(s1)
+    
+    previous_row = range(len(s2) + 1)
+    for i, c1 in enumerate(s1):
+        current_row = [i + 1]
+        for j, c2 in enumerate(s2):
+            insertions = previous_row[j + 1] + 1
+            deletions = current_row[j] + 1
+            substitutions = previous_row[j] + (c1 != c2)
+            current_row.append(min(insertions, deletions, substitutions))
+        previous_row = current_row
+    
+    return previous_row[-1]
+
+
+def fuzzy_match_query(query: str, df: pd.DataFrame, max_suggestions: int = 3) -> List[str]:
+    """
+    Trova suggerimenti fuzzy quando la query non restituisce risultati.
+    Cerca match simili in: vitigni, denominazioni, regioni.
+    """
+    q_lower = _norm_lc(query)
+    
+    # Lista vitigni comuni italiani
+    common_grapes = [
+        "Amarone", "Nebbiolo", "Sangiovese", "Barbera", "Montepulciano",
+        "Nero d'Avola", "Primitivo", "Aglianico", "Corvina", "Cannonau",
+        "Vermentino", "Trebbiano", "Pinot Grigio", "Chardonnay", "Sauvignon",
+        "Prosecco", "Franciacorta", "Lambrusco", "Brunello", "Barolo",
+        "Chianti", "Valpolicella", "Soave"
+    ]
+    
+    # Calcola distanze
+    candidates = []
+    for grape in common_grapes:
+        dist = _levenshtein(q_lower, grape.lower())
+        # Solo se distanza < 4 (typo ragionevole)
+        if dist < 4 and dist > 0:
+            candidates.append((grape, dist))
+    
+    # Ordina per distanza crescente
+    candidates.sort(key=lambda x: x[1])
+    
+    # Restituisci top N
+    return [c[0] for c in candidates[:max_suggestions]]
+
 def _filter_by_text_contains(df: pd.DataFrame, col: str, val: str) -> pd.DataFrame:
     """Filter DataFrame rows where column contains val (case-insensitive)."""
     if col not in df.columns or not val:
@@ -2683,6 +2737,13 @@ def run_search(
 
     # ✅ single return path (no duplicati)
     sorted_cards = dedup_strict(sorted_cards)
+    
+    # ✅ Fuzzy suggestions quando pochi risultati (<3) o zero
+    if len(sorted_cards) < 3:
+        suggestions = fuzzy_match_query(q, get_wines_df())
+        if suggestions:
+            meta["did_you_mean"] = suggestions
+    
     return {"results": sorted_cards, "meta": meta}
 
 # =========================

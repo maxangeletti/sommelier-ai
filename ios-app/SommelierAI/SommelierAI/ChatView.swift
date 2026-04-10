@@ -159,6 +159,42 @@ struct ChatView: View {
                 .background(AppColors.backgroundPrimary)
 
                 Divider()
+
+            // ✅ Suggerimenti fuzzy "Intendevi:"
+            if !vm.didYouMeanSuggestions.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Intendevi:")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    
+                    HStack(spacing: 8) {
+                        ForEach(vm.didYouMeanSuggestions, id: \.self) { suggestion in
+                            Button {
+                                vm.send(suggestion)
+                                forceScrollToBottomTick += 1
+                                inputText = ""
+                                withAnimation(.easeInOut(duration: 0.15)) {
+                                    expandedSuggestion = nil
+                                    showSuggestions = false
+                                }
+                            } label: {
+                                Text(suggestion)
+                                    .font(.subheadline.weight(.medium))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(AppColors.accentWine)
+                                    .clipShape(Capsule())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                
+                Divider()
+            }
             }
 
             let cleanSuggestions = vm.suggestions

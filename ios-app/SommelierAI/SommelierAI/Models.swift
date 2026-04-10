@@ -54,6 +54,7 @@ struct SearchMeta: Codable {
     var rank_mode: String?
     var model: String?
     var build_id: String?
+    var did_you_mean: [String]?  // ✅ Suggerimenti fuzzy quando pochi risultati
 }
 
 // MARK: - AromaIcon
