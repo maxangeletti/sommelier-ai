@@ -2015,8 +2015,12 @@ def _build_wine_card(row: Any, rank: int, score: float, price_delta: float, matc
     # ✅ AROMAS: parse comma-separated list from CSV
     aromas_raw = _norm(getattr(row, "aromas", ""))
     if aromas_raw:
-        # Split by comma and clean
-        aromas_list = [a.strip() for a in aromas_raw.split(",") if a.strip()]
+        # Split by comma, clean whitespace, and replace underscores with spaces
+        aromas_list = [
+            a.strip().replace("_", " ") 
+            for a in aromas_raw.split(",") 
+            if a.strip()
+        ]
         if aromas_list:
             card["aromas"] = aromas_list
 
