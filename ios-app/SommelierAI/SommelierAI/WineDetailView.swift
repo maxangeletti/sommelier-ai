@@ -208,6 +208,32 @@ struct WineDetailView: View {
                     .padding(.top, 8)
                 }
                 
+                // 🍒 SEZIONE SENTORI (con emoji)
+                if let aromas = wine.aromas, !aromas.isEmpty {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("SENTORI")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .tracking(1)
+                        
+                        HStack(spacing: 16) {
+                            ForEach(Array(aromas.prefix(4)), id: \.self) { aroma in
+                                VStack(spacing: 6) {
+                                    Text(aromaEmoji(for: aroma))
+                                        .font(.system(size: 40))
+                                    Text(aroma.capitalized)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .multilineTextAlignment(.center)
+                                        .lineLimit(2)
+                                }
+                                .frame(maxWidth: .infinity)
+                            }
+                        }
+                    }
+                    .padding(.top, 8)
+                }
+                
                 Divider()
                     .padding(.vertical, 8)
                 
@@ -362,6 +388,72 @@ struct WineDetailView: View {
         }
         
         return "🍽"
+    }
+    
+    // 🍒 Emoji per aromi
+    private func aromaEmoji(for aroma: String) -> String {
+        let normalized = aroma.lowercased().trimmingCharacters(in: .whitespaces)
+        
+        // Frutta
+        if normalized.contains("ciliegi") || normalized.contains("cherry") { return "🍒" }
+        if normalized.contains("fragol") || normalized.contains("strawberry") { return "🍓" }
+        if normalized.contains("lampon") || normalized.contains("raspberry") { return "🥝" }
+        if normalized.contains("mora") || normalized.contains("blackberry") { return "🫛" }
+        if normalized.contains("mirtill") || normalized.contains("blueberry") { return "🫐" }
+        if normalized.contains("prun") || normalized.contains("plum") { return "🍑" }
+        if normalized.contains("ribes") { return "🍇" }
+        if normalized.contains("mela") || normalized.contains("apple") { return "🍏" }
+        if normalized.contains("pera") || normalized.contains("pear") { return "🍐" }
+        if normalized.contains("pesca") || normalized.contains("peach") { return "🍑" }
+        if normalized.contains("albicocc") || normalized.contains("apricot") { return "🥝" }
+        if normalized.contains("agrumi") || normalized.contains("citrus") { return "🍋" }
+        if normalized.contains("limon") || normalized.contains("lemon") { return "🍋" }
+        
+        // Fiori
+        if normalized.contains("rosa") || normalized.contains("rose") { return "🌹" }
+        if normalized.contains("viola") || normalized.contains("violet") { return "🌸" }
+        if normalized.contains("gelsomino") || normalized.contains("jasmine") { return "🌼" }
+        if normalized.contains("fiori") || normalized.contains("floral") { return "🌸" }
+        
+        // Spezie & Erbe
+        if normalized.contains("pepe") || normalized.contains("pepper") { return "🌶️" }
+        if normalized.contains("cannella") || normalized.contains("cinnamon") { return "🥤" }
+        if normalized.contains("chiodi") || normalized.contains("clove") { return "✨" }
+        if normalized.contains("menta") || normalized.contains("mint") { return "🌿" }
+        if normalized.contains("timo") || normalized.contains("thyme") { return "🌿" }
+        if normalized.contains("rosmarino") || normalized.contains("rosemary") { return "🌿" }
+        if normalized.contains("salvia") || normalized.contains("sage") { return "🍃" }
+        if normalized.contains("erbace") || normalized.contains("herbal") { return "🌿" }
+        
+        // Legno & Tostato
+        if normalized.contains("vaniglia") || normalized.contains("vanilla") { return "🍮" }
+        if normalized.contains("tostato") || normalized.contains("toasted") { return "🍞" }
+        if normalized.contains("caffè") || normalized.contains("coffee") { return "☕" }
+        if normalized.contains("cioccolat") || normalized.contains("chocolate") { return "🍫" }
+        if normalized.contains("cacao") || normalized.contains("cocoa") { return "🍫" }
+        if normalized.contains("legno") || normalized.contains("wood") { return "🌲" }
+        if normalized.contains("quercia") || normalized.contains("oak") { return "🌳" }
+        if normalized.contains("cedro") { return "🌲" }
+        
+        // Terre & Minerale
+        if normalized.contains("mineral") { return "🪨" }
+        if normalized.contains("pietra") || normalized.contains("stone") { return "🪨" }
+        if normalized.contains("terr") || normalized.contains("earth") { return "🌍" }
+        if normalized.contains("fungo") || normalized.contains("mushroom") { return "🍄" }
+        if normalized.contains("tartufo") || normalized.contains("truffle") { return "⭐" }
+        
+        // Altri
+        if normalized.contains("cuoio") || normalized.contains("leather") { return "🧥" }
+        if normalized.contains("tabacco") || normalized.contains("tobacco") { return "🍃" }
+        if normalized.contains("miele") || normalized.contains("honey") { return "🍯" }
+        if normalized.contains("cereali") || normalized.contains("cereal") { return "🌾" }
+        if normalized.contains("pane") || normalized.contains("bread") { return "🍞" }
+        if normalized.contains("burro") || normalized.contains("butter") { return "🧈" }
+        if normalized.contains("noci") || normalized.contains("nuts") { return "🥜" }
+        if normalized.contains("mandorl") || normalized.contains("almond") { return "🥜" }
+        
+        // Default
+        return "🍇" // Uva
     }
 }
 
