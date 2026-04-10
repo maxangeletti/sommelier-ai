@@ -539,10 +539,8 @@ struct WineDetailExpandedView: View {
                 // ✅ SEZIONE 1: VALUTAZIONI (punteggi numerici)
                 if wine.quality != nil || wine.balance != nil || wine.persistence != nil {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("VALUTAZIONI")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .tracking(1)
+                        Text("Valutazioni")
+                            .font(.headline)
                         
                         VStack(alignment: .leading, spacing: 8) {
                             if let q = wine.quality {
@@ -564,10 +562,8 @@ struct WineDetailExpandedView: View {
                 // ✅ SEZIONE 2: PROFILO ORGANOLETTICO (valori testuali)
                 if wine.intensity != nil || wine.tannins != nil || wine.acidity != nil || wine.color_detail != nil {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("PROFILO ORGANOLETTICO")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .tracking(1)
+                        Text("Profilo organolettico")
+                            .font(.headline)
                         
                         VStack(alignment: .leading, spacing: 8) {
                             if let i = wine.intensity {
@@ -591,10 +587,8 @@ struct WineDetailExpandedView: View {
                 
                 // 📏 GRAFICO CARATTERISTICHE (barre orizzontali)
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("PROFILO SENSORIALE")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .tracking(1)
+                    Text("Profilo sensoriale")
+                        .font(.headline)
                     
                     VStack(spacing: 10) {
                         // Intensità
