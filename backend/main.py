@@ -1522,10 +1522,11 @@ def _keyword_match_score(row: Any, query: str) -> float:
     if q_norm in hay:
         return 1.0
     
-    # Fallback: token-by-token matching
+    # ✅ FIX: Word boundary matching per evitare "amaro" → "Negroamaro"
     hits = 0
     for t in toks:
-        if t in hay:
+        # Usa regex con word boundary \b per match esatto
+        if re.search(rf"\b{re.escape(t)}\b", hay):
             hits += 1
     return min(1.0, max(0.0, hits / max(1, len(toks))))
 
