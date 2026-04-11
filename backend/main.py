@@ -16,7 +16,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 
 # LLM intent parser (dual-step: parse + explain)
-from llm_intent_parser import parse_intent_with_llm, generate_personalized_reason, generate_tasting_notes
+# TEMPORANEAMENTE DISABILITATO PER FIX
+# from llm_intent_parser import parse_intent_with_llm, generate_personalized_reason, generate_tasting_notes
 from ui_helpers import should_show_value_badge, get_aroma_icons, get_mock_reviews_count, get_mock_critic_score
 
 
@@ -126,6 +127,7 @@ def fuzzy_match_query(query: str, df: pd.DataFrame, max_suggestions: int = 3) ->
     """
     Trova suggerimenti fuzzy quando la query non restituisce risultati.
     Cerca match simili in: vitigni, denominazioni, regioni.
+    ✅ FIX: Word boundary check per query corte (<=5 char) per evitare "amaro" → "Amarone"
     """
     q_lower = _norm_lc(query)
     
@@ -138,10 +140,21 @@ def fuzzy_match_query(query: str, df: pd.DataFrame, max_suggestions: int = 3) ->
         "Chianti", "Valpolicella", "Soave"
     ]
     
+    # ✅ NUOVO: Per query corte (<=5 char), richiedi substring esatta NON come parte di parola
+    # Questo previene "amaro" da matchare "Amarone"
+    is_short_query = len(q_lower) <= 5
+    
     # Calcola distanze
     candidates = []
     for grape in common_grapes:
-        dist = _levenshtein(q_lower, grape.lower())
+        grape_lower = grape.lower()
+        dist = _levenshtein(q_lower, grape_lower)
+        
+        # ✅ NUOVO: Per query corte, verifica che NON sia substring di un termine più lungo
+        if is_short_query and q_lower in grape_lower and q_lower != grape_lower:
+            # "amaro" è substring di "amarone" ma non match esatto → SKIP
+            continue
+        
         # Solo se distanza < 4 (typo ragionevole)
         if dist < 4 and dist > 0:
             candidates.append((grape, dist))
@@ -2243,7 +2256,10 @@ def run_search(
     q = _norm(query)
     
     # --- LLM Intent Layer Step 1: Parse ---
-    llm_intent = parse_intent_with_llm(q)
+    # TEMPORANEAMENTE DISABILITATO
+    # llm_intent, llm_failed = parse_intent_with_llm(q)
+    llm_intent = {}
+    llm_failed = False
     
     price_info = parse_price(q)
     region = parse_region(q) or llm_intent.get("region")
@@ -2551,14 +2567,14 @@ def run_search(
         }
         
         # Genera reason personalizzata
-        personalized_reason = generate_personalized_reason(
-            query=q,
-            active_signals=active_signals,
-            top_wine=top_wine_info
-        )
-        
+        # TEMPORANEAMENTE DISABILITATO
+        # personalized_reason = generate_personalized_reason(
+        #     query=q,
+        #     active_signals=active_signals,
+        #     top_wine=top_wine_info
+        # )
         # Sostituisci reason statica con quella personalizzata
-        sorted_cards[0]["reason"] = personalized_reason
+        # sorted_cards[0]["reason"] = personalized_reason
         
         # ✅ UI Badge: "Ottimo Valore" per tutti i vini
         for card in sorted_cards:
@@ -2589,6 +2605,7 @@ def run_search(
         "count": len(sorted_cards),
         "total_count": total_count,
         "timestamp": int(_now()),
+        "llm_failed": llm_failed,  # ✅ LLM fallback flag
     }
     if explain:
         meta["explain_mode"] = "B"
@@ -2965,7 +2982,9 @@ def get_wine_details(wine_id: str) -> JSONResponse:
         "price": _price_effective(row),
     }
     
-    wine_dict["tasting_notes"] = generate_tasting_notes(wine_dict)
+    # TEMPORANEAMENTE DISABILITATO
+    # wine_dict["tasting_notes"] = generate_tasting_notes(wine_dict)
+    wine_dict["tasting_notes"] = wine_dict.get("description", "")
     
     aromas_text = wine_dict.get("aromas", "")
     if aromas_text:
