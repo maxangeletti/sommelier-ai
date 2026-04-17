@@ -126,7 +126,7 @@ def fuzzy_match_query(query: str, df: pd.DataFrame, max_suggestions: int = 3) ->
     """
     Trova suggerimenti fuzzy quando la query non restituisce risultati.
     Cerca match simili in: vitigni, denominazioni, regioni.
-    ✅ FIX: Word boundary check per query corte (<=5 char) per evitare "amaro" → "Amarone"
+    ✅ FIX v2: Per query corte, accetta substring SE dist < 3 (typo probabile)
     """
     q_lower = _norm_lc(query)
     
@@ -139,23 +139,16 @@ def fuzzy_match_query(query: str, df: pd.DataFrame, max_suggestions: int = 3) ->
         "Chianti", "Valpolicella", "Soave"
     ]
     
-    # ✅ NUOVO: Per query corte (<=5 char), richiedi substring esatta NON come parte di parola
-    # Questo previene "amaro" da matchare "Amarone"
-    is_short_query = len(q_lower) <= 5
-    
     # Calcola distanze
     candidates = []
     for grape in common_grapes:
         grape_lower = grape.lower()
         dist = _levenshtein(q_lower, grape_lower)
         
-        # ✅ NUOVO: Per query corte, verifica che NON sia substring di un termine più lungo
-        if is_short_query and q_lower in grape_lower and q_lower != grape_lower:
-            # "amaro" è substring di "amarone" ma non match esatto → SKIP
-            continue
-        
-        # Solo se distanza < 4 (typo ragionevole)
-        if dist < 4 and dist > 0:
+        # ✅ NUOVO: Accetta se dist < 3 (typo molto probabile)
+        # Anche se substring, se la distanza è molto bassa è una suggestion valida
+        # Es: "amaro" → "Amarone" (dist=2) è suggestion ragionevole
+        if dist < 3 and dist > 0:
             candidates.append((grape, dist))
     
     # Ordina per distanza crescente
@@ -2808,6 +2801,26 @@ def dedup_strict(results: list[dict]) -> list[dict]:
 # =========================
 # Endpoints
 # =========================
+
+def is_generic_query(query: str) -> bool:
+    """
+    Determina se query è troppo generica per search diretto.
+    Criteri: corta (<=5 char) + no intent specifico (price/region/color).
+    """
+    q = _norm_lc(query)
+    
+    if len(q) <= 5:
+        # Check intent specifici
+        has_price = bool(parse_price(q).get("min") or parse_price(q).get("max"))
+        has_region = bool(parse_region(q))
+        has_color = bool(parse_color_request(q))
+        
+        # Generica se NO intent
+        return not (has_price or has_region or has_color)
+    
+    return False
+
+
 @app.post("/search")
 def post_search(payload: Dict[str, Any] = Body(...)) -> JSONResponse:
     query = _norm(payload.get("query", ""))
@@ -2817,6 +2830,22 @@ def post_search(payload: Dict[str, Any] = Body(...)) -> JSONResponse:
     include_test = bool(payload.get("include_test", False))
     debug = bool(payload.get("debug", False))
     explain = bool(payload.get("explain", False))  # ✅ Explain Mode B toggle (default: OFF)
+
+    # ✅ Suggestion mode: query generica → suggerisci invece di cercare
+    if is_generic_query(query):
+        df = get_wines_df()
+        suggestions = fuzzy_match_query(query, df, max_suggestions=3)
+        
+        if suggestions:
+            return JSONResponse({
+                "results": [],
+                "suggestions": suggestions,
+                "meta": {
+                    "query": query,
+                    "suggestion_mode": True,
+                    "message": "Query troppo generica. Forse cercavi:"
+                }
+            })
 
     # Cache: disable when debug=true (must be fresh and include meta.debug)
     if not debug:
