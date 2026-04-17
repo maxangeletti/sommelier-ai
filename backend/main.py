@@ -24,7 +24,7 @@ from ui_helpers import should_show_value_badge, get_aroma_icons, get_mock_review
 # Build signature (anti-confusione / anti-regressione)
 # =========================
 
-BUILD_ID = "SommelierAI v0.2 STABILE + A/B/D (CSV schema real) + cache-safe 2026-03-25-v1.6.0"
+BUILD_ID = "SommelierAI v1.7.0 - LLM + Suggestions + Fuzzy (2026-04-17)"
 
 
 # =========================
