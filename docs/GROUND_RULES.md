@@ -175,9 +175,16 @@ Dopo modifiche:
 - Verificare che le modifiche abbiano senso nel contesto
 - Non fare cambi "tanto per fare"
 
+## 7. NO SUPPOSIZIONI
+- **NON fare supposizioni MAI, a meno che non sia esplicitamente richiesto di supporre**
+- Se non sai qualcosa, chiedi
+- Se un file non esiste dove ti aspetti, chiedi dove si trova
+- Se un comportamento non è chiaro, chiedi chiarimenti
+- Non assumere configurazioni, path, o stati senza verificare
+
 ---
 
-## 7. WORKFLOW EFFICIENZA ⭐ NUOVO
+## 8. WORKFLOW EFFICIENZA ⭐ NUOVO
 
 **Regole per ridurre friction e migliorare efficienza:**
 
@@ -215,6 +222,7 @@ Queste regole esistono perché sono state violate ripetutamente in passato, caus
 - **Mancanza di continuità tra sessioni**
 - **Documentazione obsoleta o mancante**
 - **Friction inutile e ripetitivo**
+- **Supposizioni non verificate**
 
 **ZERO TOLLERANZA.**
 
@@ -246,6 +254,7 @@ perf: ottimizzazione performance
 6. **Documentazione > Velocità**
 7. **Continuità > Velocità**
 8. **Efficienza > Spiegazioni** ⭐ NUOVO
+9. **Verifica > Supposizione** ⭐ NUOVO
 
 ---
 

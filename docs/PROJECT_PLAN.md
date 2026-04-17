@@ -1,34 +1,36 @@
 # 📊 PIANO DI PROGETTO — SommelierAI
 
-**Versione**: 1.0  
-**Ultimo aggiornamento**: 2026-04-01  
-**Baseline Backend**: v1.6.0 LIVE  
-**Baseline iOS**: v0.9.1 POST-PAGINAZIONE  
-**Ground Truth**: v2.1 (22 PASS, 4 WARN, 0 FAIL)
+**Versione**: 1.1  
+**Ultimo aggiornamento**: 2026-04-08  
+**Baseline Backend**: v1.6.2 LIVE (fix value_intent badge)  
+**Baseline iOS**: v0.9.2 POST-JSON-FIX  
+**Ground Truth**: v2.1 (4/4 critical PASS, 0 regressions)
 
 ---
 
 ## 🎯 DOVE SIAMO
 
-### Backend v1.6.0 — PRODUCTION LIVE ✅
+### Backend v1.6.2 — PRODUCTION LIVE ✅
 - **Deploy**: Render.com, stabile
 - **Uptime**: ~95% (cold start mitigato)
-- **Ground Truth**: 84.6% accuracy (22/26 PASS, 4 WARN)
+- **Ground Truth**: 4/4 critical tests PASS (GT-NEW, GT-20, GT-08, GT-05)
+- **Latest Fix**: show_value_badge con value_intent (8 Apr 2026)
 - **LLM**: Step 1 integrato (parser semantico)
 - **Dataset**: 100 vini, 35 regioni, 75 vitigni
 - **Performance**: <500ms avg, <800ms p95
 
-### iOS v0.9.1 — POST-PAGINAZIONE ✅
+### iOS v0.9.2 — POST-JSON-FIX ✅
 - **Build**: Stabile, Xcode OK
-- **Ultima feature**: Paginazione 10→15→20 (commit `3fd4b44`)
+- **Ultima feature**: Fix JSON parsing + HTTP cache disabled (7 Apr 2026)
 - **Crash rate**: <1%
-- **Feature completeness**: 88%
+- **Feature completeness**: 92%
 
 ### Milestone Corrente
 **"LLM Enhancement + Polish UI"**
-- **Progress**: 7/10 task (70%)
+- **Progress**: 9/10 task (90%)
 - **Deadline**: 30 Aprile 2026
-- **Remaining**: 29 giorni
+- **Remaining**: 21 giorni
+- **Latest**: Badge fix v1.6.2 + GT verification (8 Apr 2026)
 
 ---
 
@@ -52,10 +54,12 @@
 
 ### P0 — BLOCCANTI LANCIO (entro 15 Aprile)
 1. ✅ **Paginazione iOS** — COMPLETATA 31 Marzo 2026
-2. ⏳ **Test device reale** — Da fare 1-2 Aprile
-3. ⏳ **LLM Step 2** — 3-5 giorni effort
-4. ⏳ **Estetica app** — Icona 1024x1024, splash, theme (2-3 giorni)
-5. ⏳ **Apple Developer Account** — $99/anno (acquisto immediato)
+2. ✅ **Badge "Ottimo Valore"** — COMPLETATA 8 Aprile 2026 (v1.6.2)
+3. ✅ **GT Tests v1.6.2** — COMPLETATA 8 Aprile 2026 (4/4 PASS)
+4. ⏳ **Test device reale** — Da fare 9-10 Aprile
+5. ⏳ **LLM Step 2** — 3-4 giorni effort (9-12 Aprile)
+6. ⏳ **Estetica app** — Icona 1024x1024, splash, theme (2-3 giorni)
+7. ⏳ **Apple Developer Account** — $99/anno (acquisto immediato)
 
 ### P1 — IMPORTANTI (entro 25 Aprile)
 6. ⏳ **TestFlight setup** — 1 giorno
@@ -74,16 +78,20 @@
 
 ### Milestone Corrente (30 Aprile) — FATTIBILE ✅
 ```
-Task rimanenti: 3/10
-- LLM Step 2: 3-5 giorni
+Task rimanenti: 2/10
+- LLM Step 2: 3-4 giorni
 - Estetica app: 2-3 giorni
-- Test + fix: 2 giorni
 ─────────────────────────
-TOTALE: 7-10 giorni
+TOTALE: 5-7 giorni
 
 Deadline: 30 Aprile
-Buffer: 19-22 giorni
+Buffer: 21 giorni
 Risk: BASSO 🟢
+
+Completed:
+✅ Badge fix v1.6.2 (8 Apr)
+✅ GT tests verification (8 Apr)
+✅ iOS JSON parsing fix (7 Apr)
 ```
 
 ### Beta TestFlight (15 Maggio) — PROBABILE ✅
