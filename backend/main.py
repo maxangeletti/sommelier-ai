@@ -16,8 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 
 # LLM intent parser (dual-step: parse + explain)
-# TEMPORANEAMENTE DISABILITATO PER FIX
-# from llm_intent_parser import parse_intent_with_llm, generate_personalized_reason, generate_tasting_notes
+from llm_intent_parser import parse_intent_with_llm, generate_personalized_reason, generate_tasting_notes
 from ui_helpers import should_show_value_badge, get_aroma_icons, get_mock_reviews_count, get_mock_critic_score
 
 
@@ -2257,10 +2256,7 @@ def run_search(
     q = _norm(query)
     
     # --- LLM Intent Layer Step 1: Parse ---
-    # TEMPORANEAMENTE DISABILITATO
-    # llm_intent, llm_failed = parse_intent_with_llm(q)
-    llm_intent = {}
-    llm_failed = False
+    llm_intent, llm_failed = parse_intent_with_llm(q)
     
     price_info = parse_price(q)
     region = parse_region(q) or llm_intent.get("region")
@@ -2568,14 +2564,13 @@ def run_search(
         }
         
         # Genera reason personalizzata
-        # TEMPORANEAMENTE DISABILITATO
-        # personalized_reason = generate_personalized_reason(
-        #     query=q,
-        #     active_signals=active_signals,
-        #     top_wine=top_wine_info
-        # )
+        personalized_reason = generate_personalized_reason(
+            query=q,
+            active_signals=active_signals,
+            top_wine=top_wine_info
+        )
         # Sostituisci reason statica con quella personalizzata
-        # sorted_cards[0]["reason"] = personalized_reason
+        sorted_cards[0]["reason"] = personalized_reason
         
         # ✅ UI Badge: "Ottimo Valore" per tutti i vini
         for card in sorted_cards:
