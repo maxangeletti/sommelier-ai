@@ -1,108 +1,113 @@
 # 📋 TODO PROSSIMA SESSIONE
 
-**Aggiornato**: 8 Aprile 2026 ore 20:15  
-**Sessione precedente**: Onboarding Screen Implementation (100% COMPLETATA!)  
-**Prossima sessione**: 9 Aprile 2026
+**Aggiornato**: 17 Aprile 2026 ore 21:00  
+**Sessione precedente**: Suggestion Mode + Deploy v1.7.0 (100% COMPLETATA!)  
+**Prossima sessione**: TBD
 
 ---
 
-## ✅ COMPLETATO (Sessione 8 Aprile - Sera)
+## ✅ COMPLETATO (Sessione 17 Aprile)
 
-### Onboarding Screen (100% COMPLETATA) 🎉
-- [x] WelcomeView.swift creata con design matching screenshot
-- [x] ContentView.swift integrata con @AppStorage
-- [x] ChatView.swift modificata per leggere pendingSearchQuery
-- [x] Suggerimenti query predefiniti funzionanti
-- [x] Integrazione end-to-end completata
+### Backend v1.7.0 LIVE 🎉
+- [x] Suggestion mode implementato
+- [x] fuzzy_match_query() semplificato
+- [x] is_generic_query() aggiunto
+- [x] GT tests: 23/27 PASS (+1 vs baseline)
+- [x] Deploy verificato
+- [x] BUILD_ID aggiornato
 
-**Status**: PRONTA per test su device! ✅
-
----
-
-## 🔥 PRIORITÀ ASSOLUTA (fare SUBITO domani)
-
-### 1. 🧪 Test Onboarding su Device
-
-**Cosa testare**:
-1. Build in Xcode
-2. Run su iPhone (simulator OK per primo test)
-3. Verifica WelcomeView appare al primo avvio
-4. Tap su suggerimento → va a ChatView con ricerca automatica
-5. Scrivi query custom → va a ChatView con quella query
-6. Chiudi e riapri app → WelcomeView NON appare più
-
-**Tempo stimato**: 10 minuti
+### Documentazione
+- [x] GROUND_RULES v2 (token budget, GT tests, handoff)
+- [x] Release notes v1.7.0
+- [x] SESSION_HANDOFF_2026-04-17.md
+- [x] Script cleanup_docs_structure.sh creato
 
 ---
 
-### 2. 💾 Commit iOS Onboarding
+## 🔥 PRIORITÀ ASSOLUTA (fare SUBITO prossima sessione)
+
+### 1. 💾 Commit Documentazione
 
 ```bash
 cd /Users/massimilianoangeletti/sommelier-ai
-git add ios-app/SommelierAI/SommelierAI/WelcomeView.swift
-git add ios-app/SommelierAI/SommelierAI/ContentView.swift
-git add ios-app/SommelierAI/SommelierAI/ChatView.swift
-git commit -m "iOS v0.9.3: Add onboarding screen with query suggestions
 
-- Create WelcomeView with 4 predefined query suggestions
-- Show welcome screen on first app launch only (@AppStorage)
-- Pass selected query to ChatView via UserDefaults
-- ChatView auto-triggers search on pending query
-- Clean, polished UI matching design spec"
-git push origin main
+git add docs/releases/v1.7.0.md
+git add docs/roadmap/SESSION_HANDOFF_2026-04-17.md
+git add docs/TODO_NEXT_SESSION.md
+git add docs/GROUND_RULES.md
+git commit -m "docs: session 2026-04-17 - v1.7.0 release + handoff + ground rules v2"
+git push
 ```
 
-**Tempo stimato**: 3 minuti
+**Tempo stimato**: 2 minuti
 
 ---
 
-### 3. 🎨 LLM Step 2 - Implementation
+### 2. 🧹 Cleanup Docs Structure
 
-**Decisioni prese**:
-- Model: **Haiku** ($0.25/M token)
-- Scope: **Top 3 vini**
-- Fallback: **Template CSV** obbligatorio
-
-**Architettura**:
-```python
-# backend/engine.py
-async def generate_reason_llm(wine_data, query, context):
-    try:
-        response = await anthropic_client.generate(
-            model="claude-3-5-haiku-20241022",
-            max_tokens=150,
-            system="Sommelier esperto...",
-            messages=[...]
-        )
-        return response.text
-    except Exception:
-        return fallback_csv_template(wine_data)
+```bash
+cd /Users/massimilianoangeletti/sommelier-ai
+./cleanup_docs_structure.sh
+git add docs/
+git commit -m "docs: cleanup structure + archive obsolete files"
+git push
 ```
 
-**Tempo stimato**: 
-- Design: 1 ora
-- Implementazione: 3-4 ore
-- Testing: 2 ore
+**Tempo stimato**: 5 minuti
+
+---
+
+### 3. 📱 iOS Suggestion Mode UI
+
+**Task**: Integrare suggestion mode in ChatView
+
+**Implementation**:
+```swift
+// In ChatViewModel
+if let suggestions = response.suggestions, !suggestions.isEmpty {
+    // Show suggestions UI
+    self.showSuggestions = true
+    self.suggestions = suggestions
+} else {
+    // Show results
+    self.wines = response.results
+}
+```
+
+**UI**: Mostrare "Forse cercavi: Amarone?" con tap per ricercare
+
+**Tempo stimato**: 2-3 ore
 
 ---
 
 ## 📊 PRIORITÀ ALTA
 
-### 4. 📱 Screenshot per App Store
+### 4. 🧪 Test Onboarding su Device
 
-Con onboarding completato, cattura screenshot per submission:
+Con onboarding completato (v0.9.3), testare su iPhone:
+- WelcomeView appare al primo avvio
+- Tap suggerimento → ricerca automatica
+- Riapri app → WelcomeView NON appare
+
+**Tempo stimato**: 15 minuti
+
+---
+
+### 5. 📸 Screenshot App Store
+
+Con onboarding + suggestion mode:
 - WelcomeView
 - ChatView con risultati
-- WineDetailView  
-- Favorites
+- ChatView con suggestions (NEW!)
+- WineDetailView
 
 **Tempo stimato**: 30 minuti
 
 ---
 
-### 5. 🎨 Icona App Definitiva
+### 6. 🎨 Icona App Definitiva
 
-Sostituire placeholder cerchio grigio:
+Sostituire placeholder:
 - Design icona 1024x1024
 - **Opzioni**: DIY (Figma) o designer ($200-500)
 
@@ -117,49 +122,52 @@ Sostituire placeholder cerchio grigio:
 - Setup per TestFlight
 - **Tempo**: 30 minuti + attesa Apple
 
-### KNOWN_GRAPES Arricchimento
-- Aggiungere 14 vitigni mancanti
-- **Tempo**: 2 giorni
+### ROADMAP v1.6 Update
+- Aggiornare progress milestone
+- Marcare task completati (suggestion mode, LLM Step 2)
+- **Tempo**: 15 minuti
+
+### PROJECT_PLAN Update
+- Aggiornare metriche backend (v1.7.0)
+- Aggiornare milestone progress (10/10 → nuovi task)
+- **Tempo**: 20 minuti
 
 ---
 
-## 📅 ROADMAP SETTIMANA (9-12 Aprile)
+## 📅 ROADMAP SETTIMANA (18-24 Aprile)
 
-### Martedì 9 Aprile (DOMANI)
-- ✅ Test onboarding device (10 min)
-- ✅ Commit iOS v0.9.3 (3 min)
-- 🔄 LLM Step 2: Design architettura (1 ora)
-- 🔄 LLM Step 2: Implementazione base (3-4 ore)
+### Venerdì 18 Aprile (DOMANI - se sessione)
+- ✅ Commit docs (2 min)
+- ✅ Cleanup docs structure (5 min)
+- 🔄 ROADMAP + PROJECT_PLAN update (35 min)
 
-### Mercoledì 10 Aprile
-- LLM Step 2: Test + tuning
-- Screenshot App Store
+### Sabato-Domenica 19-20 Aprile
+- iOS suggestion mode UI (2-3 ore)
+- Test onboarding device (15 min)
+- Screenshot App Store (30 min)
 
-### Giovedì 11 Aprile
-- LLM Step 2: Deploy + verifiche
-- Icona app: Brief o DIY
+### Lunedì 21 Aprile
+- Review iOS integration
+- Fix eventuali bug
+- Commit iOS final
 
-### Venerdì 12 Aprile
-- Review progresso milestone
-- Pianificare settimana 15-19 Aprile
+### Martedì-Giovedì 22-24 Aprile
+- Icona app (brief o DIY)
+- Apple Developer Account
+- TestFlight prep
 
 ---
 
 ## 🎯 OBIETTIVO MILESTONE (30 Aprile)
 
-**Progress**: 10/10 task (100%) 🎉
+**Progress**: 10/10 original tasks (100%) 🎉
 
-**Completati**:
-- ✅ Badge "Ottimo Valore" (v1.6.2)
-- ✅ iOS Fix JSON parsing
-- ✅ GT Tests verification
-- ✅ **Onboarding screen (100% - COMPLETATA!)**
-
-**Rimanenti**:
-1. ⏳ LLM Step 2 (3-4 giorni)
+**Nuovi task identificati**:
+1. ⏳ iOS suggestion mode UI (2-3 giorni)
 2. ⏳ Icona app (2-3 giorni)
+3. ⏳ Test device completo (1 giorno)
 
-**Buffer**: 21 giorni → FATTIBILISSIMO ✅
+**Buffer**: 13 giorni → FATTIBILISSIMO ✅
 
 ---
 
@@ -169,43 +177,46 @@ Sostituire placeholder cerchio grigio:
 |------|-------|--------|--------|
 | Apple Developer Account | $99/anno | SUBITO | ⏳ Pending |
 | Icona app (designer) | $200-500 | Opzionale | 💡 Nice to have |
-| Anthropic API (Haiku) | ~$5-10/mese | Dopo LLM Step 2 | 💡 Budget OK |
+| Anthropic API (Haiku) | ~$5-10/mese | Attivo | ✅ Running |
 
 ---
 
 ## 📝 NOTE TECNICHE
 
-### Backend v1.6.2 Status
+### Backend v1.7.0 Status
 - ✅ LIVE su Render
-- ✅ Commit `647252d`
-- ✅ GT tests PASS (4/4 critici)
+- ✅ Commit `fbadc64`
+- ✅ GT tests PASS (23/27)
+- ✅ Suggestion mode funzionante
+- ✅ LLM Step 2 attivo
 
 ### iOS App Status
-- Version: **0.9.3** (Onboarding complete!)
+- Version: **0.9.3** (Onboarding complete)
 - ✅ WelcomeView implementata
-- ✅ Integrazione ChatView completata
+- ⏳ Suggestion mode UI pending
 - ⏳ Commit pending (dopo test)
 
 ---
 
 ## 🔗 RISORSE
 
-**Documentazione**:
-- [GT Report v1.6.2](/docs/GT_REPORT_v1.6.2.md)
-- [Release v1.6.2](/docs/releases/v1.6.2.md)
-- [Session Handoff 2026-04-08](/docs/roadmap/SESSION_HANDOFF_2026-04-08.md)
-- [Project Plan](/docs/PROJECT_PLAN.md)
+**Documentazione Sessione**:
+- [Release v1.7.0](/docs/releases/v1.7.0.md)
+- [Session Handoff 2026-04-17](/docs/roadmap/SESSION_HANDOFF_2026-04-17.md)
+- [GROUND_RULES v2](/docs/GROUND_RULES.md)
 
-**Codice iOS Onboarding**:
-- WelcomeView: `/ios-app/SommelierAI/SommelierAI/WelcomeView.swift` ✅
-- ContentView: `/ios-app/SommelierAI/SommelierAI/ContentView.swift` ✅
-- ChatView: `/ios-app/SommelierAI/SommelierAI/ChatView.swift` ✅
+**Scripts**:
+- cleanup_docs_structure.sh (root)
+- test_all_gt.sh (root)
 
 **Backend**:
 - URL: https://sommelier-ai.onrender.com
 - Dashboard: https://dashboard.render.com
 
+**Tests**:
+- GT Results: gt_results_20260417.txt
+
 ---
 
-**Prossimo aggiornamento**: Fine sessione 9 Aprile 2026  
-**Ultima modifica**: Claude Sonnet 4.6, 8 Aprile 2026 ore 20:15
+**Prossimo aggiornamento**: Fine prossima sessione  
+**Ultima modifica**: Claude Sonnet 4.5, 17 Aprile 2026 ore 21:00

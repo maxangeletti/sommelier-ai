@@ -1,36 +1,38 @@
 # 📊 PIANO DI PROGETTO — SommelierAI
 
-**Versione**: 1.1  
-**Ultimo aggiornamento**: 2026-04-08  
-**Baseline Backend**: v1.6.2 LIVE (fix value_intent badge)  
-**Baseline iOS**: v0.9.2 POST-JSON-FIX  
-**Ground Truth**: v2.1 (4/4 critical PASS, 0 regressions)
+**Versione**: 1.2  
+**Ultimo aggiornamento**: 2026-04-17  
+**Baseline Backend**: v1.7.0 LIVE (LLM + Suggestions + Fuzzy)  
+**Baseline iOS**: v0.9.3 POST-ONBOARDING  
+**Ground Truth**: v2.1 (23/27 PASS, +1 vs baseline)
 
 ---
 
 ## 🎯 DOVE SIAMO
 
-### Backend v1.6.2 — PRODUCTION LIVE ✅
+### Backend v1.7.0 — PRODUCTION LIVE ✅
 - **Deploy**: Render.com, stabile
 - **Uptime**: ~95% (cold start mitigato)
-- **Ground Truth**: 4/4 critical tests PASS (GT-NEW, GT-20, GT-08, GT-05)
-- **Latest Fix**: show_value_badge con value_intent (8 Apr 2026)
-- **LLM**: Step 1 integrato (parser semantico)
+- **Ground Truth**: 23/27 PASS, 3 WARN, 1 FAIL (85% accuracy)
+- **Latest Release**: Suggestion mode + LLM Step 2 (17 Apr 2026)
+- **LLM**: Step 2 deployed (personalized reasons, timeout 10s)
+- **Suggestion Mode**: Generic queries → suggestions instead results
 - **Dataset**: 100 vini, 35 regioni, 75 vitigni
-- **Performance**: <500ms avg, <800ms p95
+- **Performance**: <500ms avg, <1s p95 (LLM adds latency)
 
-### iOS v0.9.2 — POST-JSON-FIX ✅
+### iOS v0.9.3 — POST-ONBOARDING ✅
 - **Build**: Stabile, Xcode OK
-- **Ultima feature**: Fix JSON parsing + HTTP cache disabled (7 Apr 2026)
+- **Ultima feature**: WelcomeView onboarding + UI refinements (11 Apr 2026)
 - **Crash rate**: <1%
-- **Feature completeness**: 92%
+- **Feature completeness**: 95%
+- **Pending**: Suggestion mode UI integration, test device
 
 ### Milestone Corrente
 **"LLM Enhancement + Polish UI"**
-- **Progress**: 9/10 task (90%)
+- **Progress**: 11/13 task (85%) - nuovi task identificati
 - **Deadline**: 30 Aprile 2026
-- **Remaining**: 21 giorni
-- **Latest**: Badge fix v1.6.2 + GT verification (8 Apr 2026)
+- **Remaining**: 13 giorni
+- **Latest**: v1.7.0 deployed - Suggestion mode + LLM Step 2 (17 Apr 2026)
 
 ---
 
@@ -52,14 +54,17 @@
 
 ## ⚠️ COSA MANCA (PRIORITÀ)
 
-### P0 — BLOCCANTI LANCIO (entro 15 Aprile)
+### P0 — BLOCCANTI LANCIO (entro 25 Aprile)
 1. ✅ **Paginazione iOS** — COMPLETATA 31 Marzo 2026
 2. ✅ **Badge "Ottimo Valore"** — COMPLETATA 8 Aprile 2026 (v1.6.2)
-3. ✅ **GT Tests v1.6.2** — COMPLETATA 8 Aprile 2026 (4/4 PASS)
-4. ⏳ **Test device reale** — Da fare 9-10 Aprile
-5. ⏳ **LLM Step 2** — 3-4 giorni effort (9-12 Aprile)
-6. ⏳ **Estetica app** — Icona 1024x1024, splash, theme (2-3 giorni)
-7. ⏳ **Apple Developer Account** — $99/anno (acquisto immediato)
+3. ✅ **GT Tests v1.7.0** — COMPLETATA 17 Aprile 2026 (23/27 PASS)
+4. ✅ **LLM Step 2** — COMPLETATA 17 Aprile 2026 (v1.7.0 deployed)
+5. ✅ **Suggestion Mode** — COMPLETATA 17 Aprile 2026 (v1.7.0 deployed)
+6. ✅ **Onboarding iOS** — COMPLETATA 11 Aprile 2026 (v0.9.3)
+7. ⏳ **iOS Suggestion UI** — 2-3 giorni (integrazione)
+8. ⏳ **Test device reale** — 1 giorno
+9. ⏳ **Estetica app** — Icona 1024x1024, splash, theme (2-3 giorni)
+10. ⏳ **Apple Developer Account** — $99/anno (acquisto immediato)
 
 ### P1 — IMPORTANTI (entro 25 Aprile)
 6. ⏳ **TestFlight setup** — 1 giorno
