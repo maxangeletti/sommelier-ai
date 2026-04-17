@@ -35,14 +35,16 @@ import Foundation
             var wines: [WineCard]?
             var totalCount: Int?      // Totale vini disponibili dal backend
             var currentLimit: Int?    // Quanti vini stiamo mostrando ora
+            var meta: SearchMeta?     // ✅ Metadata from backend (includes llm_failed flag)
 
-            init(id: UUID = UUID(), role: Role, text: String, wines: [WineCard]? = nil, totalCount: Int? = nil, currentLimit: Int? = nil) {
+            init(id: UUID = UUID(), role: Role, text: String, wines: [WineCard]? = nil, totalCount: Int? = nil, currentLimit: Int? = nil, meta: SearchMeta? = nil) {
                 self.id = id
                 self.role = role
                 self.text = text
                 self.wines = wines
                 self.totalCount = totalCount
                 self.currentLimit = currentLimit
+                self.meta = meta
             }
         }
 

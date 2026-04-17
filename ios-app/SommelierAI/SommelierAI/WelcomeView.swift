@@ -13,13 +13,28 @@ struct WelcomeView: View {
     @Binding var searchQuery: String
     @FocusState private var isSearchFocused: Bool
     
-    // Suggerimenti predefiniti
-    private let suggestions = [
+    // ✅ Pool completo di suggerimenti (randomizzati)
+    private let allSuggestions = [
         "Vino per cena importante",
         "Rosso strutturato",
         "Vino sotto 20 euro",
-        "Bianco fresco"
+        "Bianco fresco",
+        "Vino per sushi",
+        "Rosso tannico",
+        "Champagne per brindisi",
+        "Vino da aperitivo",
+        "Barolo o Brunello",
+        "Bianco minerale",
+        "Rosé estivo",
+        "Vino biologico",
+        "Amarone o Primitivo",
+        "Vino per pizza",
+        "Prosecco per festa",
+        "Vino toscano pregiato"
     ]
+    
+    // ✅ Suggerimenti mostrati (4 random)
+    @State private var displayedSuggestions: [String] = []
     
     private func proceedToChat() {
         // ✅ Salva query pendente per ChatView
@@ -61,7 +76,7 @@ struct WelcomeView: View {
             
             // Suggerimenti come bottoni
             VStack(spacing: 12) {
-                ForEach(suggestions, id: \.self) { suggestion in
+                ForEach(displayedSuggestions, id: \.self) { suggestion in
                     Button(action: {
                         searchQuery = suggestion
                         proceedToChat()
@@ -87,6 +102,12 @@ struct WelcomeView: View {
                 }
             }
             .padding(.horizontal, 24)
+            .onAppear {
+                // ✅ Scegli 4 suggerimenti random al primo load
+                if displayedSuggestions.isEmpty {
+                    displayedSuggestions = Array(allSuggestions.shuffled().prefix(4))
+                }
+            }
             
             Spacer()
             

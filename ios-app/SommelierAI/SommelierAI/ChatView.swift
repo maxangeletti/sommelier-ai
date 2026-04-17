@@ -125,6 +125,25 @@ struct ChatView: View {
                     .frame(maxWidth: .infinity)
                     .background(Color.yellow.opacity(0.2))
             }
+            
+            // ✅ ERROR STATE 3: Banner LLM fallback (solo se NO risultati E stream finito)
+            if let lastMsg = vm.messages.last(where: { $0.role == .assistant }),
+               let meta = lastMsg.meta,
+               meta.llm_failed == true,
+               (lastMsg.wines?.isEmpty ?? true),
+               !vm.isLoading {
+                HStack(spacing: 6) {
+                    Image(systemName: "info.circle.fill")
+                        .font(.caption)
+                    Text("Ricerca semplificata attiva")
+                        .font(.caption)
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .frame(maxWidth: .infinity)
+                .background(Color.orange.opacity(0.85))
+            }
 
             // ✅ Barra filtri SCROLLABILE - visibile solo dopo primo risultato
             if lastResultHadWines {
@@ -653,74 +672,117 @@ struct ChatView: View {
                 if msg.role == .user { Spacer(minLength: 0) }
             }
 
-            if msg.role == .assistant, let wines = msg.wines, !wines.isEmpty {
-                VStack(spacing: 10) {
-                    let groups = groupedWinesForDisplay(wines)
-
-                    ForEach(groups) { g in
-                        VStack(alignment: .leading, spacing: 6) {
-                            wineRow(g.representative)
-
-                            // ✅ POLISH 3 — micro reason solo per il primo
-                            if g.representativeIndex == 0 {
-                                Text(topReasonLabel(for: g.representative))
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-
-                            if let line = vintagesLine(g.vintages) {
-                                Text(line)
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(1)
-                            }
-                        }
-                        .padding(10)
-                        .background(
-                            g.representativeIndex == 0
-                            ? RoundedRectangle(cornerRadius: 14)
-                                .fill(Color(red: 0.98, green: 0.94, blue: 0.78).opacity(0.6))
-                            : nil
-                        )
-                        .overlay(
-                            g.representativeIndex == 0
-                            ? RoundedRectangle(cornerRadius: 14)
-                                .stroke(Color.yellow.opacity(0.15), lineWidth: 1)
-                            : nil
-                        )
-                        .id("wine:\(msg.id.uuidString):\(g.representativeIndex)")
-                    }
-                    
-                    // ✅ PAGINAZIONE: Bottone "Mostra altri"
-                    if let totalCount = msg.totalCount,
-                       let currentLimit = msg.currentLimit,
-                       currentLimit < totalCount,
-                       currentLimit < 20 {
+            if msg.role == .assistant, let wines = msg.wines {
+                // ✅ FIX OPZIONE 3: Mostra "nessun risultato" SOLO se stream finito (!vm.isLoading)
+                if wines.isEmpty && !vm.isLoading {
+                    // ✅ ERROR STATE 1: Nessun vino trovato
+                    VStack(spacing: 12) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 48))
+                            .foregroundStyle(.secondary.opacity(0.5))
                         
-                        let remaining = min(totalCount - currentLimit, 5)
+                        Text("Nessun vino trovato")
+                            .font(.headline)
+                            .foregroundStyle(.primary)
                         
-                        Button(action: {
-                            vm.loadMore(for: msg.id)
-                        }) {
+                        Text("Prova a cercare con termini diversi o meno specifici")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                        
+                        // ✅ ERROR STATE 2: Retry button
+                        Button {
+                            // Riusa l'ultima query user
+                            if let lastUserMsg = vm.messages.last(where: { $0.role == .user }) {
+                                vm.send(lastUserMsg.text)
+                                forceScrollToBottomTick += 1
+                            }
+                        } label: {
                             HStack(spacing: 6) {
-                                Image(systemName: "arrow.down.circle")
-                                Text("Mostra altri \(remaining) vini")
+                                Image(systemName: "arrow.clockwise")
+                                Text("Riprova")
                                     .font(.subheadline.weight(.medium))
                             }
-                            .foregroundStyle(AppColors.primaryWine)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(AppColors.primaryWine.opacity(0.08))
-                            )
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(AppColors.accentWine)
+                            .clipShape(Capsule())
                         }
-                        .padding(.top, 8)
+                        .buttonStyle(.plain)
                     }
+                    .padding(.vertical, 24)
+                    .frame(maxWidth: .infinity)
+                } else {
+                    // Vini trovati
+                    VStack(spacing: 10) {
+                        let groups = groupedWinesForDisplay(wines)
+
+                        ForEach(groups) { g in
+                            VStack(alignment: .leading, spacing: 6) {
+                                wineRow(g.representative)
+
+                                // ✅ POLISH 3 — micro reason solo per il primo
+                                if g.representativeIndex == 0 {
+                                    Text(topReasonLabel(for: g.representative))
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+
+                                if let line = vintagesLine(g.vintages) {
+                                    Text(line)
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                }
+                            }
+                            .padding(10)
+                            .background(
+                                g.representativeIndex == 0
+                                ? RoundedRectangle(cornerRadius: 14)
+                                    .fill(Color(red: 0.98, green: 0.94, blue: 0.78).opacity(0.6))
+                                : nil
+                            )
+                            .overlay(
+                                g.representativeIndex == 0
+                                ? RoundedRectangle(cornerRadius: 14)
+                                    .stroke(Color.yellow.opacity(0.15), lineWidth: 1)
+                                : nil
+                            )
+                            .id("wine:\(msg.id.uuidString):\(g.representativeIndex)")
+                        }
+                        
+                        // ✅ PAGINAZIONE: Bottone "Mostra altri"
+                        if let totalCount = msg.totalCount,
+                           let currentLimit = msg.currentLimit,
+                           currentLimit < totalCount,
+                           currentLimit < 20 {
+                            
+                            let remaining = min(totalCount - currentLimit, 5)
+                            
+                            Button(action: {
+                                vm.loadMore(for: msg.id)
+                            }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "arrow.down.circle")
+                                    Text("Mostra altri \(remaining) vini")
+                                        .font(.subheadline.weight(.medium))
+                                }
+                                .foregroundStyle(AppColors.primaryWine)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(AppColors.primaryWine.opacity(0.08))
+                                )
+                            }
+                            .padding(.top, 8)
+                        }
+                    }
+                    .padding(.top, 4)
+                    .transition(.opacity)
+                    .animation(.easeInOut(duration: 0.18), value: wines.count)
                 }
-                .padding(.top, 4)
-                .transition(.opacity)
-                .animation(.easeInOut(duration: 0.18), value: wines.count)
             }
         }
     }

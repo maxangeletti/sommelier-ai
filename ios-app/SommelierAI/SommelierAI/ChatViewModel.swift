@@ -585,6 +585,9 @@ final class ChatViewModel: ObservableObject {
                         self.lastAssistantBaseWines = base
                         self.updateGrapeOptions(from: base)
                         
+                        // ✅ Assegna meta al messaggio (includes llm_failed flag)
+                        messages[idx].meta = ev.meta
+                        
                         // ✅ Leggi suggerimenti fuzzy dal backend
                         if let suggestions = ev.meta?.did_you_mean, !suggestions.isEmpty {
                             self.didYouMeanSuggestions = suggestions
@@ -687,6 +690,9 @@ final class ChatViewModel: ObservableObject {
 
                         self.lastAssistantBaseWines = base
                         self.updateGrapeOptions(from: base)
+
+                        // ✅ Assegna meta al messaggio (includes llm_failed flag)
+                        messages[idx].meta = ev.meta
 
                         // ✅ PATCH (Step 4/5): applica MULTI-FILTRO anche nel commit (no streaming)
                         let allProcessed = self.applyAllLocalFilters(base)

@@ -40,9 +40,9 @@ struct ContentView: View {
                 )
             }
         }
-        // 🔧 DEBUG: Decomment to force welcome screen on every launch
-        // .onAppear {
-        //     hasSeenWelcome = false
-        // }
+        // 🔧 DEBUG: Force welcome screen (comment out for production)
+        .onAppear {
+            hasSeenWelcome = false
+        }
     }
 }

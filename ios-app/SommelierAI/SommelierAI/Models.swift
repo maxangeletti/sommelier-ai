@@ -55,6 +55,7 @@ struct SearchMeta: Codable {
     var model: String?
     var build_id: String?
     var did_you_mean: [String]?  // ✅ Suggerimenti fuzzy quando pochi risultati
+    var llm_failed: Bool?  // ✅ Flag se il backend LLM ha fallito
 }
 
 // MARK: - AromaIcon

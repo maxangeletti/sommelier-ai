@@ -55,4 +55,37 @@ struct WineLocalizer {
         default:           return raw
         }
     }
+    
+    // ✅ NEW: Localizzazione intensità/tannicità/acidità
+    static func intensity(_ raw: String?) -> String {
+        guard let raw = raw else { return "" }
+        switch raw.lowercased() {
+        case "low":    return "Bassa"
+        case "medium": return "Media"
+        case "high":   return "Alta"
+        default:       return raw.capitalized
+        }
+    }
+    
+    static func tannins(_ raw: String?) -> String {
+        guard let raw = raw else { return "" }
+        switch raw.lowercased() {
+        case "low":          return "Bassa"
+        case "medium":       return "Media"
+        case "medium_plus":  return "Media-Alta"
+        case "high":         return "Alta"
+        default:             return raw.replacingOccurrences(of: "_", with: " ").capitalized
+        }
+    }
+    
+    static func acidity(_ raw: String?) -> String {
+        guard let raw = raw else { return "" }
+        switch raw.lowercased() {
+        case "low":          return "Bassa"
+        case "medium":       return "Media"
+        case "medium_plus":  return "Media-Alta"
+        case "high":         return "Alta"
+        default:             return raw.replacingOccurrences(of: "_", with: " ").capitalized
+        }
+    }
 }
