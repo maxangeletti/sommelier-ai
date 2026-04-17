@@ -2839,10 +2839,10 @@ def post_search(payload: Dict[str, Any] = Body(...)) -> JSONResponse:
         if suggestions:
             return JSONResponse({
                 "results": [],
-                "suggestions": suggestions,
                 "meta": {
                     "query": query,
                     "suggestion_mode": True,
+                    "did_you_mean": suggestions,  # ✅ FIX: usa did_you_mean (iOS compatibility)
                     "message": "Query troppo generica. Forse cercavi:"
                 }
             })
