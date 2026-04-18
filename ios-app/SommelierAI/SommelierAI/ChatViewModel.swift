@@ -595,12 +595,15 @@ final class ChatViewModel: ObservableObject {
                             self.didYouMeanSuggestions = []
                         }
 
+                        // ✅ FIX SUGGESTION MODE: se backend dice "solo suggestions", NON mostrare wine cards
+                        let isSuggestionMode = ev.meta?.suggestion_mode == true
+                        
                         // ✅ PATCH (Step 4): applica MULTI-FILTRO FINAL (vitigno+prezzo+colore+intensità)
                         let allProcessed = self.applyAllLocalFilters(base)
                         
                         // ✅ PAGINAZIONE: Mostra inizialmente solo i primi 10 vini
                         let initialLimit = 10
-                        let processed = Array(allProcessed.prefix(initialLimit))
+                        let processed = isSuggestionMode ? [] : Array(allProcessed.prefix(initialLimit))
                         
                         // ✅ PAGINAZIONE: salva totalCount e currentLimit
                         let totalCount = ev.meta?.total_count ?? base.count
