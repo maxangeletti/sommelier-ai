@@ -24,7 +24,7 @@ from ui_helpers import should_show_value_badge, get_aroma_icons, get_mock_review
 # Build signature (anti-confusione / anti-regressione)
 # =========================
 
-BUILD_ID = "SommelierAI v1.7.0 - LLM + Suggestions + Fuzzy (2026-04-17)"
+BUILD_ID = "SommelierAI v1.7.0 - Price Parser Fix (sopra/sotto articoli) (2026-04-19)"
 
 
 # =========================
@@ -317,13 +317,13 @@ def parse_price(query: str) -> Dict[str, Any]:
     if m2:
         return {"min": float(m2.group(1)), "max": float(m2.group(2)), "mode": "range"}
 
-    m3 = re.search(r"\b(sotto|fino a|entro|meno di|max)\s+(\d{1,3})\b", q)
+    m3 = re.search(r"\b(sotto|fino a|entro|meno di|max)(\s+(i|il|gli|le|l'))?\s+(\d{1,3})\b", q)
     if m3:
-        return {"min": None, "max": float(m3.group(2)), "mode": "max"}
+        return {"min": None, "max": float(m3.group(4)), "mode": "max"}
 
-    m4 = re.search(r"\b(sopra|oltre|almeno|min)\s+(\d{1,3})\b", q)
+    m4 = re.search(r"\b(sopra|oltre|almeno|min)(\s+(i|il|gli|le|l'))?\s+(\d{1,3})\b", q)
     if m4:
-        return {"min": float(m4.group(2)), "max": None, "mode": "min"}
+        return {"min": float(m4.group(4)), "max": None, "mode": "min"}
 
     m5 = re.search(r"\bda\s+(\d{1,3})\s+in\s+su\b", q)
     if m5:
@@ -964,6 +964,7 @@ def _filter_new_A_B_D(
     aromas_req: List[str],
     intensity_req: Optional[str],
     typology_req: Dict[str, Optional[str]],
+    country: Optional[str] = None,  # ✅ NEW: country for smart sparkling expansion
 ) -> pd.DataFrame:
         
     # B) grapes: filter on grape_varieties (token-aware, robusto su separatori)
@@ -1009,8 +1010,9 @@ def _filter_new_A_B_D(
         derived_sw = df["sweetness"].astype(str).map(normalize_sweetness)
 
         if sp_req:
-            # ✅ FIX: "frizzante" query includes both frizzante AND spumante (both effervescent)
-            if sp_req == "frizzante":
+            # ✅ Smart expansion: "francese frizzante" → includes Champagne (spumante)
+            # In Francia non esistono vini frizzanti, solo spumanti (Champagne, Crémant)
+            if sp_req == "frizzante" and country and "franci" in _norm_lc(country):
                 df = df.loc[derived_sp.isin(["frizzante", "spumante"])]
             else:
                 df = df.loc[derived_sp.eq(sp_req)]
@@ -1038,6 +1040,24 @@ def _filter_new_A_B_D(
             axis=1,
         )
         df = df.loc[derived_int.eq(intensity_req)]
+
+    # ✅ Country filter AFTER sparkling expansion
+    # Questo permette "frizzante francese" → espansione a "spumante" → poi filtro country
+    if country:
+        country_val = _norm_lc(country)
+        # Normalize Italian country names to English (DB uses English)
+        country_aliases = {
+            "italia": "italy",
+            "francia": "france",
+            "spagna": "spain",
+            "germania": "germany",
+            "portogallo": "portugal",
+            "austria": "austria",
+            "svizzera": "switzerland"
+        }
+        country_val = country_aliases.get(country_val, country_val)
+        if "country" in df.columns:
+            df = df[df["country"].astype(str).str.lower().str.contains(country_val, na=False)]
 
     return df
 
@@ -2252,6 +2272,7 @@ def run_search(
     llm_intent, llm_failed = parse_intent_with_llm(q)
     
     price_info = parse_price(q)
+    country = llm_intent.get("country")  # ✅ NEW: country from LLM (francia, italia, etc.)
     region = parse_region(q) or llm_intent.get("region")
 
     # A/B/D requests
@@ -2311,6 +2332,32 @@ def run_search(
                 mask |= filtered[col].astype(str).str.lower().str.contains(v, na=False)
         filtered = filtered.loc[mask]
 
+    # ✅ Country filter CONDIZIONALE (smart: efficienza + correctness)
+    # - Se NON c'è richiesta sparkling → applica QUI (efficienza: riduce dataset prima)
+    # - Se c'è richiesta sparkling → applica DOPO in _filter_new_A_B_D (permette smart expansion)
+    sparkling_requested = bool(typology_req.get("sparkling"))
+    
+    if country and not sparkling_requested:
+        # Applica country filter standalone (caso normale: efficienza)
+        country_val = _norm_lc(country)
+        country_aliases = {
+            "italia": "italy",
+            "francia": "france",
+            "spagna": "spain",
+            "germania": "germany",
+            "portogallo": "portugal",
+            "austria": "austria",
+            "svizzera": "switzerland"
+        }
+        country_val = country_aliases.get(country_val, country_val)
+        if "country" in filtered.columns:
+            filtered = filtered[filtered["country"].astype(str).str.lower().str.contains(country_val, na=False)]
+        # Flag: country già filtrato, non riapplicare in _filter_new_A_B_D
+        country_for_filter = None
+    else:
+        # Country filter sarà applicato DOPO in _filter_new_A_B_D (smart expansion)
+        country_for_filter = country
+
     # Tannin → color rosso implicito (tannino è rilevante solo per rossi)
     if typology_req.get("tannin") and not color_req:
         color_req = "rosso"
@@ -2333,7 +2380,7 @@ def run_search(
     if len(keyword_matches) > 0 and len(keyword_matches) < len(filtered):
         filtered = filtered.loc[keyword_matches]
     # A/B/D filters
-    filtered = _filter_new_A_B_D(filtered, grapes_req, aromas_req, intensity_req, typology_req)
+    filtered = _filter_new_A_B_D(filtered, grapes_req, aromas_req, intensity_req, typology_req, country_for_filter)
     timings["filters"] = round(time.perf_counter() - t0, 6)
     t0 = time.perf_counter()
 
@@ -2749,6 +2796,15 @@ def run_search(
         suggestions = fuzzy_match_query(q, get_wines_df())
         if suggestions:
             meta["did_you_mean"] = suggestions
+    
+    # ✅ Banner: "frizzante francese" → suggerisci spumante
+    q_lc = _norm_lc(q)
+    if len(sorted_cards) == 0 and "frizzant" in q_lc and ("franc" in q_lc or country and "franc" in _norm_lc(country)):
+        meta["sparkling_suggestion"] = {
+            "type": "french_sparkling",
+            "message": "In Francia non esistono vini frizzanti, solo spumanti (Champagne, Crémant). Vuoi includere gli spumanti francesi?",
+            "buttons": ["Sì, mostra spumanti", "No, solo frizzanti"]
+        }
     
     return {"results": sorted_cards, "meta": meta}
 
