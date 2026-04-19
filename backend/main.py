@@ -2626,6 +2626,7 @@ def run_search(
         "limit": limit,
         "filters": {
             "price": price_info,
+            "country": country,  # ✅ NEW: country filter
             "region": region,
             "color": color_req,
             "grapes": grapes_req,

@@ -65,7 +65,8 @@ Estrai i seguenti campi (tutti opzionali, usa null se non presenti):
 
 {
   "color": "rosso" | "bianco" | "rosato" | null,
-  "region": string | null,             // es. "piemonte", "toscana", "borgogna", "loira"
+  "country": string | null,             // es. "francia", "italia", "spagna", "germania"
+  "region": string | null,             // es. "piemonte", "toscana", "champagne", "bordeaux"
   "occasion": "aperitif" | "dinner" | "important_dinner" | "lunch" | "meditation" | "summer" | "everyday" | null,
   "prestige_intent": true | false,     // vino importante, fare bella figura, regalo
   "elegant_intent": true | false,      // elegante, fine, raffinato
@@ -81,12 +82,26 @@ Estrai i seguenti campi (tutti opzionali, usa null se non presenti):
   "free_context": string | null        // contesto non mappabile ma utile (max 20 parole)
 }
 
-Regole:
+Regole ed Esempi:
+
+ESEMPI COUNTRY (PRIORITÀ ALTA):
+- "vino francese frizzante sopra i 30 euro" → country: "francia", sparkling: "frizzante", price_min: 30
+- "vino francese" → country: "francia"
+- "frizzante francese" → country: "francia", sparkling: "frizzante"
+- "vino italiano rosso" → country: "italia", color: "rosso"
+- "vino spagnolo" → country: "spagna"
+
+REGIONI (distinte da country):
+- "champagne brut" → region: "champagne", sparkling: "spumante", sweetness: "secco" (NON country!)
+- "bordeaux" / "loira" → region: "bordeaux" / "loira" (regioni francesi, NON country)
+- "piemonte" / "toscana" → region: "piemonte" / "toscana" (regioni italiane, NON country)
+
+ALTRI ESEMPI:
 - "rosso elegante" → color: rosso, elegant_intent: true
 - "qualcosa di importante per mia suocera" → prestige_intent: true, occasion: important_dinner
 - "aperitivo estivo leggero" → occasion: aperitif, style: leggero, color: bianco (implicito per aperitivo)
 - "voglio stupire" → prestige_intent: true
-- "cena da amici che amano la Francia" → region: loira o borgogna (scegli il più probabile), occasion: dinner
+- "cena da amici che amano la Francia" → occasion: dinner, free_context: "preferenza per vini francesi"
 - "vino da meditazione potente" → occasion: meditation, style: potente
 - "ho già preso il pesce, abbino la carne" → foods: ["carne"] (ignora ciò che è già stato ordinato)
 - CRITICO: NON inferire vitigni da denominazioni! "barolo" NON deve produrre grapes: ["nebbiolo"], "brunello" NON deve produrre ["sangiovese"]. Estrai "grapes" SOLO se l'utente nomina esplicitamente il vitigno (es. "un nebbiolo", "vino di sangiovese").
@@ -101,6 +116,7 @@ Regole:
 
 EMPTY_INTENT: Dict[str, Any] = {
     "color": None,
+    "country": None,  # ✅ FIX: country field
     "region": None,
     "occasion": None,
     "prestige_intent": False,
@@ -195,7 +211,19 @@ def parse_intent_with_llm(query: str) -> tuple[Dict[str, Any], bool]:
         raw = re.sub(r"\s*```$", "", raw)
 
         intent = json.loads(raw)
-        return _validate_intent(intent), False  # ✅ LLM success
+        validated = _validate_intent(intent)
+        
+        # ✅ FALLBACK RULE-BASED: Se LLM non ha estratto country, cerca pattern noti
+        if not validated.get("country"):
+            q_lower = query.lower()
+            if re.search(r'\b(francese|frances[ei]|vino\s+francese|frizzante\s+francese)\b', q_lower):
+                validated["country"] = "francia"
+            elif re.search(r'\b(italiano|italiana[ei]|vino\s+italiano)\b', q_lower):
+                validated["country"] = "italia"
+            elif re.search(r'\b(spagnolo|spagnol[oi]|vino\s+spagnolo)\b', q_lower):
+                validated["country"] = "spagna"
+        
+        return validated, False  # ✅ LLM success
 
     except Exception:
         # Fallback silenzioso: il motore rule-based gestisce tutto
@@ -237,6 +265,7 @@ def _validate_intent(raw: Dict[str, Any]) -> Dict[str, Any]:
     color = _str_or_none("color")
     out["color"] = color if color in VALID_COLORS else None
 
+    out["country"] = _str_or_none("country")  # ✅ NEW: country field
     out["region"] = _str_or_none("region")
 
     occasion = _str_or_none("occasion")
@@ -283,7 +312,7 @@ def merge_intent(llm_intent: Dict[str, Any], rule_based: Dict[str, Any]) -> Dict
     merged = dict(rule_based)
 
     # Campi semantici: LLM vince se ha trovato qualcosa che rule-based non ha
-    for key in ["color", "region", "occasion", "prestige_intent", "elegant_intent",
+    for key in ["color", "country", "region", "occasion", "prestige_intent", "elegant_intent",
                 "value_intent", "sparkling", "sweetness", "style"]:
         llm_val = llm_intent.get(key)
         rb_val = rule_based.get(key)
