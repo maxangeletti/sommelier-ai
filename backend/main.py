@@ -3105,6 +3105,75 @@ def get_wine_details(wine_id: str) -> JSONResponse:
     
     return JSONResponse({"wine": wine_dict})
 
+
+@app.get("/wine/{wine_id}/tasting_notes")
+def get_tasting_notes(wine_id: str, query: str = Query("")) -> JSONResponse:
+    """
+    Endpoint per tasting notes (ritorna solo le note di degustazione).
+    """
+    df = get_wines_df()
+    wine_row = df[df["id"] == wine_id]
+    
+    if wine_row.empty:
+        return JSONResponse({"error": "Wine not found"}, status_code=404)
+    
+    row = wine_row.iloc[0]
+    
+    # TEMPORANEAMENTE DISABILITATO: generate_tasting_notes_with_llm
+    # tasting_notes = generate_tasting_notes(...)
+    tasting_notes = _norm(getattr(row, "description", "Non disponibili al momento."))
+    
+    return JSONResponse({
+        "wine_id": wine_id,
+        "tasting_notes": tasting_notes or "Non disponibili al momento."
+    })
+
+
+@app.get("/wine/{wine_id}/similar")
+def get_similar_wines(wine_id: str, limit: int = Query(3)) -> JSONResponse:
+    """
+    Endpoint per vini simili (stessa denominazione, top per quality).
+    """
+    df = get_wines_df()
+    wine_row = df[df["id"] == wine_id]
+    
+    if wine_row.empty:
+        return JSONResponse({"error": "Wine not found"}, status_code=404)
+    
+    row = wine_row.iloc[0]
+    denomination = _norm(getattr(row, "denomination", ""))
+    
+    if not denomination:
+        return JSONResponse({"similar_wines": []})
+    
+    # Filtra vini stessa denominazione, escludi quello corrente
+    similar_df = df[
+        (df["denomination"] == denomination) &
+        (df["id"] != wine_id)
+    ].copy()
+    
+    # Ordina per quality (decrescente), prendi top limit
+    similar_df["quality_num"] = pd.to_numeric(similar_df["quality"], errors="coerce").fillna(0)
+    similar_df = similar_df.sort_values("quality_num", ascending=False).head(limit)
+    
+    # Converti in WineCard format
+    similar_wines = []
+    for _, r in similar_df.iterrows():
+        card = {
+            "id": _norm(getattr(r, "id", "")),
+            "name": _norm(getattr(r, "name", "")),
+            "producer": _norm(getattr(r, "producer", "")),
+            "region": _norm(getattr(r, "region", "")),
+            "denomination": _norm(getattr(r, "denomination", "")),
+            "vintage": _norm(getattr(r, "vintage", "")),
+            "price": _price_effective(r),
+            "score": _parse_float_maybe(getattr(r, "quality", "")),
+        }
+        similar_wines.append(card)
+    
+    return JSONResponse({"similar_wines": similar_wines})
+
+
 if __name__ == "__main__":
     import sys
     import pandas as pd

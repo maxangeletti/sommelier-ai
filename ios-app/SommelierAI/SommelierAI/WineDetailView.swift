@@ -17,6 +17,13 @@ struct WineDetailView: View {
     
     @EnvironmentObject private var favoritesStore: FavoritesStore
     
+    @State private var tastingNotes: String = ""
+    @State private var isLoadingNotes: Bool = false
+    @State private var similarWines: [WineCard] = []
+    @State private var isLoadingSimilar: Bool = false
+    
+    private let api = APIClient()
+    
     // Calcolo score complessivo (overall) - CLAMPED tra 0-100%
     private var overallScore: Int {
         let score = max(0, min(5, wine.score ?? 0))  // Clamp tra 0 e 5
@@ -869,7 +876,7 @@ struct CharacteristicRow: View {
     }
 }
 
-// 📏 Barra orizzontale per caratteristiche
+// 📏 Barra orizzontale per caratteristiche (MAX 50% width)
 struct CharacteristicBar: View {
     let label: String
     let value: Double // 0.0 ... 1.0
@@ -881,15 +888,19 @@ struct CharacteristicBar: View {
                 .foregroundStyle(.secondary)
             
             GeometryReader { geo in
+                // ✅ FIX: MAX 50% della larghezza totale
+                let maxBarWidth = geo.size.width * 0.5
+                
                 ZStack(alignment: .leading) {
-                    // Background
+                    // Background (full 50% width)
                     RoundedRectangle(cornerRadius: 4)
                         .fill(Color.gray.opacity(0.15))
+                        .frame(width: maxBarWidth)
                     
-                    // Foreground bar
+                    // Foreground bar (value * 50%)
                     RoundedRectangle(cornerRadius: 4)
-                        .fill(Color(red: 0.6, green: 0.15, blue: 0.15)) // Vino rosso scuro
-                        .frame(width: geo.size.width * value)
+                        .fill(AppColors.primaryWine)
+                        .frame(width: maxBarWidth * value)
                 }
             }
             .frame(height: 8)
