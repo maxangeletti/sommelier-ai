@@ -372,6 +372,62 @@ def parse_region(query: str) -> Optional[str]:
     return None
 
 
+# ✅ DENOMINATION PARSING (FIX CRITICO per Brunello/Barolo)
+DENOMINATION_PATTERNS = [
+    # Italiani DOCG/DOC principali
+    r"\bbrunello(\s+di\s+montalcino)?\b",
+    r"\bbarolo\b",
+    r"\bbarbaresco\b",
+    r"\bamarone(\s+della\s+valpolicella)?\b",
+    r"\bchianti(\s+classico)?\b",
+    r"\bmontepulciano\s+d'abruzzo\b",
+    r"\bnobile\s+di\s+montepulciano\b",
+    r"\btaurasi\b",
+    r"\bsagrantino(\s+di\s+montefalco)?\b",
+    r"\bfranciacorta\b",
+    r"\bprosecco\b",
+    r"\bvalpolicella\b",
+    r"\bsoave\b",
+    r"\bvermentino\s+di\s+gallura\b",
+    r"\bvernaccia\s+di\s+san\s+gimignano\b",
+    r"\bgavi\b",
+    r"\bbolgheri\b",
+    # Francesi principali
+    r"\bchampagne\b",
+    r"\bpauillac\b",
+    r"\bgevrey-chambertin\b",
+    r"\bpomerol\b",
+    r"\bst-?emilion\b",
+    r"\bchablis\b",
+    r"\bsancerre\b",
+    r"\bpouilly-fuisse\b",
+]
+
+
+def parse_denomination(query: str) -> Optional[str]:
+    """Parse denomination from query (e.g., 'brunello', 'barolo').
+    
+    Returns normalized denomination string if found, None otherwise.
+    """
+    q = _norm_lc(query)
+    for pat in DENOMINATION_PATTERNS:
+        m = re.search(pat, q)
+        if m:
+            # Restituisci il match normalizzato
+            denom = m.group(0).strip()
+            # Normalizza varianti: "brunello di montalcino" -> "brunello"
+            if "brunello" in denom:
+                return "brunello"
+            if "amarone" in denom:
+                return "amarone"
+            if "sagrantino" in denom:
+                return "sagrantino"
+            if "chianti" in denom:
+                return "chianti" if "classico" not in denom else "chianti classico"
+            return denom
+    return None
+
+
 # --- B: vitigni (match su query -> filtro su grape_varieties) ---
 KNOWN_GRAPES = [
     # Italiani principali
@@ -2365,6 +2421,17 @@ def run_search(
     # color filter (bianco/rosso/rosato)
     filtered = _filter_by_color(filtered, color_req)
 
+    # ✅ DENOMINATION FILTER (HARD - risolve bug Brunello/Barolo)
+    denomination_req = parse_denomination(q) or llm_intent.get("denomination")
+    if denomination_req:
+        denom_val = _norm_lc(denomination_req)
+        # Match in name OR denomination column (case-insensitive, substring)
+        mask = (
+            filtered["name"].astype(str).str.lower().str.contains(denom_val, na=False) |
+            filtered["denomination"].astype(str).str.lower().str.contains(denom_val, na=False)
+        )
+        filtered = filtered.loc[mask]
+
     # Keyword filter: se query matcha esattamente una denominazione, mostra SOLO quella
     keyword_matches = []
     for idx, row in filtered.iterrows():
@@ -2633,6 +2700,7 @@ def run_search(
             "aromas": aromas_req,
             "intensity": intensity_req,
             "typology": typology_req,
+            "denomination": denomination_req,  # ✅ ADDED
             "foods": foods_req,
             "occasion_intent": bool(occasion_intent),
             "prestige_intent": prestige_intent,
