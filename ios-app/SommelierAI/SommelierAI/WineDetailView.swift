@@ -21,6 +21,7 @@ struct WineDetailView: View {
     @State private var isLoadingNotes: Bool = false
     @State private var similarWines: [WineCard] = []
     @State private var isLoadingSimilar: Bool = false
+    @State private var showScoreInfo: Bool = false
     
     private let api = APIClient()
     
@@ -72,18 +73,33 @@ struct WineDetailView: View {
                     .lineLimit(3)
                     .padding(.top, 8)
                 
-                // ✅ PUNTEGGIO COMPLESSIVO
+                // ✅ PUNTEGGIO COMPLESSIVO (con info icon)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("PUNTEGGIO COMPLESSIVO")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .tracking(1)
+                    HStack(spacing: 6) {
+                        Text("PUNTEGGIO COMPLESSIVO")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .tracking(1)
+                        
+                        Button {
+                            showScoreInfo = true
+                        } label: {
+                            Image(systemName: "info.circle")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                     
                     Text("\(overallScore)%")
                         .font(.system(size: 48, weight: .bold))
                         .foregroundStyle(AppColors.accentWine)
                 }
                 .padding(.top, 4)
+                .alert("Punteggio Complessivo", isPresented: $showScoreInfo) {
+                    Button("OK") { }
+                } message: {
+                    Text("Media di 3 valutazioni AIS:\n\nQualità + Equilibrio + Persistenza")
+                }
                 
                 // ✅ DUE COLONNE: MATCH + ANNATA
                 HStack(spacing: 20) {
@@ -120,16 +136,24 @@ struct WineDetailView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 
-                // ✅ PRODUCER (con icona)
+                // ✅ PRODUCER (con icona + link)
                 if let producer = wine.producer, !producer.isEmpty {
-                    HStack(spacing: 10) {
-                        Image(systemName: "building.2.fill")
-                            .font(.title3)
-                            .foregroundStyle(AppColors.accentWine)
-                        
-                        Text(producer)
-                            .font(.body)
-                            .foregroundStyle(.primary)
+                    let producerURL = wine.purchase_url ?? "https://www.google.com/search?q=\(producer.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? producer)+vino"
+                    
+                    Link(destination: URL(string: producerURL)!) {
+                        HStack(spacing: 10) {
+                            Image(systemName: "building.2.fill")
+                                .font(.title3)
+                                .foregroundStyle(AppColors.accentWine)
+                            
+                            Text(producer)
+                                .font(.body)
+                                .foregroundStyle(.primary)
+                            
+                            Image(systemName: "arrow.up.right.square")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                     .padding(.top, 8)
                 }
