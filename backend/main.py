@@ -1590,6 +1590,12 @@ def _keyword_match_score(row: Any, query: str) -> float:
     if q_norm in hay:
         return 1.0
     
+    # ✅ BOOST: se query matcha producer o è substring di name, score molto alto
+    producer = _norm_lc(getattr(row, "producer", ""))
+    name = _norm_lc(getattr(row, "name", ""))
+    if q_norm and (q_norm in producer or q_norm in name):
+        return 0.95  # Quasi perfetto per match diretto
+    
     # ✅ FIX: Word boundary matching per evitare "amaro" → "Negroamaro"
     hits = 0
     for t in toks:
@@ -2072,6 +2078,16 @@ def _build_wine_card(row: Any, rank: int, score: float, price_delta: float, matc
 
     tags = ", ".join([t for t in tags_parts if t])
 
+    # ✅ CALCOLA rating_overall da quality, balance, persistence
+    q = _parse_float_maybe(getattr(row, "quality", ""))
+    b = _parse_float_maybe(getattr(row, "balance", ""))
+    p = _parse_float_maybe(getattr(row, "persistence", ""))
+    
+    rating_calc = 0.0
+    if q is not None and b is not None and p is not None:
+        rating_calc = (q + b + p) / 3.0
+        rating_calc = max(0.0, min(5.0, rating_calc))  # clamp 0-5
+    
     card: Dict[str, Any] = {
         # base
         "id": _norm(getattr(row, "id", "")),
@@ -2085,8 +2101,8 @@ def _build_wine_card(row: Any, rank: int, score: float, price_delta: float, matc
 
         "match_score": round(float(max(0.0, min(1.0, match_score))), 4),
         "__match_score": round(float(max(0.0, min(1.0, match_score))), 4),
-        # rating_overall/popularity non presenti nel CSV: lasciamo 0.0 (stabile per iOS)
-        "rating_overall": 0.0,
+        # ✅ rating_overall calcolato da CSV (qualità vino)
+        "rating_overall": round(rating_calc, 2) if rating_calc > 0 else 0.0,
         "popularity": 0.0,
 
         # new fields già previsti dalla tua app
@@ -2432,19 +2448,21 @@ def run_search(
         )
         filtered = filtered.loc[mask]
 
-    # Keyword filter: se query matcha esattamente una denominazione, mostra SOLO quella
+    # ✅ FIX: Keyword filter PRODUCER-first (quando cerchi "bollinger", esci SOLO Bollinger)
     keyword_matches = []
+    q_lower = q.lower().strip()
+    
     for idx, row in filtered.iterrows():
-        name_lower = str(row.get('name', '')).lower()
-        denom_lower = str(row.get('denomination', '')).lower()
-        q_lower = q.lower().strip()
+        # pandas iterrows() restituisce Series, non dict - usa indicizzazione diretta
+        producer_lower = str(row['producer']).lower() if 'producer' in row.index else ''
+        name_lower = str(row['name']).lower() if 'name' in row.index else ''
         
-        # Match esatto su name o denomination
-        if q_lower in name_lower or q_lower in denom_lower:
+        # Match PRODUCER o NAME (NON denomination - troppo generico)
+        if q_lower in producer_lower or q_lower in name_lower:
             keyword_matches.append(idx)
     
-    # Se ci sono match esatti, mostra SOLO quelli
-    if len(keyword_matches) > 0 and len(keyword_matches) < len(filtered):
+    # Se ci sono match esatti su PRODUCER/NAME, mostra SOLO quelli
+    if len(keyword_matches) > 0:
         filtered = filtered.loc[keyword_matches]
     # A/B/D filters
     filtered = _filter_new_A_B_D(filtered, grapes_req, aromas_req, intensity_req, typology_req, country_for_filter)
@@ -3228,14 +3246,14 @@ def get_similar_wines(wine_id: str, limit: int = Query(3)) -> JSONResponse:
     similar_wines = []
     for _, r in similar_df.iterrows():
         card = {
-            "id": _norm(getattr(r, "id", "")),
-            "name": _norm(getattr(r, "name", "")),
-            "producer": _norm(getattr(r, "producer", "")),
-            "region": _norm(getattr(r, "region", "")),
-            "denomination": _norm(getattr(r, "denomination", "")),
-            "vintage": _norm(getattr(r, "vintage", "")),
+            "id": str(r["id"]) if pd.notna(r.get("id")) else "",
+            "name": _norm(r.get("name", "")),
+            "producer": _norm(r.get("producer", "")),
+            "region": _norm(r.get("region", "")),
+            "denomination": _norm(r.get("denomination", "")),
+            "vintage": _norm(r.get("vintage", "")),
             "price": _price_effective(r),
-            "score": _parse_float_maybe(getattr(r, "quality", "")),
+            "score": _parse_float_maybe(r.get("quality", "")),
         }
         similar_wines.append(card)
     

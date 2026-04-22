@@ -1,10 +1,10 @@
 # 📊 PIANO DI PROGETTO — SommelierAI
 
 **Versione**: 1.2  
-**Ultimo aggiornamento**: 2026-04-17  
-**Baseline Backend**: v1.7.0 LIVE (LLM + Suggestions + Fuzzy)  
-**Baseline iOS**: v0.9.3 POST-ONBOARDING  
-**Ground Truth**: v2.1 (23/27 PASS, +1 vs baseline)
+**Ultimo aggiornamento**: 2026-04-22  
+**Baseline Backend**: v1.8.1 (⚠️ FIX NOT TESTED)  
+**Baseline iOS**: v0.9.3 (BUGS OPEN)  
+**Ground Truth**: v2.1 (23/27 PASS)
 
 ---
 
@@ -29,10 +29,10 @@
 
 ### Milestone Corrente
 **"LLM Enhancement + Polish UI"**
-- **Progress**: 11/13 task (85%) - nuovi task identificati
+- **Progress**: 11/13 task (85%)
 - **Deadline**: 30 Aprile 2026
-- **Remaining**: 13 giorni
-- **Latest**: v1.7.0 deployed - Suggestion mode + LLM Step 2 (17 Apr 2026)
+- **Remaining**: 8 giorni ⚠️
+- **Latest**: v1.8.1 fix "bollinger" (22 Apr 2026) — ⚠️ NOT TESTED
 
 ---
 
@@ -54,17 +54,25 @@
 
 ## ⚠️ COSA MANCA (PRIORITÀ)
 
-### P0 — BLOCCANTI LANCIO (entro 25 Aprile)
+### P0 — BLOCCANTI LANCIO (⚠️ URGENT)
+
+#### 🚨 CRITICAL (Next Session - MUST DO)
+0. ⚠️ **TEST BACKEND "bollinger"** — 5 min + debug (v1.8.1 verification)
+0. ⚠️ **FIX iOS "Gli Imperdibili"** — 30-60 min (ID → nomi)
+
+#### Completati
 1. ✅ **Paginazione iOS** — COMPLETATA 31 Marzo 2026
 2. ✅ **Badge "Ottimo Valore"** — COMPLETATA 8 Aprile 2026 (v1.6.2)
 3. ✅ **GT Tests v1.7.0** — COMPLETATA 17 Aprile 2026 (23/27 PASS)
 4. ✅ **LLM Step 2** — COMPLETATA 17 Aprile 2026 (v1.7.0 deployed)
 5. ✅ **Suggestion Mode** — COMPLETATA 17 Aprile 2026 (v1.7.0 deployed)
 6. ✅ **Onboarding iOS** — COMPLETATA 11 Aprile 2026 (v0.9.3)
-7. ⏳ **iOS Suggestion UI** — 2-3 giorni (integrazione)
+
+#### Pending
+7. ⏳ **iOS Suggestion UI** — 2-3 giorni
 8. ⏳ **Test device reale** — 1 giorno
-9. ⏳ **Estetica app** — Icona 1024x1024, splash, theme (2-3 giorni)
-10. ⏳ **Apple Developer Account** — $99/anno (acquisto immediato)
+9. ⏳ **Estetica app** — 2-3 giorni
+10. ⏳ **Apple Developer Account** — $99/anno
 
 ### P1 — IMPORTANTI (entro 25 Aprile)
 6. ⏳ **TestFlight setup** — 1 giorno

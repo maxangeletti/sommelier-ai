@@ -1,9 +1,9 @@
 # 🗺️ ROADMAP SOMMELIERAI — Ufficiale
 
 **Versione**: 1.6  
-**Ultimo aggiornamento**: 2026-04-17  
-**Baseline Backend**: v1.7.0 LIVE  
-**Baseline iOS**: v0.9.3 POST-ONBOARDING  
+**Ultimo aggiornamento**: 2026-04-22  
+**Baseline Backend**: v1.8.1 (⚠️ FIX NOT TESTED)  
+**Baseline iOS**: v0.9.3 (BUGS OPEN)  
 **Ground Truth**: v2.1 (23 PASS, 3 WARN, 1 FAIL)
 
 ---
@@ -189,22 +189,25 @@
 
 ## 📊 METRICHE ATTUALI
 
-### Backend (v1.7.0 LIVE) ⬆️
-- **Uptime**: ~95% (cold start mitigato, non eliminato)
-- **Response time**: <500ms avg, <1s p95 (LLM adds latency)
-- **GT Accuracy**: 85.2% (23/27 PASS) — +1 PASS vs baseline
+### Backend (v1.8.1 CODE READY) ⚠️
+- **Status**: ⚠️ Fix applicato ma NON TESTATO
+- **Uptime**: ~95% (cold start mitigato)
+- **Response time**: <500ms avg, <1s p95
+- **GT Accuracy**: 85.2% (23/27 PASS)
 - **Dataset**: 100 vini, 35 regioni, 75 vitigni
-- **Error rate**: <1%
-- **Latest Release**: v1.7.0 (17 Apr 2026)
-  - LLM Step 2 deployed
-  - Suggestion mode LIVE
-  - Fuzzy matching improvements
+- **Latest Release**: v1.8.1 (22 Apr 2026) - ⚠️ NOT TESTED
+  - Keyword filter fix ("bollinger" → SOLO Bollinger)
+  - Fix: `row.get()` → `row['producer']` (pandas Series)
+  - Status: Deployed but verification pending
 
-### iOS (v0.9.3 POST-ONBOARDING) ⬆️
+### iOS (v0.9.3 - BUGS OPEN) ⚠️
 - **Crash rate**: <1%
-- **Build stability**: 100% (freeze attivo)
+- **Build stability**: 100%
 - **User base**: ~10-20 beta testers interni
-- **Feature completeness**: 95% (+7% da ultimo update)
+- **Feature completeness**: 95%
+- **Open Bugs**:
+  - ⚠️ "Gli Imperdibili" mostra ID numerico invece nomi
+  - Issue: API `getSimilarWines()` non restituisce `name` popolato
 - **Latest**: WelcomeView onboarding (11 Apr 2026)
 
 ### Tech Debt
@@ -247,6 +250,7 @@
 
 ## 📝 RELEASE HISTORY
 
+- **v1.8.1** (2026-04-22): ⚠️ Keyword filter fix "bollinger" (NOT TESTED)
 - **v1.7.0** (2026-04-17): LLM Step 2 + Suggestion Mode + Fuzzy improvements
 - **v1.6.2** (2026-04-08): Value intent badge fix
 - **v1.6.0** (2026-03-30): Backend total_count + paginazione iOS
@@ -290,7 +294,7 @@
 
 ## 🔒 FREEZE UFFICIALE
 
-**Baseline stabile**: v1.7.0  
+**Baseline stabile**: v1.8.1 ⚠️ (pending verification)  
 **Engine**: A9v2 Composite — NO TOUCH senza sessione GT dedicata  
 **Dataset**: 100 vini — modifiche solo additive  
 **Architettura**: Flask monolith — keep semplice  
@@ -328,10 +332,14 @@
 
 ## 🔥 HOT ITEMS (ACTION REQUIRED)
 
-### Immediate (Next Session)
-1. **Commit docs** (release notes, handoff, roadmap) — 5 min
-2. **Execute cleanup_docs_structure.sh** — 5 min
-3. **iOS Suggestion UI** implementation — 2-3 giorni
+### 🚨 CRITICAL (Next Session - MUST DO)
+1. **TEST BACKEND FIX "bollinger"** — 5 min + debug se fallisce
+2. **FIX iOS "Gli Imperdibili"** ID → nomi — 30-60 min
+3. **Commit docs** (session 22 Apr) — 2 min
+
+### Immediate (This Week)
+4. **Execute cleanup_docs_structure.sh** — 5 min
+5. **iOS Suggestion UI** implementation — 2-3 giorni
 
 ### This Week (18-24 Apr)
 4. **Icona app** design/commission — 2-3 giorni
