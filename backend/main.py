@@ -24,7 +24,7 @@ from ui_helpers import should_show_value_badge, get_aroma_icons, get_mock_review
 # Build signature (anti-confusione / anti-regressione)
 # =========================
 
-BUILD_ID = "SommelierAI v1.7.0 - Price Parser Fix (sopra/sotto articoli) (2026-04-19)"
+BUILD_ID = "SommelierAI v1.8.4 - OR Logic Support (Amarone o Primitivo) (2026-04-24)"
 
 
 # =========================
@@ -2945,6 +2945,119 @@ def dedup_strict(results: list[dict]) -> list[dict]:
 # Endpoints
 # =========================
 
+def parse_or_queries(query: str) -> List[str]:
+    """
+    Detecta pattern OR nella query e splitta in sub-queries.
+    
+    Pattern supportati:
+    - "A o B" → ["A", "B"]
+    - "A oppure B" → ["A", "B"]
+    - "A or B" → ["A", "B"]
+    
+    Se non trova OR, ritorna [query] originale.
+    """
+    q = _norm(query)
+    
+    # Pattern OR (case-insensitive)
+    or_pattern = r'\s+(?:o|oppure|or)\s+'
+    
+    # Splitta se trova OR
+    parts = re.split(or_pattern, q, flags=re.IGNORECASE)
+    
+    if len(parts) > 1:
+        # Rimuovi parti vuote e normalizza
+        return [p.strip() for p in parts if p.strip()]
+    
+    # Nessun OR trovato
+    return [q]
+
+
+def search_with_or_logic(
+    query: str,
+    sort: str,
+    limit: int,
+    include_test: bool,
+    debug: bool,
+    explain: bool,
+) -> Dict[str, Any]:
+    """
+    Search con supporto OR logic.
+    
+    Se query contiene "A o B":
+    - Esegue run_search("A") → results_A
+    - Esegue run_search("B") → results_B
+    - Unisce con dedup strict
+    - Riordina per score
+    """
+    sub_queries = parse_or_queries(query)
+    
+    # Caso normale (no OR)
+    if len(sub_queries) == 1:
+        return run_search(
+            query=query,
+            sort=sort,
+            limit=limit,
+            include_test=include_test,
+            debug=debug,
+            explain=explain,
+        )
+    
+    # Caso OR: multiple sub-queries
+    all_results: List[Dict[str, Any]] = []
+    
+    for sub_q in sub_queries:
+        data = run_search(
+            query=sub_q,
+            sort=sort,
+            limit=limit * 2,  # fetch più risultati per sub-query
+            include_test=include_test,
+            debug=False,  # no debug per sub-queries
+            explain=explain,
+        )
+        all_results.extend(data.get("results", []))
+    
+    # Dedup strict (by wine ID)
+    seen_ids: set = set()
+    unique_results: List[Dict[str, Any]] = []
+    
+    for r in all_results:
+        wine_id = r.get("id")
+        if wine_id and wine_id not in seen_ids:
+            seen_ids.add(wine_id)
+            unique_results.append(r)
+    
+    # Riordina per score desc (già nel formato giusto)
+    unique_results.sort(key=lambda r: float(r.get("score", 0.0) or 0.0), reverse=True)
+    
+    # Applica limit finale
+    final_results = unique_results[:limit]
+    
+    # Re-rank dopo dedup
+    for i, r in enumerate(final_results, start=1):
+        r["rank"] = i
+    
+    # Meta aggregata
+    meta = {
+        "build_id": BUILD_ID,
+        "query": query,
+        "or_queries": sub_queries,  # ✅ mostra sub-queries in meta
+        "sort": sort,
+        "limit": limit,
+        "count": len(final_results),
+        "total_count": len(unique_results),
+        "timestamp": int(_now()),
+    }
+    
+    if debug:
+        meta["debug"] = {"or_logic_used": True, "sub_queries_count": len(sub_queries)}
+    
+    return {"results": final_results, "meta": meta}
+
+
+# =========================
+# Endpoints
+# =========================
+
 def is_generic_query(query: str) -> bool:
     """
     Determina se query è troppo generica per search diretto.
@@ -3009,7 +3122,7 @@ def post_search(payload: Dict[str, Any] = Body(...)) -> JSONResponse:
     else:
         cache_key = None
 
-    data = run_search(query=query, sort=sort, limit=limit, include_test=include_test, debug=debug, explain=explain)
+    data = search_with_or_logic(query=query, sort=sort, limit=limit, include_test=include_test, debug=debug, explain=explain)
 
     if cache_key is not None:
         _cache_set(cache_key, data)
@@ -3044,7 +3157,7 @@ def get_search_stream(
         })
         data = _cache_get(cache_key)
         if data is None:
-            data = run_search(
+            data = search_with_or_logic(
                 query=query,
                 sort=sort,
                 limit=limit,
@@ -3054,7 +3167,7 @@ def get_search_stream(
             )
             _cache_set(cache_key, data)
     else:
-        data = run_search(
+        data = search_with_or_logic(
             query=query,
             sort=sort,
             limit=limit,
@@ -3108,9 +3221,17 @@ def get_suggestions() -> JSONResponse:
         "Un sangiovese di buona qualità",
         "Un vino intenso e strutturato sopra i 20€",
         "Uno spumante brut per aperitivo",
-        "Un frizzante dolce francese sopra i 30€",
+        "Uno Champagne sopra i 30€",
         "Un bianco con sentori agrumati sotto i 15€",
         "Un vino con buon rapporto qualità prezzo",
+        "Un Barolo o Brunello per una cena importante",
+        "Un rosso corposo per carne alla griglia",
+        "Un bianco minerale per pesce crudo",
+        "Un rosato fresco per l'estate",
+        "Un Prosecco per brindare",
+        "Un passito per dessert",
+        "Un vino biologico sotto i 20€",
+        "Un Nebbiolo giovane e tannico",
     ]
     return JSONResponse({"suggestions": suggestions})
 
