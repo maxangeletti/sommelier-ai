@@ -3242,19 +3242,17 @@ def get_similar_wines(wine_id: str, limit: int = Query(3)) -> JSONResponse:
     similar_df["quality_num"] = pd.to_numeric(similar_df["quality"], errors="coerce").fillna(0)
     similar_df = similar_df.sort_values("quality_num", ascending=False).head(limit)
     
-    # Converti in WineCard format
+    # Converti in WineCard format (usa _build_wine_card per consistenza)
     similar_wines = []
     for _, r in similar_df.iterrows():
-        card = {
-            "id": str(r["id"]) if pd.notna(r.get("id")) else "",
-            "name": _norm(r.get("name", "")),
-            "producer": _norm(r.get("producer", "")),
-            "region": _norm(r.get("region", "")),
-            "denomination": _norm(r.get("denomination", "")),
-            "vintage": _norm(r.get("vintage", "")),
-            "price": _price_effective(r),
-            "score": _parse_float_maybe(r.get("quality", "")),
-        }
+        # ✅ FIX v1.8.2: usa _build_wine_card per garantire tutti i campi iOS
+        card = _build_wine_card(
+            row=r,
+            rank=0,
+            score=_parse_float_maybe(r.get("quality", "")) or 0.0,
+            price_delta=0.0,
+            match_score=0.0
+        )
         similar_wines.append(card)
     
     return JSONResponse({"similar_wines": similar_wines})
