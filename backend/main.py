@@ -3249,7 +3249,7 @@ def get_similar_wines(wine_id: str, limit: int = Query(3)) -> JSONResponse:
         card = _build_wine_card(
             row=r,
             rank=0,
-            score=_parse_float_maybe(r.get("quality", "")) or 0.0,
+            score=_parse_float_maybe(getattr(r, "quality", "")) or 0.0,
             price_delta=0.0,
             match_score=0.0
         )
