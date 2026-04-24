@@ -12,9 +12,27 @@ struct ContentView: View {
     // ✅ Query iniziale dalla WelcomeView
     @State private var initialSearchQuery = ""
     
+    // ✅ Mostra splash screen iniziale
+    @State private var showingSplash = true
+    
+    init() {
+        // Production: no debug reset
+    }
+    
     var body: some View {
         Group {
-            if hasSeenWelcome {
+            if showingSplash {
+                // ✅ SPLASH SCREEN
+                LaunchScreenView()
+                    .onAppear {
+                        // Mostra per 2 secondi
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            withAnimation {
+                                showingSplash = false
+                            }
+                        }
+                    }
+            } else if hasSeenWelcome {
                 // Schermata principale con tabs
                 TabView {
                     NavigationStack { ChatView() }
@@ -39,10 +57,6 @@ struct ContentView: View {
                     searchQuery: $initialSearchQuery
                 )
             }
-        }
-        // 🔧 DEBUG: Force welcome screen (comment out for production)
-        .onAppear {
-            hasSeenWelcome = false
         }
     }
 }
