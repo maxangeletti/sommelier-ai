@@ -11,6 +11,17 @@
 
 import SwiftUI
 
+// 🍾 HELPER GLOBALE: Icona bottiglia in base al tipo di vino
+fileprivate func bottleIcon(for wine: WineCard) -> String {
+    // Spumante / Champagne
+    if wine.sparkling == "spumante" || wine.sparkling == "champagne" {
+        return "🍾"  // Bottiglia champagne
+    }
+    
+    // Tutti gli altri (rossi e bianchi) → bottiglia generica
+    return "🍾"  // Bottiglia
+}
+
 struct WineDetailView: View {
     let wine: WineCard
     let userQuery: String
@@ -22,6 +33,7 @@ struct WineDetailView: View {
     @State private var similarWines: [WineCard] = []
     @State private var isLoadingSimilar: Bool = false
     @State private var showScoreInfo: Bool = false
+    @State private var showRatingInfo: Bool = false
     
     private let api = APIClient()
     
@@ -41,30 +53,33 @@ struct WineDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 
-                // ✅ Badge contestuale in alto (es: "Rosso per bistecca")
-                if let topBadge = contextualTopBadge() {
-                    Text(topBadge)
-                        .font(.subheadline.weight(.medium))
+                // ✅ BADGE CONTESTUALI AFFIANCATI
+                HStack(spacing: 12) {
+                    // Badge contestuale
+                    if let topBadge = contextualTopBadge() {
+                        Text(topBadge)
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(AppColors.accentWine)
+                            .clipShape(Capsule())
+                    }
+                    
+                    // Badge "Eccellente scelta"
+                    if wine.ottimo_valore == true || (wine.rank ?? 99) == 1 {
+                        HStack(spacing: 6) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.subheadline)
+                            Text("Eccellente scelta")
+                                .font(.subheadline.weight(.semibold))
+                        }
                         .foregroundStyle(.white)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
-                        .background(AppColors.accentWine)
+                        .background(Color.red)
                         .clipShape(Capsule())
-                }
-                
-                // ✅ Badge "Eccellente scelta" (rosso)
-                if wine.ottimo_valore == true || (wine.rank ?? 99) == 1 {
-                    HStack(spacing: 6) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.subheadline)
-                        Text("Eccellente scelta")
-                            .font(.subheadline.weight(.semibold))
                     }
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(Color.red)
-                    .clipShape(Capsule())
                 }
                 
                 // ✅ TITOLO VINO GRANDE
@@ -73,13 +88,13 @@ struct WineDetailView: View {
                     .lineLimit(3)
                     .padding(.top, 8)
                 
-                // ✅ PUNTEGGIO COMPLESSIVO (con info icon)
+                // ✅ PUNTEGGIO COMPLESSIVO (con info icon) - RISALTO
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 6) {
                         Text("PUNTEGGIO COMPLESSIVO")
-                            .font(.caption.weight(.semibold))
+                            .font(.caption2.weight(.bold))  // Da .caption a .caption2.bold per più risalto
                             .foregroundStyle(.secondary)
-                            .tracking(1)
+                            .tracking(1.2)
                         
                         Button {
                             showScoreInfo = true
@@ -136,11 +151,20 @@ struct WineDetailView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 
-                // ✅ PRODUCER (con icona + link)
+                // ✅ PRODUCER (con icona + Button + openURL)
                 if let producer = wine.producer, !producer.isEmpty {
-                    let producerURL = wine.purchase_url ?? "https://www.google.com/search?q=\(producer.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? producer)+vino"
+                    let urlString = wine.purchase_url ?? "https://www.google.com/search?q=\(producer.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? producer.replacingOccurrences(of: " ", with: "+"))+cantina"
                     
-                    Link(destination: URL(string: producerURL)!) {
+                    Button {
+                        print("[DEBUG] Tap producer button")
+                        print("[DEBUG] URL string: \(urlString)")
+                        if let url = URL(string: urlString) {
+                            print("[DEBUG] Opening URL: \(url)")
+                            UIApplication.shared.open(url)
+                        } else {
+                            print("[DEBUG] Invalid URL")
+                        }
+                    } label: {
                         HStack(spacing: 10) {
                             Image(systemName: "building.2.fill")
                                 .font(.title3)
@@ -150,11 +174,14 @@ struct WineDetailView: View {
                                 .font(.body)
                                 .foregroundStyle(.primary)
                             
-                            Image(systemName: "arrow.up.right.square")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            Spacer()
+                            
+                            Image(systemName: "arrow.up.right.square.fill")
+                                .font(.title2)
+                                .foregroundStyle(AppColors.accentWine)
                         }
                     }
+                    .buttonStyle(.borderless)
                     .padding(.top, 8)
                 }
                 
@@ -175,13 +202,13 @@ struct WineDetailView: View {
                 Divider()
                     .padding(.vertical, 8)
                 
-                // ✅ ABBINAMENTI IDEALI (con emoji grandi)
+                // ✅ ABBINAMENTI IDEALI (con emoji grandi) - RISALTO
                 if let pairings = wine.food_pairings, !pairings.isEmpty {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("ABBINAMENTI IDEALI")
-                            .font(.caption.weight(.semibold))
+                            .font(.subheadline.weight(.bold))  // Da .caption a .subheadline per più risalto
                             .foregroundStyle(.secondary)
-                            .tracking(1)
+                            .tracking(1.2)
                         
                         HStack(spacing: 16) {
                             ForEach(Array(pairings.prefix(3)), id: \.self) { pairing in
@@ -202,13 +229,13 @@ struct WineDetailView: View {
                     .padding(.top, 8)
                 }
                 
-                // ✅ CARATTERISTICHE PRINCIPALI (Tannicità + Acidità)
+                // ✅ CARATTERISTICHE PRINCIPALI (Tannicità + Acidità) - RISALTO
                 if wine.tannins != nil || wine.acidity != nil {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("CARATTERISTICHE")
-                            .font(.caption.weight(.semibold))
+                            .font(.subheadline.weight(.bold))  // Da .caption a .subheadline per più risalto
                             .foregroundStyle(.secondary)
-                            .tracking(1)
+                            .tracking(1.2)
                         
                         HStack(spacing: 20) {
                             if let t = wine.tannins {
@@ -239,13 +266,13 @@ struct WineDetailView: View {
                     .padding(.top, 8)
                 }
                 
-                // 🍒 SEZIONE SENTORI (con emoji)
+                // 🍒 SEZIONE SENTORI (con emoji) - RISALTO
                 if let aromas = wine.aromas, !aromas.isEmpty {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("SENTORI")
-                            .font(.caption.weight(.semibold))
+                            .font(.subheadline.weight(.bold))  // Da .caption a .subheadline per più risalto
                             .foregroundStyle(.secondary)
-                            .tracking(1)
+                            .tracking(1.2)
                         
                         HStack(spacing: 16) {
                             ForEach(Array(aromas.prefix(4)), id: \.self) { aroma in
@@ -268,29 +295,51 @@ struct WineDetailView: View {
                 Divider()
                     .padding(.vertical, 8)
                 
-                // ✅ STELLE (rating)
+                // ✅ STELLE (rating) + numero + info
                 if let rating = wine.rating_overall, rating > 0 {
-                    HStack(spacing: 4) {
-                        ForEach(0..<5, id: \.self) { i in
-                            let clamped = max(0, min(5, rating))
-                            let full = Int(clamped.rounded(.down))
-                            let hasHalf = (clamped - Double(full)) >= 0.5
-                            let colorFilled = Color(red: 0.95, green: 0.82, blue: 0.35)
-                            
-                            if i < full {
-                                Image(systemName: "star.fill")
-                                    .font(.title2)
-                                    .foregroundStyle(colorFilled)
-                            } else if i == full && hasHalf {
-                                Image(systemName: "star.leadinghalf.filled")
-                                    .font(.title2)
-                                    .foregroundStyle(colorFilled)
-                            } else {
-                                Image(systemName: "star")
-                                    .font(.title2)
-                                    .foregroundStyle(Color.gray.opacity(0.3))
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 4) {
+                            ForEach(0..<5, id: \.self) { i in
+                                let clamped = max(0, min(5, rating))  // ✅ CLAMP 0-5
+                                let full = Int(clamped.rounded(.down))
+                                let hasHalf = (clamped - Double(full)) >= 0.5
+                                let colorFilled = Color(red: 0.95, green: 0.82, blue: 0.35)
+                                
+                                if i < full {
+                                    Image(systemName: "star.fill")
+                                        .font(.title2)
+                                        .foregroundStyle(colorFilled)
+                                } else if i == full && hasHalf {
+                                    Image(systemName: "star.leadinghalf.filled")
+                                        .font(.title2)
+                                        .foregroundStyle(colorFilled)
+                                } else {
+                                    Image(systemName: "star")
+                                        .font(.title2)
+                                        .foregroundStyle(Color.gray.opacity(0.3))
+                                }
                             }
                         }
+                        
+                        HStack(spacing: 6) {
+                            let clamped = max(0, min(5, rating))  // ✅ CLAMP anche il numero mostrato
+                            Text(String(format: "%.1f", clamped))
+                                .font(.headline)
+                                .foregroundStyle(.primary)
+                            
+                            Button {
+                                showRatingInfo = true
+                            } label: {
+                                Image(systemName: "info.circle")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    .alert("Rating", isPresented: $showRatingInfo) {
+                        Button("OK") { }
+                    } message: {
+                        Text("È il voto medio aggregato da recensioni di esperti e consumatori (scala 0-5)")
                     }
                 }
                 
@@ -321,27 +370,16 @@ struct WineDetailView: View {
                 .buttonStyle(.plain)
                 .padding(.top, 8)
                 
-                // ✅ HEART BUTTON (floating)
-                HStack {
-                    Spacer()
-                    Button {
-                        favoritesStore.toggle(wine)
-                    } label: {
-                        Image(systemName: favoritesStore.isFavorite(wine) ? "heart.fill" : "heart")
-                            .font(.title2)
-                            .foregroundStyle(favoritesStore.isFavorite(wine) ? .red : .secondary)
-                            .padding(12)
-                            .background(Circle().fill(Color.white.opacity(0.9)))
-                            .shadow(radius: 4)
-                    }
-                }
-                .padding(.top, -600) // Floating position
+
             }
             .padding(20)
         }
         .background(Color(red: 0.98, green: 0.94, blue: 0.78).opacity(0.3))
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
+        .task {
+            await loadSimilarWines()
+        }
     }
     
     // ✅ Badge contestuale basato su query + food pairings
@@ -372,6 +410,19 @@ struct WineDetailView: View {
         }
         
         return nil
+    }
+    
+    // 🍷 Carica vini simili
+    private func loadSimilarWines() async {
+        isLoadingSimilar = true
+        defer { isLoadingSimilar = false }
+        
+        do {
+            let wines = try await api.getSimilarWines(wineId: wine.id, limit: 3)
+            similarWines = wines
+        } catch {
+            similarWines = []
+        }
     }
     
     // ✅ Emoji per food pairings
@@ -535,38 +586,6 @@ struct WineDetailExpandedView: View {
                 
                 // ❌ SENTORI RIMOSSI per richiesta utente
                 
-                // Similar Wines
-                if !similarWines.isEmpty {
-                    VStack(alignment: .leading, spacing: 16) {
-                        HStack {
-                            Image(systemName: "sparkles")
-                                .foregroundStyle(AppColors.gold)
-                            Text("Gli Imperdibili")
-                                .font(.headline)
-                        }
-                        
-                        Text("Vini simili che potrebbero piacerti")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        
-                        ForEach(similarWines) { similar in
-                            SimilarWineRow(wine: similar)
-                        }
-                    }
-                    .padding()
-                    .background(AppColors.cardBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                } else if isLoadingSimilar {
-                    VStack {
-                        ProgressView()
-                        Text("Caricamento vini simili...")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                }
-                
                 // ✅ SEZIONE 1: VALUTAZIONI (punteggi numerici)
                 if wine.quality != nil || wine.balance != nil || wine.persistence != nil {
                     VStack(alignment: .leading, spacing: 12) {
@@ -676,6 +695,65 @@ struct WineDetailExpandedView: View {
                 .padding()
                 .background(AppColors.cardBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
+                
+                // Similar Wines (SPOSTATO IN FONDO)
+                if !similarWines.isEmpty {
+                    VStack(alignment: .leading, spacing: 16) {
+                        HStack {
+                            Image(systemName: "sparkles")
+                                .foregroundStyle(AppColors.gold)
+                            Text("Gli Imperdibili")
+                                .font(.headline)
+                        }
+                        
+                        Text("Vini simili che potrebbero piacerti")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        
+                        ForEach(similarWines) { similar in
+                            NavigationLink {
+                                WineDetailView(wine: similar, userQuery: userQuery)
+                            } label: {
+                                HStack(spacing: 12) {
+                                    // 🍾 ICONA BOTTIGLIA in base al tipo
+                                    Text(bottleIcon(for: similar))
+                                        .font(.system(size: 32))
+                                    
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(similar.name.isEmpty ? "ID: \(similar.id)" : similar.name)
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundStyle(.primary)
+                                            .lineLimit(2)
+                                        
+                                        if let price = similar.price {
+                                            Text(String(format: "€%.2f", price))
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                    }
+                                    
+                                    Spacer()
+                                }
+                                .padding()
+                                .background(Color.gray.opacity(0.05))
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding()
+                    .background(AppColors.cardBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                } else if isLoadingSimilar {
+                    VStack {
+                        ProgressView()
+                        Text("Caricamento vini simili...")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                }
                 
                 // Purchase Link
                 if let url = wine.purchase_url, !url.isEmpty, let validURL = URL(string: url) {
@@ -849,38 +927,6 @@ struct WineDetailExpandedView: View {
 }
 
 // MARK: - Supporting Views
-
-struct SimilarWineRow: View {
-    let wine: WineCard
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(wine.name)
-                    .font(.subheadline.weight(.medium))
-                    .lineLimit(2)
-                
-                if let producer = wine.producer {
-                    Text(producer)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
-            
-            Spacer()
-            
-            if let price = wine.price {
-                Text(String(format: "€%.0f", price))
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(AppColors.accentWine)
-            }
-        }
-        .padding(12)
-        .background(Color.gray.opacity(0.05))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
-}
 
 struct CharacteristicRow: View {
     let label: String
