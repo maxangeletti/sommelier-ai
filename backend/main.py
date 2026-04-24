@@ -3244,7 +3244,7 @@ def get_similar_wines(wine_id: str, limit: int = Query(3)) -> JSONResponse:
     
     # Converti in WineCard format (usa _build_wine_card per consistenza)
     similar_wines = []
-    for _, r in similar_df.iterrows():
+    for r in similar_df.itertuples(index=False):
         # ✅ FIX v1.8.2: usa _build_wine_card per garantire tutti i campi iOS
         card = _build_wine_card(
             row=r,
