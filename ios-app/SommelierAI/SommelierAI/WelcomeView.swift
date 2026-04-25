@@ -14,26 +14,26 @@ struct WelcomeView: View {
     @Binding var searchQuery: String
     @FocusState private var isSearchFocused: Bool
     
-    // ✅ Pool completo di suggerimenti (allineati a backend v1.8.4)
-    private let allSuggestions = [
-        "Un sangiovese di buona qualità",
-        "Un vino intenso e strutturato sopra i 20€",
-        "Uno spumante brut per aperitivo",
-        "Uno Champagne sopra i 30€",
-        "Un bianco con sentori agrumati sotto i 15€",
-        "Un vino con buon rapporto qualità prezzo",
-        "Un Barolo o Brunello per una cena importante",
-        "Un rosso corposo per carne alla griglia",
-        "Un bianco minerale per pesce crudo",
-        "Un rosato fresco per l'estate",
-        "Un Prosecco per brindare",
-        "Un passito per dessert",
-        "Un vino biologico sotto i 20€",
-        "Un Nebbiolo giovane e tannico"
+    // ✅ Pool completo di suggerimenti con emoji (allineati a backend v1.8.4)
+    private let allSuggestions: [(emoji: String, text: String)] = [
+        ("🍷", "Un sangiovese di buona qualità"),
+        ("💎", "Un vino intenso e strutturato sopra i 20€"),
+        ("🥂", "Uno spumante brut per aperitivo"),
+        ("🍾", "Uno Champagne sopra i 30€"),
+        ("🍋", "Un bianco con sentori agrumati sotto i 15€"),
+        ("⭐", "Un vino con buon rapporto qualità prezzo"),
+        ("👔", "Un Barolo o Brunello per una cena importante"),
+        ("🥩", "Un rosso corposo per carne alla griglia"),
+        ("🐟", "Un bianco minerale per pesce crudo"),
+        ("☀️", "Un rosato fresco per l'estate"),
+        ("🎉", "Un Prosecco per brindare"),
+        ("🍰", "Un passito per dessert"),
+        ("🌱", "Un vino biologico sotto i 20€"),
+        ("🌟", "Un Nebbiolo giovane e tannico")
     ]
     
     // ✅ Suggerimenti mostrati (4 random)
-    @State private var displayedSuggestions: [String] = []
+    @State private var displayedSuggestions: [(emoji: String, text: String)] = []
     
     // ✅ Animazione Sommy (4 frame loop)
     @State private var currentFrame = 1
@@ -100,33 +100,15 @@ struct WelcomeView: View {
             
             // Suggerimenti come bottoni
             VStack(spacing: 12) {
-                ForEach(displayedSuggestions, id: \.self) { suggestion in
-                    Button(action: {
-                        searchQuery = suggestion
-                        proceedToChat()
-                    }) {
-                        HStack {
-                            Text(suggestion)
-                                .font(.system(size: 16))
-                                .foregroundColor(AppColors.textPrimary)
-                            
-                            Spacer()
-                            
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 14))
-                                .foregroundColor(AppColors.textSecondary)
+                ForEach(displayedSuggestions, id: \.text) { suggestion in
+                    SuggestionButton(
+                        emoji: suggestion.emoji,
+                        text: suggestion.text,
+                        action: {
+                            searchQuery = suggestion.text
+                            proceedToChat()
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(AppColors.cardBackground)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(AppColors.borderLight, lineWidth: 1)
-                        )
-                    }
+                    )
                 }
             }
             .padding(.horizontal, 24)
@@ -184,6 +166,68 @@ struct WelcomeView: View {
             .padding(.bottom, 32)
         }
         .background(AppColors.backgroundPrimary)
+    }
+    
+    private func proceedToChat() {
+        hasSeenWelcome = true
+    }
+}
+
+// MARK: - Suggestion Button Component (con animazioni)
+
+struct SuggestionButton: View {
+    let emoji: String
+    let text: String
+    let action: () -> Void
+    
+    @State private var isPressed = false
+    
+    var body: some View {
+        Button(action: {
+            // Haptic feedback
+            let impact = UIImpactFeedbackGenerator(style: .light)
+            impact.impactOccurred()
+            
+            // Action
+            action()
+        }) {
+            HStack(spacing: 12) {
+                // Emoji icona grande
+                Text(emoji)
+                    .font(.system(size: 28))
+                
+                Text(text)
+                    .font(.system(size: 16))
+                    .foregroundColor(AppColors.textPrimary)
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14))
+                    .foregroundColor(AppColors.textSecondary)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(AppColors.cardBackground)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(AppColors.borderLight, lineWidth: 1)
+            )
+        }
+        .buttonStyle(ScaleButtonStyle())
+    }
+}
+
+// MARK: - Scale Button Style (Spring Animation)
+
+struct ScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: configuration.isPressed)
     }
 }
 
