@@ -167,10 +167,6 @@ struct WelcomeView: View {
         }
         .background(AppColors.backgroundPrimary)
     }
-    
-    private func proceedToChat() {
-        hasSeenWelcome = true
-    }
 }
 
 // MARK: - Suggestion Button Component (con animazioni)
