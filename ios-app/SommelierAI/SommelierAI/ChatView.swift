@@ -148,7 +148,7 @@ struct ChatView: View {
             // ✅ Barra filtri SCROLLABILE - visibile solo dopo primo risultato
             if lastResultHadWines {
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
+                    HStack(spacing: Spacing.md) {
 
                         Button {
                             vm.prepareGrapeSheetOptions()
@@ -161,17 +161,23 @@ struct ChatView: View {
                                 badgeColor: grapeBadgeColor
                             )
                         }
+                        .accessibilityLabel("Filtra per vitigno")
+                        .accessibilityHint("Tocca per selezionare un vitigno specifico. \(displayedWineCount) vini mostrati.")
 
                         Button { showColorSheet = true } label: {
                             filterChip(system: "paintpalette", title: colorButtonTitle)
                         }
+                        .accessibilityLabel("Filtra per colore vino")
+                        .accessibilityHint("Tocca per selezionare rosso, bianco, rosé o arancione")
 
                         Button { showIntensitySheet = true } label: {
                             filterChip(system: "flame", title: intensityButtonTitle)
                         }
+                        .accessibilityLabel("Filtra per intensità")
+                        .accessibilityHint("Tocca per selezionare intensità bassa, media o alta")
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, isFilterBarCompact ? 4 : 8)
+                    .padding(.horizontal, Spacing.md)
+                    .padding(.vertical, isFilterBarCompact ? Spacing.xs : Spacing.sm)
                 }
                 .scaleEffect(isFilterBarCompact ? 0.92 : 1.0, anchor: .top)
                 .opacity(isFilterBarCompact ? 0.94 : 1.0)
@@ -181,12 +187,12 @@ struct ChatView: View {
 
             // ✅ Suggerimenti fuzzy "Intendevi:"
             if !vm.didYouMeanSuggestions.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: Spacing.sm) {
                     Text("Intendevi:")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                     
-                    HStack(spacing: 8) {
+                    HStack(spacing: Spacing.sm) {
                         ForEach(vm.didYouMeanSuggestions, id: \.self) { suggestion in
                             Button {
                                 vm.send(suggestion)
@@ -209,8 +215,8 @@ struct ChatView: View {
                         }
                     }
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
+                .padding(.horizontal, Spacing.md)
+                .padding(.vertical, Spacing.md)
                 
                 Divider()
             }
@@ -220,120 +226,114 @@ struct ChatView: View {
                 .map { sanitizeSuggestion($0) }
                 .filter { !$0.isEmpty }
 
-            // ✅ Suggerimenti: apri/chiudi su tap (non più legati allo scroll)
+            // ✅ Suggerimenti: NASCONDIBILI con toggle + iconcine
             if !cleanSuggestions.isEmpty {
-                Button {
-                    withAnimation(.easeInOut(duration: 0.15)) {
-                        showSuggestions.toggle()
-                        expandedSuggestion = nil
+                VStack(alignment: .leading, spacing: 0) {
+                    // Header con toggle
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.15)) {
+                            showSuggestions.toggle()
+                        }
+                    } label: {
+                        HStack(spacing: Spacing.sm) {
+                            Image(systemName: "sparkles")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(AppColors.primaryWine)
+                            
+                            Text("Prova a chiedere a Sommy:")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(AppColors.textPrimary)
+                            
+                            Spacer()
+                            
+                            Image(systemName: showSuggestions ? "chevron.up" : "chevron.down")
+                                .font(.caption)
+                                .foregroundStyle(AppColors.textSecondary)
+                        }
+                        .padding(.horizontal, Spacing.lg)
+                        .padding(.vertical, Spacing.md)
                     }
-                } label: {
-                    HStack(spacing: 8) {
-                        Text("Prova a chiedere a Sommy:")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
+                    .buttonStyle(.plain)
+                    
+                    if showSuggestions {
+                        let pool = cleanSuggestions
+                        let picked: [String] = {
+                            guard !pool.isEmpty else { return [] }
+                            var rng = SeededGenerator(seed: UInt64(suggestionsSeed))
+                            let shuffled = pool.shuffled(using: &rng)
+                            return Array(shuffled.prefix(4))
+                        }()
 
-                        Spacer()
-
-                        Image(systemName: showSuggestions ? "chevron.up" : "chevron.down")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 12)
-                    .padding(.top, 10)
-                    .padding(.bottom, showSuggestions ? 6 : 10)
-                }
-                .buttonStyle(.plain)
-
-                if showSuggestions {
-                    let pool = cleanSuggestions
-                    let picked: [String] = {
-                        guard !pool.isEmpty else { return [] }
-                        var rng = SeededGenerator(seed: UInt64(suggestionsSeed))
-                        let shuffled = pool.shuffled(using: &rng)
-                        return Array(shuffled.prefix(3))
-                    }()
-
-                    LazyVGrid(
-                        columns: [
-                            GridItem(.flexible(), spacing: 8),
-                            GridItem(.flexible(), spacing: 8)
-                        ],
-                        spacing: 8
-                    ) {
-                        ForEach(picked, id: \.self) { s in
-                            let isExpanded = (expandedSuggestion == s)
+                        LazyVGrid(
+                            columns: [
+                                GridItem(.flexible(), spacing: 10),
+                                GridItem(.flexible(), spacing: 10)
+                            ],
+                            spacing: 10
+                        ) {
+                            ForEach(picked, id: \.self) { s in
+                                Button {
+                                    vm.send(s)
+                                    forceScrollToBottomTick += 1
+                                    inputText = ""
+                                } label: {
+                                    HStack(spacing: Spacing.sm) {
+                                        // ✅ Iconcina basata sul contenuto
+                                        Text(suggestionEmoji(s))
+                                            .font(.title3)
+                                        
+                                        Text(s)
+                                            .font(.subheadline)
+                                            .foregroundColor(AppColors.textPrimary)
+                                            .lineLimit(2)
+                                            .multilineTextAlignment(.leading)
+                                        
+                                        Spacer()
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.vertical, Spacing.md)
+                                    .padding(.horizontal, Spacing.md)
+                                    .background(AppColors.cardBackground)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(AppColors.borderLight, lineWidth: 1)
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
 
                             Button {
-                                if expandedSuggestion != s {
-                                    withAnimation(.easeInOut(duration: 0.15)) {
-                                        expandedSuggestion = s
-                                    }
-                                } else {
-                                    vm.send(s)
-                                    forceScrollToBottomTick += 1
-                                    inputText = ""
-                                    withAnimation(.easeInOut(duration: 0.15)) {
-                                        expandedSuggestion = nil
-                                        showSuggestions = false
-                                    }
+                                withAnimation(.easeInOut(duration: 0.15)) {
+                                    suggestionsSeed += 1
+                                    expandedSuggestion = nil
                                 }
                             } label: {
-                                Text(s)
-                                    .font(.footnote)
-                                    .foregroundColor(.primary)
-                                    .lineLimit(isExpanded ? 3 : 1)
-                                    .multilineTextAlignment(.center)
-                                    .frame(maxWidth: .infinity, alignment: .center)
-                                    .padding(.vertical, 8)
-                                    .padding(.horizontal, 10)
-                                    .background(.thinMaterial)
-                                    .clipShape(Capsule())
+                                HStack(spacing: Spacing.sm) {
+                                    Image(systemName: "arrow.triangle.2.circlepath")
+                                        .font(.subheadline)
+                                    Text("Altri")
+                                        .font(.subheadline)
+                                }
+                                .foregroundColor(AppColors.primaryWine)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, Spacing.md)
+                                .background(AppColors.primaryWine.opacity(0.1))
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
                             }
                             .buttonStyle(.plain)
-                            .simultaneousGesture(
-                                LongPressGesture(minimumDuration: 0.35).onEnded { _ in
-                                    vm.send(s)
-                                    forceScrollToBottomTick += 1
-                                    inputText = ""
-                                    withAnimation(.easeInOut(duration: 0.15)) {
-                                        expandedSuggestion = nil
-                                        showSuggestions = false
-                                    }
-                                }
-                            )
                         }
-
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.15)) {
-                                suggestionsSeed += 1
-                                expandedSuggestion = nil
-                            }
-                        } label: {
-                            Text("Altri")
-                                .font(.footnote)
-                                .foregroundColor(.primary)
-                                .lineLimit(1)
-                                .frame(maxWidth: .infinity, alignment: .center)
-                                .padding(.vertical, 8)
-                                .padding(.horizontal, 10)
-                                .background(.thinMaterial)
-                                .clipShape(Capsule())
-                        }
-                        .buttonStyle(.plain)
+                        .padding(.horizontal, Spacing.md)
+                        .padding(.bottom, Spacing.md)
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-
-                    Divider()
-                } else {
-                    Divider()
                 }
+                .background(AppColors.backgroundSecondary)
+
+                Divider()
             }
 
             // ✅ Filtro Prezzo Max: tap apre/chiude; resta visibile finché maxPriceFilter > 0
-            VStack(spacing: 6) {
+            VStack(spacing: Spacing.xs) {
                 Button {
                     withAnimation(.easeInOut(duration: 0.15)) {
                         showPriceBar.toggle()
@@ -362,8 +362,8 @@ struct ChatView: View {
                     Slider(value: $vm.maxPriceFilter, in: 0...200, step: 5)
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, Spacing.sm)
             .onChange(of: vm.maxPriceFilter) { _, newValue in
                 if newValue > 0 { showPriceBar = true } else { showPriceBar = false }
             }
@@ -408,7 +408,7 @@ struct ChatView: View {
                                 }
                             )
                     }
-                    .padding(12)
+                    .padding(Spacing.md)
                 }
                 .coordinateSpace(name: "scroll")
                 .simultaneousGesture(
@@ -432,7 +432,7 @@ struct ChatView: View {
                     scrollOffsetY = y
                     let compact = y < -28
                     if compact != isFilterBarCompact {
-                        withAnimation(.easeInOut(duration: 0.18)) {
+                        withAnimation(.easeInOut(duration: 0.15)) {
                             isFilterBarCompact = compact
                         }
                     }
@@ -529,8 +529,10 @@ struct ChatView: View {
                 }
                 .tint(AppColors.accentWine)
                 .disabled(vm.isLoading)
+                .accessibilityLabel(vm.isLoading ? "Caricamento in corso" : "Invia ricerca")
+                .accessibilityHint(vm.isLoading ? "" : "Tocca per inviare la tua richiesta a Sommy")
             }
-            .padding(12)
+            .padding(Spacing.md)
         }
         .background(AppColors.backgroundPrimary)
         .onAppear {
@@ -554,11 +556,18 @@ struct ChatView: View {
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            // ✅ Cestino Reset in navbar
+            // ✅ Bottone Pulisci in navbar (cestino)
             ToolbarItem(placement: .topBarLeading) {
-                Button { vm.clear() } label: {
-                    Image(systemName: "trash")
-                        .foregroundStyle(.secondary)
+                Button {
+                    vm.clear()
+                    inputText = ""
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        expandedSuggestion = nil
+                        showSuggestions = true  // Mostra suggerimenti dopo reset
+                    }
+                } label: {
+                    Label("Pulisci", systemImage: "trash")
+                        .foregroundStyle(AppColors.primaryWine)
                 }
             }
 
@@ -623,6 +632,39 @@ struct ChatView: View {
         return String(String.UnicodeScalarView(filteredScalars))
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
+    
+    // ✅ Emoji per suggerimenti basata sul contenuto
+    private func suggestionEmoji(_ suggestion: String) -> String {
+        let s = suggestion.lowercased()
+        
+        // Occasioni
+        if s.contains("cena") || s.contains("importante") { return "🍽" }
+        if s.contains("aperitiv") || s.contains("brindare") { return "🥂" }
+        if s.contains("festa") || s.contains("party") { return "🎉" }
+        if s.contains("romantica") || s.contains("romantico") { return "💕" }
+        
+        // Piatti
+        if s.contains("carne") || s.contains("bistecca") { return "🥩" }
+        if s.contains("pesce") || s.contains("frutti di mare") { return "🐟" }
+        if s.contains("sushi") { return "🍣" }
+        if s.contains("pasta") { return "🍝" }
+        if s.contains("pizza") { return "🍕" }
+        if s.contains("formaggio") { return "🧀" }
+        
+        // Caratteristiche vino
+        if s.contains("rosso") || s.contains("red") { return "🍷" }
+        if s.contains("bianco") || s.contains("white") { return "🥃" }
+        if s.contains("rosé") || s.contains("rosato") { return "🌷" }
+        if s.contains("bollicine") || s.contains("spumante") || s.contains("prosecco") { return "🍾" }
+        
+        // Mood/Contesto
+        if s.contains("relax") || s.contains("tranquillo") { return "😌" }
+        if s.contains("economico") || s.contains("budget") || s.contains("risparmia") { return "💰" }
+        if s.contains("pregiato") || s.contains("lusso") || s.contains("riserva") { return "⭐" }
+        
+        // Default
+        return "🍇"  // uva
+    }
 
     private func filterChip(
         system: String,
@@ -675,50 +717,44 @@ struct ChatView: View {
             if msg.role == .assistant, let wines = msg.wines {
                 // ✅ FIX OPZIONE 3: Mostra "nessun risultato" SOLO se stream finito (!vm.isLoading)
                 if wines.isEmpty && !vm.isLoading {
-                    // ✅ ERROR STATE 1: Nessun vino trovato
-                    VStack(spacing: 12) {
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 48))
-                            .foregroundStyle(.secondary.opacity(0.5))
-                        
-                        Text("Nessun vino trovato")
-                            .font(.headline)
-                            .foregroundStyle(.primary)
-                        
-                        Text("Prova a cercare con termini diversi o meno specifici")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                        
-                        // ✅ ERROR STATE 2: Retry button
-                        Button {
-                            // Riusa l'ultima query user
-                            if let lastUserMsg = vm.messages.last(where: { $0.role == .user }) {
-                                vm.send(lastUserMsg.text)
-                                forceScrollToBottomTick += 1
-                            }
-                        } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "arrow.clockwise")
-                                Text("Riprova")
-                                    .font(.subheadline.weight(.medium))
-                            }
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(AppColors.accentWine)
-                            .clipShape(Capsule())
+                    // ✅ Empty State Migliorato
+                    EmptyStateView(
+                        type: .noResults,
+                        didYouMeanSuggestions: vm.didYouMeanSuggestions,
+                        onSuggestionTap: { suggestion in
+                            vm.send(suggestion)
+                            forceScrollToBottomTick += 1
+                            inputText = ""
                         }
-                        .buttonStyle(.plain)
+                    )
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                } else if wines.isEmpty && vm.isLoading {
+                    // ✅ Typing Indicator
+                    HStack(spacing: 8) {
+                        ForEach(0..<3) { index in
+                            Circle()
+                                .fill(AppColors.primaryWine.opacity(0.6))
+                                .frame(width: 8, height: 8)
+                                .scaleEffect(vm.isLoading ? 1.0 : 0.5)
+                                .animation(
+                                    Animation.easeInOut(duration: 0.6)
+                                        .repeatForever()
+                                        .delay(Double(index) * 0.2),
+                                    value: vm.isLoading
+                                )
+                        }
+                        Text("Sommy sta pensando...")
+                            .font(.subheadline)
+                            .foregroundColor(AppColors.textSecondary)
                     }
                     .padding(.vertical, 24)
                     .frame(maxWidth: .infinity)
                 } else {
-                    // Vini trovati
+                    // Vini trovati - con animazioni
                     VStack(spacing: 10) {
                         let groups = groupedWinesForDisplay(wines)
 
-                        ForEach(groups) { g in
+                        ForEach(Array(groups.enumerated()), id: \.0) { index, g in
                             VStack(alignment: .leading, spacing: 6) {
                                 wineRow(g.representative)
 
@@ -750,6 +786,16 @@ struct ChatView: View {
                                 : nil
                             )
                             .id("wine:\(msg.id.uuidString):\(g.representativeIndex)")
+                            // ✅ Animazioni apparizione card
+                            .transition(.asymmetric(
+                                insertion: .opacity.combined(with: .offset(y: 20)),
+                                removal: .opacity
+                            ))
+                            .animation(
+                                .spring(response: 0.4, dampingFraction: 0.8)
+                                    .delay(Double(index) * 0.05),
+                                value: wines.count
+                            )
                         }
                         
                         // ✅ PAGINAZIONE: Bottone "Mostra altri"
@@ -915,11 +961,20 @@ struct ChatView: View {
             Spacer()
 
             Button {
-                favoritesStore.toggle(wine)
+                // ✅ Haptic feedback
+                let impact = UIImpactFeedbackGenerator(style: .medium)
+                impact.impactOccurred()
+                
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                    favoritesStore.toggle(wine)
+                }
             } label: {
                 Image(systemName: favoritesStore.isFavorite(wine) ? "heart.fill" : "heart")
                     .foregroundStyle(favoritesStore.isFavorite(wine) ? .red : .secondary)
+                    .font(.title3)
+                    .scaleEffect(favoritesStore.isFavorite(wine) ? 1.1 : 1.0)
             }
+            .buttonStyle(.plain)
 
             let metaTop = metaLineTop(wine)
             let metaBottom = metaLineBottom(wine)

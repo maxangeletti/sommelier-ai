@@ -88,4 +88,32 @@ struct WineLocalizer {
         default:             return raw.replacingOccurrences(of: "_", with: " ").capitalized
         }
     }
+    
+    // ✅ NEW: Body
+    static func body(_ raw: String?) -> String {
+        guard let raw = raw else { return "" }
+        switch raw.lowercased() {
+        case "light":  return "Leggero"
+        case "medium": return "Medio"
+        case "full":   return "Corposo"
+        default:       return raw.capitalized
+        }
+    }
+    
+    // ✅ NEW: Sweetness
+    static func sweetness(_ raw: String?) -> String {
+        guard let raw = raw else { return "" }
+        switch raw.lowercased() {
+        case "dry":       return "Secco"
+        case "off_dry":   return "Abboccato"
+        case "semi_sweet": return "Semidolce"
+        case "sweet":     return "Dolce"
+        default:          return raw.replacingOccurrences(of: "_", with: " ").capitalized
+        }
+    }
+    
+    // ✅ NEW: Tannin (alias per tannins)
+    static func tannin(_ raw: String?) -> String {
+        return tannins(raw)
+    }
 }

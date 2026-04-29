@@ -324,13 +324,13 @@ final class ChatViewModel: ObservableObject {
            !detail.isEmpty {
             switch expected {
             case "red":
-                return detail.contains("ross") || detail.contains("rubin") || detail.contains("granat") || detail.contains("porpora") || detail.contains("red") || detail.contains("ruby")
+            return detail.contains("red") || detail.contains("ross") || detail.contains("rubin") || detail.contains("granat") || detail.contains("porpora") || detail.contains("ruby")
             case "white":
-                return detail.contains("bianc") || detail.contains("giall") || detail.contains("paglier") || detail.contains("straw")
+            return detail.contains("white") || detail.contains("bianc") || detail.contains("giall") || detail.contains("paglier") || detail.contains("straw")
             case "rose":
-                return detail.contains("ros") || detail.contains("cerasuol") || detail.contains("salmon")
+            return detail.contains("rose") || detail.contains("ros") || detail.contains("cerasuol") || detail.contains("salmon")
             default:
-                return true
+            return true
             }
         }
 
@@ -601,13 +601,13 @@ final class ChatViewModel: ObservableObject {
                         // ✅ PATCH (Step 4): applica MULTI-FILTRO FINAL (vitigno+prezzo+colore+intensità)
                         let allProcessed = self.applyAllLocalFilters(base)
                         
-                        // ✅ PAGINAZIONE: Mostra inizialmente solo i primi 10 vini
-                        let initialLimit = 10
+                        // ✅ PAGINAZIONE: Mostra inizialmente solo i primi 5 vini
+                        let initialLimit = 5
                         let processed = isSuggestionMode ? [] : Array(allProcessed.prefix(initialLimit))
                         
                         // ✅ PAGINAZIONE: salva totalCount e currentLimit
                         let totalCount = ev.meta?.total_count ?? base.count
-                        let currentLimit = min(initialLimit, base.count)  // 🔧 FIX: inizia con 10 vini
+                        let currentLimit = min(initialLimit, base.count)  // 🔧 FIX: inizia con 5 vini
                         
                         withAnimation(.easeInOut(duration: 0.18)) {
                             messages[idx].wines = processed
@@ -700,13 +700,13 @@ final class ChatViewModel: ObservableObject {
                         // ✅ PATCH (Step 4/5): applica MULTI-FILTRO anche nel commit (no streaming)
                         let allProcessed = self.applyAllLocalFilters(base)
                         
-                        // ✅ PAGINAZIONE: Mostra inizialmente solo i primi 10 vini
-                        let initialLimit = 10
+                        // ✅ PAGINAZIONE: Mostra inizialmente solo i primi 5 vini
+                        let initialLimit = 5
                         let processed = Array(allProcessed.prefix(initialLimit))
                         
                         // ✅ PAGINAZIONE: salva totalCount e currentLimit
                         let totalCount = ev.meta?.total_count ?? base.count
-                        let currentLimit = min(initialLimit, base.count)  // 🔧 FIX: inizia con 10 vini
+                        let currentLimit = min(initialLimit, base.count)  // 🔧 FIX: inizia con 5 vini
                         
                         withAnimation(.easeInOut(duration: 0.18)) {
                             messages[idx].wines = processed

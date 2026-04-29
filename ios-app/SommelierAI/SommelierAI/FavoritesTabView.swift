@@ -12,12 +12,8 @@ struct FavoritesTabView: View {
     var body: some View {
         VStack(spacing: 0) {
 
-            // Header
+            // Header con sorting e delete
             HStack {
-                Text("Preferiti")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-
                 Spacer()
 
                 Menu {
@@ -29,39 +25,55 @@ struct FavoritesTabView: View {
                     .pickerStyle(.inline)
                 } label: {
                     Image(systemName: "arrow.up.arrow.down")
+                        .foregroundColor(AppColors.textSecondary)
                 }
 
                 Button(role: .destructive) {
                     favoritesStore.clear()
                 } label: {
                     Image(systemName: "trash")
+                        .foregroundColor(AppColors.accentWine)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.horizontal, Spacing.screenEdges)
+            .padding(.vertical, Spacing.md)
+            .background(AppColors.backgroundSecondary)
 
             Divider()
 
             if favoritesStore.sortedFavorites.isEmpty {
-                VStack(spacing: 12) {
-                    Image(systemName: "heart")
-                        .font(.system(size: 40))
-                        .foregroundStyle(.secondary)
+                VStack(spacing: Spacing.lg) {
+                    Spacer()
+                    
+                    Image(systemName: "heart.slash")
+                        .font(.system(size: 60))
+                        .foregroundColor(AppColors.textMuted)
 
                     Text("Nessun preferito")
-                        .foregroundStyle(.secondary)
+                        .font(Typography.title3)
+                        .foregroundColor(AppColors.textSecondary)
+                    
+                    Text("Aggiungi vini dalla ricerca\nper trovarli qui")
+                        .font(Typography.callout)
+                        .foregroundColor(AppColors.textMuted)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, Spacing.xxl)
+                    
+                    Spacer()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(AppColors.backgroundPrimary)
 
             } else {
                 ScrollView {
-                    VStack(spacing: 12) {
+                    VStack(spacing: Spacing.md) {
                         ForEach(favoritesStore.sortedFavorites) { wine in
                             favoriteRow(wine)
                         }
                     }
-                    .padding(12)
+                    .padding(Spacing.screenEdges)
                 }
+                .background(AppColors.backgroundPrimary)
             }
         }
         .navigationTitle("Preferiti")
@@ -98,42 +110,54 @@ struct FavoritesTabView: View {
     // MARK: - Row
 
     private func favoriteRow(_ wine: WineCard) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        NavigationLink {
+            WineDetailView(wine: wine, userQuery: "")
+        } label: {
+            VStack(alignment: .leading, spacing: Spacing.sm) {
 
-            HStack {
-                Text(wine.name)
-                    .font(.headline)
+                HStack {
+                    Text(wine.name)
+                        .font(Typography.title3)
+                        .foregroundColor(AppColors.textPrimary)
+                        .lineLimit(2)
 
-                Spacer()
+                    Spacer()
 
-                Button {
-                    favoritesStore.toggle(wine)
-                } label: {
-                    Image(systemName: "heart.fill")
-                        .foregroundStyle(.red)
+                    Button {
+                        favoritesStore.toggle(wine)
+                    } label: {
+                        Image(systemName: "heart.fill")
+                            .foregroundColor(AppColors.accentWine)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                if let price = wine.price {
+                    Text(String(format: "€%.2f", price))
+                        .font(Typography.price)
+                        .foregroundColor(AppColors.primaryWine)
+                }
+
+                Text(wine.reason)
+                    .font(Typography.callout)
+                    .foregroundColor(AppColors.textSecondary)
+                    .lineLimit(2)
+
+                if let tags = wine.tags, !tags.isEmpty {
+                    Text(tags.filter { let t = $0.lowercased().replacingOccurrences(of: "_", with: " "); return !["red","white","rose","rosso","bianco","rosato","ruby red","ruby","orange","low","medium","high","fermo","secco","dolce","amabile","frizzante","spumante","garnet","straw","golden","pink","pale"].contains(t) }.map { $0.replacingOccurrences(of: "_", with: " ") }.joined(separator: " • "))
+                        .font(Typography.caption)
+                        .foregroundColor(AppColors.textMuted)
                 }
             }
-
-            if let price = wine.price {
-                Text(String(format: "€%.2f", price))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-
-            Text(wine.reason)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .lineLimit(3)
-
-            if let tags = wine.tags, !tags.isEmpty {
-                Text(tags.filter { let t = $0.lowercased().replacingOccurrences(of: "_", with: " "); return !["red","white","rose","rosso","bianco","rosato","ruby red","ruby","orange","low","medium","high","fermo","secco","dolce","amabile","frizzante","spumante","garnet","straw","golden","pink","pale"].contains(t) }.map { $0.replacingOccurrences(of: "_", with: " ") }.joined(separator: " • "))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+            .padding(Spacing.cardPadding)
+            .background(AppColors.cardBackground)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(AppColors.borderLight, lineWidth: 0.5)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 16))
         }
-        .padding(12)
-        .background(Color.gray.opacity(0.12))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .buttonStyle(.plain)
     }
 }
 

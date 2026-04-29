@@ -13,14 +13,15 @@ struct WelcomeView: View {
     @Binding var hasSeenWelcome: Bool
     @Binding var searchQuery: String
     @FocusState private var isSearchFocused: Bool
+    @EnvironmentObject private var searchHistoryStore: SearchHistoryStore   // ✅ NEW
     
     // ✅ Pool completo di suggerimenti con emoji (allineati a backend v1.8.4)
     private let allSuggestions: [(emoji: String, text: String)] = [
         ("🍷", "Un sangiovese di buona qualità"),
-        ("💎", "Un vino intenso e strutturato sopra i 20€"),
+        ("💎", "Un vino intenso e strutturato sopra i 20 euro"),
         ("🥂", "Uno spumante brut per aperitivo"),
-        ("🍾", "Uno Champagne sopra i 30€"),
-        ("🍋", "Un bianco con sentori agrumati sotto i 15€"),
+        ("🍾", "Uno Champagne sopra i 30 euro"),
+        ("🍋", "Un bianco con sentori agrumati sotto i 15 euro"),
         ("⭐", "Un vino con buon rapporto qualità prezzo"),
         ("👔", "Un Barolo o Brunello per una cena importante"),
         ("🥩", "Un rosso corposo per carne alla griglia"),
@@ -28,7 +29,7 @@ struct WelcomeView: View {
         ("☀️", "Un rosato fresco per l'estate"),
         ("🎉", "Un Prosecco per brindare"),
         ("🍰", "Un passito per dessert"),
-        ("🌱", "Un vino biologico sotto i 20€"),
+        ("🌱", "Un vino biologico sotto i 20 euro"),
         ("🌟", "Un Nebbiolo giovane e tannico")
     ]
     
@@ -43,15 +44,17 @@ struct WelcomeView: View {
     private let timer = Timer.publish(every: 1.0, on: .main, in: .common).autoconnect()
     
     private func proceedToChat() {
-        // ✅ Salva query pendente per ChatView
+        // ✅ Salva query nello storico
         if !searchQuery.isEmpty {
+            searchHistoryStore.add(searchQuery)
             UserDefaults.standard.set(searchQuery, forKey: "pendingSearchQuery")
         }
         hasSeenWelcome = true
     }
     
     var body: some View {
-        VStack(spacing: 0) {
+        ScrollView {
+            VStack(spacing: 0) {
             // Header con logo e titolo
             VStack(spacing: Spacing.lg) {
                 // ✅ Avatar Sommy ANIMATO - centrato e stabile
@@ -95,11 +98,11 @@ struct WelcomeView: View {
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(AppColors.textPrimary)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 24)
-                .padding(.bottom, 16)
+                .padding(.horizontal, Spacing.screenEdges)
+                .padding(.bottom, Spacing.lg)
             
             // Suggerimenti come bottoni
-            VStack(spacing: 12) {
+            VStack(spacing: Spacing.md) {
                 ForEach(displayedSuggestions, id: \.text) { suggestion in
                     SuggestionButton(
                         emoji: suggestion.emoji,
@@ -111,7 +114,7 @@ struct WelcomeView: View {
                     )
                 }
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, Spacing.screenEdges)
             .onAppear {
                 // ✅ Scegli 4 suggerimenti random al primo load
                 if displayedSuggestions.isEmpty {
@@ -119,10 +122,73 @@ struct WelcomeView: View {
                 }
             }
             
+            // ✅ Ricerche recenti
+            if !searchHistoryStore.recentSearches.isEmpty {
+                VStack(alignment: .leading, spacing: Spacing.md) {
+                    HStack {
+                        Text("Ricerche recenti")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(AppColors.textPrimary)
+                        
+                        Spacer()
+                        
+                        Button("Cancella") {
+                            searchHistoryStore.clear()
+                        }
+                        .font(.system(size: 14))
+                        .foregroundColor(AppColors.textSecondary)
+                    }
+                    
+                    VStack(spacing: Spacing.sm) {
+                        ForEach(searchHistoryStore.recentSearches.prefix(5), id: \.self) { query in
+                            Button(action: {
+                                searchQuery = query
+                                proceedToChat()
+                            }) {
+                                HStack(spacing: Spacing.md) {
+                                    Image(systemName: "clock.arrow.circlepath")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(AppColors.textSecondary)
+                                    
+                                    Text(query)
+                                        .font(.system(size: 15))
+                                        .foregroundColor(AppColors.textPrimary)
+                                        .lineLimit(1)
+                                    
+                                    Spacer()
+                                    
+                                    Button(action: {
+                                        searchHistoryStore.remove(query)
+                                    }) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .font(.system(size: 16))
+                                            .foregroundColor(AppColors.textSecondary.opacity(0.5))
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                                .padding(.horizontal, Spacing.lg)
+                                .padding(.vertical, Spacing.md)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .fill(AppColors.cardBackground)
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(AppColors.borderLight, lineWidth: 1)
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                .padding(.horizontal, Spacing.screenEdges)
+                .padding(.top, Spacing.xl)
+            }
+            
             Spacer()
             
             // Campo di ricerca in basso
-            HStack(spacing: 12) {
+            HStack(spacing: Spacing.md) {
                 TextField("Scrivi che vino cerchi...", text: $searchQuery)
                     .font(.system(size: 16))
                     .padding(.horizontal, 16)
@@ -161,10 +227,14 @@ struct WelcomeView: View {
                 }
                 .disabled(searchQuery.isEmpty)
                 .opacity(searchQuery.isEmpty ? 0.5 : 1.0)
+                .accessibilityLabel("Inizia ricerca")
+                .accessibilityHint(searchQuery.isEmpty ? "Inserisci prima una richiesta" : "Tocca per iniziare la conversazione con Sommy")
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 32)
+            .padding(.horizontal, Spacing.screenEdges)
+            .padding(.bottom, Spacing.xl)
+            }
         }
+        .scrollDismissesKeyboard(.interactively)
         .background(AppColors.backgroundPrimary)
     }
 }
@@ -214,6 +284,8 @@ struct SuggestionButton: View {
             )
         }
         .buttonStyle(ScaleButtonStyle())
+        .accessibilityLabel("Suggerimento: \(text)")
+        .accessibilityHint("Tocca per cercare \(text)")
     }
 }
 

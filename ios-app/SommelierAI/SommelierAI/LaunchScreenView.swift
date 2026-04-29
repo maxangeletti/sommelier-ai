@@ -9,17 +9,11 @@ import SwiftUI
 
 struct LaunchScreenView: View {
     var body: some View {
-        ZStack {
-            // Background color (crema dalla splash)
-            Color(red: 245/255, green: 235/255, blue: 217/255)
-                .ignoresSafeArea()
-            
-            // Splash image - aspect fill per riempire tutto lo schermo
-            Image("splash_def")
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .ignoresSafeArea()
-        }
+        // ✅ Splash FULLSCREEN - copre tutto senza background
+        Image("splash_def")
+            .resizable()
+            .scaledToFill()
+            .ignoresSafeArea()
     }
 }
 

@@ -2,48 +2,47 @@
 //  WineDetailView.swift
 //  SommelierAI
 //
-//  NUOVO DESIGN: Scheda dettaglio compatta e visual-first
-//  - Score complessivo prominente
-//  - Match % + Annata affiancati
-//  - Abbinamenti con icone grandi
-//  - Prezzo hero
+//  Scheda dettaglio vino con design premium
+//  - Hero section con score e match
+//  - Animazioni smooth
+//  - Layout responsive
 //
 
 import SwiftUI
-
-// 🍾 HELPER GLOBALE: Icona bottiglia in base al tipo di vino
-fileprivate func bottleIcon(for wine: WineCard) -> String {
-    // Spumante / Champagne
-    if wine.sparkling == "spumante" || wine.sparkling == "champagne" {
-        return "🍾"  // Bottiglia champagne
-    }
-    
-    // Tutti gli altri (rossi e bianchi) → bottiglia generica
-    return "🍾"  // Bottiglia
-}
 
 struct WineDetailView: View {
     let wine: WineCard
     let userQuery: String
     
     @EnvironmentObject private var favoritesStore: FavoritesStore
+    @EnvironmentObject private var tastingSheetStore: TastingSheetStore   // ✅ NEW
+    @Environment(\.dismiss) private var dismiss
     
-    @State private var tastingNotes: String = ""
-    @State private var isLoadingNotes: Bool = false
-    @State private var similarWines: [WineCard] = []
-    @State private var isLoadingSimilar: Bool = false
-    @State private var showScoreInfo: Bool = false
-    @State private var showRatingInfo: Bool = false
+    @State private var isAppearing = false
+    @State private var selectedTab: DetailTab = .overview
+    @State private var showShareSheet = false
+    @State private var showTastingSheet = false   // ✅ NEW
     
-    private let api = APIClient()
+    private enum DetailTab: String, CaseIterable {
+        case overview = "Panoramica"
+        case tasting = "Degustazione"
+        case pairing = "Abbinamenti"
+        
+        var icon: String {
+            switch self {
+            case .overview: return "info.circle.fill"
+            case .tasting: return "wineglass.fill"
+            case .pairing: return "fork.knife"
+            }
+        }
+    }
     
-    // Calcolo score complessivo (overall) - CLAMPED tra 0-100%
+    // Scores
     private var overallScore: Int {
-        let score = max(0, min(5, wine.score ?? 0))  // Clamp tra 0 e 5
+        let score = max(0, min(5, wine.score ?? 0))
         return Int(score / 5.0 * 100)
     }
     
-    // Calcolo match score
     private var matchScore: Int {
         let raw = (wine.match_score ?? wine.__match_score) ?? 0.0
         return Int(max(0, min(1, raw)) * 100)
@@ -51,975 +50,554 @@ struct WineDetailView: View {
     
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 0) {
+                // Hero Section
+                heroSection
+                    .opacity(isAppearing ? 1 : 0)
+                    .offset(y: isAppearing ? 0 : 20)
                 
-                // ✅ BADGE CONTESTUALI AFFIANCATI
-                HStack(spacing: 12) {
-                    // Badge contestuale
-                    if let topBadge = contextualTopBadge() {
-                        Text(topBadge)
-                            .font(.subheadline.weight(.medium))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(AppColors.accentWine)
-                            .clipShape(Capsule())
-                    }
-                    
-                    // Badge "Eccellente scelta"
-                    if wine.ottimo_valore == true || (wine.rank ?? 99) == 1 {
-                        HStack(spacing: 6) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.subheadline)
-                            Text("Eccellente scelta")
-                                .font(.subheadline.weight(.semibold))
-                        }
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Color.red)
-                        .clipShape(Capsule())
+                // Tabs
+                tabSelector
+                    .opacity(isAppearing ? 1 : 0)
+                    .offset(y: isAppearing ? 0 : 10)
+                
+                // Content
+                Group {
+                    switch selectedTab {
+                    case .overview:
+                        overviewContent
+                    case .tasting:
+                        tastingContent
+                    case .pairing:
+                        pairingContent
                     }
                 }
-                
-                // ✅ TITOLO VINO GRANDE
-                Text(wine.name)
-                    .font(.system(size: 32, weight: .bold))
-                    .lineLimit(3)
-                    .padding(.top, 8)
-                
-                // ✅ PUNTEGGIO COMPLESSIVO (con info icon) - RISALTO
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 6) {
-                        Text("PUNTEGGIO COMPLESSIVO")
-                            .font(.caption2.weight(.bold))  // Da .caption a .caption2.bold per più risalto
+                .opacity(isAppearing ? 1 : 0)
+            }
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                HStack(spacing: 16) {
+                    // Degusta button
+                    Button(action: {
+                        showTastingSheet = true
+                    }) {
+                        Image(systemName: "list.clipboard")
                             .foregroundStyle(.secondary)
-                            .tracking(1.2)
-                        
-                        Button {
-                            showScoreInfo = true
-                        } label: {
-                            Image(systemName: "info.circle")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    
-                    Text("\(overallScore)%")
-                        .font(.system(size: 48, weight: .bold))
-                        .foregroundStyle(AppColors.accentWine)
-                }
-                .padding(.top, 4)
-                .alert("Punteggio Complessivo", isPresented: $showScoreInfo) {
-                    Button("OK") { }
-                } message: {
-                    Text("Media di 3 valutazioni AIS:\n\nQualità + Equilibrio + Persistenza")
-                }
-                
-                // ✅ DUE COLONNE: MATCH + ANNATA
-                HStack(spacing: 20) {
-                    // Match
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("MATCH")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .tracking(1)
-                        
-                        Text("\(matchScore)%")
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundStyle(.primary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
-                    .background(Color.gray.opacity(0.08))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    
-                    // Annata
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("ANNATA")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .tracking(1)
-                        
-                        Text(wine.vintage.map { String($0) } ?? "N/A")
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundStyle(.primary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
-                    .background(Color.gray.opacity(0.08))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-                
-                // ✅ PRODUCER (con icona + Button + openURL)
-                if let producer = wine.producer, !producer.isEmpty {
-                    let urlString = wine.purchase_url ?? "https://www.google.com/search?q=\(producer.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? producer.replacingOccurrences(of: " ", with: "+"))+cantina"
-                    
-                    Button {
-                        print("[DEBUG] Tap producer button")
-                        print("[DEBUG] URL string: \(urlString)")
-                        if let url = URL(string: urlString) {
-                            print("[DEBUG] Opening URL: \(url)")
-                            UIApplication.shared.open(url)
-                        } else {
-                            print("[DEBUG] Invalid URL")
-                        }
-                    } label: {
-                        HStack(spacing: 10) {
-                            Image(systemName: "building.2.fill")
-                                .font(.title3)
-                                .foregroundStyle(AppColors.accentWine)
-                            
-                            Text(producer)
-                                .font(.body)
-                                .foregroundStyle(.primary)
-                            
-                            Spacer()
-                            
-                            Image(systemName: "arrow.up.right.square.fill")
-                                .font(.title2)
-                                .foregroundStyle(AppColors.accentWine)
-                        }
-                    }
-                    .buttonStyle(.borderless)
-                    .padding(.top, 8)
-                }
-                
-                // ✅ LOCATION (con icona)
-                let location = [wine.region, wine.country].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: ", ")
-                if !location.isEmpty {
-                    HStack(spacing: 10) {
-                        Image(systemName: "location.fill")
                             .font(.title3)
-                            .foregroundStyle(AppColors.accentWine)
-                        
-                        Text(location)
-                            .font(.body)
-                            .foregroundStyle(.primary)
                     }
-                }
-                
-                Divider()
-                    .padding(.vertical, 8)
-                
-                // ✅ ABBINAMENTI IDEALI (con emoji grandi) - RISALTO
-                if let pairings = wine.food_pairings, !pairings.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("ABBINAMENTI IDEALI")
-                            .font(.subheadline.weight(.bold))  // Da .caption a .subheadline per più risalto
+                    .accessibilityLabel("Scheda degustazione")
+                    .accessibilityHint("Tocca per aprire la scheda di degustazione di questo vino")
+                    
+                    // Share button
+                    Button(action: {
+                        showShareSheet = true
+                    }) {
+                        Image(systemName: "square.and.arrow.up")
                             .foregroundStyle(.secondary)
-                            .tracking(1.2)
-                        
-                        HStack(spacing: 16) {
-                            ForEach(Array(pairings.prefix(3)), id: \.self) { pairing in
-                                VStack(spacing: 6) {
-                                    Text(pairingEmoji(for: pairing))
-                                        .font(.system(size: 40))
-                                    
-                                    Text(pairing.replacingOccurrences(of: "_", with: " ").capitalized)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                        .multilineTextAlignment(.center)
-                                        .lineLimit(2)
-                                }
-                                .frame(maxWidth: .infinity)
-                            }
-                        }
+                            .font(.title3)
                     }
-                    .padding(.top, 8)
+                    .accessibilityLabel("Condividi vino")
+                    .accessibilityHint("Tocca per condividere questo vino")
+                    
+                    // Favorite button
+                    Button(action: {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                            favoritesStore.toggle(wine)
+                        }
+                    }) {
+                        Image(systemName: favoritesStore.isFavorite(wine) ? "heart.fill" : "heart")
+                            .foregroundStyle(favoritesStore.isFavorite(wine) ? .red : .secondary)
+                            .font(.title3)
+                    }
+                    .accessibilityLabel(favoritesStore.isFavorite(wine) ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti")
+                    .accessibilityHint(favoritesStore.isFavorite(wine) ? "Tocca per rimuovere questo vino dai tuoi preferiti" : "Tocca per salvare questo vino nei tuoi preferiti")
+                }
+            }
+        }
+        .sheet(isPresented: $showShareSheet) {
+            ShareSheet(items: WineShareHelper.shareItems(for: wine, query: userQuery))
+        }
+        .sheet(isPresented: $showTastingSheet) {
+            NavigationStack {
+                TastingSheetView(wine: wine)
+            }
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.5)) {
+                isAppearing = true
+            }
+        }
+    }
+    
+    // MARK: - Hero Section
+    
+    private var heroSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Wine name
+            Text(wine.name)
+                .font(.system(size: 28, weight: .bold))
+                .foregroundColor(AppColors.textPrimary)
+            
+            // Producer + Region
+            VStack(alignment: .leading, spacing: 4) {
+                if let producer = wine.producer {
+                    Text(producer)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(AppColors.textSecondary)
                 }
                 
-                // ✅ CARATTERISTICHE PRINCIPALI (Tannicità + Acidità) - RISALTO
-                if wine.tannins != nil || wine.acidity != nil {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("CARATTERISTICHE")
-                            .font(.subheadline.weight(.bold))  // Da .caption a .subheadline per più risalto
-                            .foregroundStyle(.secondary)
-                            .tracking(1.2)
-                        
-                        HStack(spacing: 20) {
-                            if let t = wine.tannins {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Tannicità")
-                                        .font(.caption2)
-                                        .foregroundStyle(.secondary)
-                                    Text(WineLocalizer.tannins(t))
-                                        .font(.subheadline.weight(.semibold))
-                                        .foregroundStyle(.primary)
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            
-                            if let a = wine.acidity {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Acidità")
-                                        .font(.caption2)
-                                        .foregroundStyle(.secondary)
-                                    Text(WineLocalizer.acidity(a))
-                                        .font(.subheadline.weight(.semibold))
-                                        .foregroundStyle(.primary)
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                        }
+                HStack(spacing: 4) {
+                    if let country = wine.country {
+                        Text(WineLocalizer.country(country))
+                            .font(.subheadline)
                     }
-                    .padding(.top, 8)
-                }
-                
-                // 🍒 SEZIONE SENTORI (con emoji) - RISALTO
-                if let aromas = wine.aromas, !aromas.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("SENTORI")
-                            .font(.subheadline.weight(.bold))  // Da .caption a .subheadline per più risalto
-                            .foregroundStyle(.secondary)
-                            .tracking(1.2)
-                        
-                        HStack(spacing: 16) {
-                            ForEach(Array(aromas.prefix(4)), id: \.self) { aroma in
-                                VStack(spacing: 6) {
-                                    Text(aromaEmoji(for: aroma))
-                                        .font(.system(size: 40))
-                                    Text(aroma.capitalized)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                        .multilineTextAlignment(.center)
-                                        .lineLimit(2)
-                                }
-                                .frame(maxWidth: .infinity)
-                            }
-                        }
-                    }
-                    .padding(.top, 8)
-                }
-                
-                Divider()
-                    .padding(.vertical, 8)
-                
-                // ✅ STELLE (rating) + numero + info
-                if let rating = wine.rating_overall, rating > 0 {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack(spacing: 4) {
-                            ForEach(0..<5, id: \.self) { i in
-                                let clamped = max(0, min(5, rating))  // ✅ CLAMP 0-5
-                                let full = Int(clamped.rounded(.down))
-                                let hasHalf = (clamped - Double(full)) >= 0.5
-                                let colorFilled = Color(red: 0.95, green: 0.82, blue: 0.35)
-                                
-                                if i < full {
-                                    Image(systemName: "star.fill")
-                                        .font(.title2)
-                                        .foregroundStyle(colorFilled)
-                                } else if i == full && hasHalf {
-                                    Image(systemName: "star.leadinghalf.filled")
-                                        .font(.title2)
-                                        .foregroundStyle(colorFilled)
-                                } else {
-                                    Image(systemName: "star")
-                                        .font(.title2)
-                                        .foregroundStyle(Color.gray.opacity(0.3))
-                                }
-                            }
-                        }
-                        
-                        HStack(spacing: 6) {
-                            let clamped = max(0, min(5, rating))  // ✅ CLAMP anche il numero mostrato
-                            Text(String(format: "%.1f", clamped))
-                                .font(.headline)
-                                .foregroundStyle(.primary)
-                            
-                            Button {
-                                showRatingInfo = true
-                            } label: {
-                                Image(systemName: "info.circle")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                    .alert("Rating", isPresented: $showRatingInfo) {
-                        Button("OK") { }
-                    } message: {
-                        Text("È il voto medio aggregato da recensioni di esperti e consumatori (scala 0-5)")
+                    if let region = wine.region {
+                        Text("• \(WineLocalizer.region(region))")
+                            .font(.subheadline)
                     }
                 }
+                .foregroundColor(AppColors.textSecondary)
+            }
+            
+            // Scores row
+            HStack(spacing: 20) {
+                scoreCard(
+                    title: "QUALITÀ",
+                    score: overallScore,
+                    color: AppColors.accentWine
+                )
                 
-                // ✅ PREZZO HERO
+                scoreCard(
+                    title: "MATCH",
+                    score: matchScore,
+                    color: .blue
+                )
+                
                 if let price = wine.price {
-                    Text(String(format: "€%.2f", price))
-                        .font(.system(size: 32, weight: .bold))
-                        .foregroundStyle(.primary)
-                        .padding(.top, 12)
-                }
-                
-                // ✅ BOTTONE "SCHEDA TECNICA" (rosso scuro)
-                NavigationLink {
-                    WineDetailExpandedView(wine: wine, userQuery: userQuery)
-                } label: {
-                    HStack {
-                        Image(systemName: "doc.text.fill")
-                            .font(.headline)
-                        Text("Scheda tecnica")
-                            .font(.headline)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("PREZZO")
+                            .font(.caption2)
+                            .foregroundColor(AppColors.textSecondary)
+                        
+                        Text(String(format: "€%.2f", price))
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(AppColors.primaryWine)
                     }
-                    .foregroundStyle(.white)
+                }
+            }
+            
+            // Badges
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    if wine.ottimo_valore == true {
+                        pillBadge("💰 Ottimo Valore", color: .green)
+                    }
+                    
+                    if (wine.rank ?? 99) == 1 {
+                        pillBadge("🏆 Top Match", color: AppColors.primaryWine)
+                    }
+                    
+                    if let vintage = wine.vintage {
+                        pillBadge("\(vintage)", color: AppColors.textSecondary.opacity(0.8))
+                    }
+                    
+                    if let rating = wine.rating_overall, rating > 4.0 {
+                        pillBadge("⭐ \(String(format: "%.1f", rating))", color: .orange)
+                    }
+                }
+            }
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(AppColors.cardBackground)
+                .shadow(color: .black.opacity(0.05), radius: 10, y: 5)
+        )
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+    }
+    
+    // MARK: - Tab Selector
+    
+    private var tabSelector: some View {
+        HStack(spacing: 0) {
+            ForEach(DetailTab.allCases, id: \.self) { tab in
+                Button(action: {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        selectedTab = tab
+                    }
+                }) {
+                    VStack(spacing: 6) {
+                        Image(systemName: tab.icon)
+                            .font(.system(size: 18))
+                        
+                        Text(tab.rawValue)
+                            .font(.system(size: 13, weight: .medium))
+                    }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Color(red: 0.5, green: 0.1, blue: 0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .padding(.vertical, 12)
+                    .foregroundColor(selectedTab == tab ? AppColors.primaryWine : AppColors.textSecondary)
+                    .background(
+                        selectedTab == tab ?
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(AppColors.primaryWine.opacity(0.1)) : nil
+                    )
                 }
-                .buttonStyle(.plain)
-                .padding(.top, 8)
-                
-
-            }
-            .padding(20)
-        }
-        .background(Color(red: 0.98, green: 0.94, blue: 0.78).opacity(0.3))
-        .navigationTitle("")
-        .navigationBarTitleDisplayMode(.inline)
-        .task {
-            await loadSimilarWines()
-        }
-    }
-    
-    // ✅ Badge contestuale basato su query + food pairings
-    private func contextualTopBadge() -> String? {
-        let q = userQuery.lowercased()
-        let pairings = (wine.food_pairings ?? []).joined(separator: " ").lowercased()
-        
-        if q.contains("bistecca") || pairings.contains("steak") || pairings.contains("carne") {
-            let colorIta = WineLocalizer.color(wine.color)
-            if colorIta.lowercased() == "rosso" {
-                return "Rosso per bistecca"
+                .accessibilityLabel("Tab \(tab.rawValue)")
+                .accessibilityHint(selectedTab == tab ? "Selezionato" : "Tocca per visualizzare \(tab.rawValue.lowercased())")
             }
         }
-        
-        if q.contains("pesce") || pairings.contains("pesce") || pairings.contains("seafood") {
-            let colorIta = WineLocalizer.color(wine.color)
-            if colorIta.lowercased() == "bianco" {
-                return "Bianco per pesce"
+        .padding(4)
+        .background(AppColors.backgroundSecondary)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
+    }
+    
+    // MARK: - Overview Content
+    
+    private var overviewContent: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            // Perché questo vino
+            section(title: "Perché questo vino") {
+                if let explain = wine.explain?.first,
+                   !explain.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Text(cleanMarkdown(explain))
+                        .font(.body)
+                        .foregroundColor(AppColors.textPrimary)
+                } else {
+                    Text(cleanMarkdown(wine.reason))
+                        .font(.body)
+                        .foregroundColor(AppColors.textPrimary)
+                }
             }
-        }
-        
-        if q.contains("aperitivo") || pairings.contains("aperitivo") {
-            return "Perfetto per aperitivo"
-        }
-        
-        if q.contains("cena") {
-            return "Ideale per cena importante"
-        }
-        
-        return nil
-    }
-    
-    // 🍷 Carica vini simili
-    private func loadSimilarWines() async {
-        isLoadingSimilar = true
-        defer { isLoadingSimilar = false }
-        
-        do {
-            let wines = try await api.getSimilarWines(wineId: wine.id, limit: 3)
-            similarWines = wines
-        } catch {
-            similarWines = []
-        }
-    }
-    
-    // ✅ Emoji per food pairings
-    private func pairingEmoji(for pairing: String) -> String {
-        let p = pairing.lowercased()
-        
-        if p.contains("carne") || p.contains("steak") || p.contains("beef") {
-            return "🥩"
-        }
-        if p.contains("selvaggina") || p.contains("game") {
-            return "🦌"
-        }
-        if p.contains("formag") || p.contains("cheese") {
-            return "🧀"
-        }
-        if p.contains("pesce") || p.contains("fish") || p.contains("seafood") {
-            return "🐟"
-        }
-        if p.contains("crostace") || p.contains("shellfish") || p.contains("gamberi") || p.contains("aragosta") {
-            return "🦞"
-        }
-        if p.contains("mollusc") || p.contains("oyster") || p.contains("ostriche") || p.contains("cozze") {
-            return "🦪"
-        }
-        if p.contains("sushi") {
-            return "🍣"
-        }
-        if p.contains("pasta") {
-            return "🍝"
-        }
-        if p.contains("pizza") {
-            return "🍕"
-        }
-        if p.contains("barbecue") || p.contains("grill") {
-            return "🍖"
-        }
-        if p.contains("aperitiv") || p.contains("cocktail") {
-            return "🥂"
-        }
-        if p.contains("dessert") || p.contains("dolc") {
-            return "🍰"
-        }
-        if p.contains("vegetarian") || p.contains("verdur") {
-            return "🥗"
-        }
-        
-        return "🍽"
-    }
-    
-    // 🍒 Emoji per aromi
-    private func aromaEmoji(for aroma: String) -> String {
-        let normalized = aroma.lowercased().trimmingCharacters(in: .whitespaces)
-        
-        // Frutta
-        if normalized.contains("frutta nera") || normalized.contains("frutta_nera") { return "🍇" } // 💡 NUOVO: frutta nera generica
-        if normalized.contains("uva") || normalized.contains("grape") { return "🍇" } // 💡 NUOVO: uva/uva nera
-        if normalized.contains("ciliegi") || normalized.contains("cherry") { return "🍒" }
-        if normalized.contains("fragol") || normalized.contains("strawberry") { return "🍓" }
-        if normalized.contains("lampon") || normalized.contains("raspberry") { return "🥝" }
-        if normalized.contains("mora") || normalized.contains("blackberry") { return "🫛" }
-        if normalized.contains("mirtill") || normalized.contains("blueberry") { return "🫐" }
-        if normalized.contains("prun") || normalized.contains("plum") { return "🍑" }
-        if normalized.contains("ribes") { return "🍇" }
-        if normalized.contains("mela") || normalized.contains("apple") { return "🍏" }
-        if normalized.contains("pera") || normalized.contains("pear") { return "🍐" }
-        if normalized.contains("pesca") || normalized.contains("peach") { return "🍑" }
-        if normalized.contains("albicocc") || normalized.contains("apricot") { return "🥝" }
-        if normalized.contains("agrumi") || normalized.contains("citrus") { return "🍋" }
-        if normalized.contains("limon") || normalized.contains("lemon") { return "🍋" }
-        
-        // Fiori
-        if normalized.contains("rosa") || normalized.contains("rose") { return "🌹" }
-        if normalized.contains("viola") || normalized.contains("violet") { return "🌸" }
-        if normalized.contains("gelsomino") || normalized.contains("jasmine") { return "🌼" }
-        if normalized.contains("fiori") || normalized.contains("floral") { return "🌸" }
-        
-        // Spezie & Erbe
-        if normalized.contains("spezi") || normalized.contains("spice") { return "🌶️" } // 💡 NUOVO: spezie generiche
-        if normalized.contains("pepe") || normalized.contains("pepper") { return "🌶️" }
-        if normalized.contains("cannella") || normalized.contains("cinnamon") { return "🥤" }
-        if normalized.contains("chiodi") || normalized.contains("clove") { return "✨" }
-        if normalized.contains("menta") || normalized.contains("mint") { return "🌿" }
-        if normalized.contains("timo") || normalized.contains("thyme") { return "🌿" }
-        if normalized.contains("rosmarino") || normalized.contains("rosemary") { return "🌿" }
-        if normalized.contains("salvia") || normalized.contains("sage") { return "🍃" }
-        if normalized.contains("erbace") || normalized.contains("herbal") { return "🌿" }
-        
-        // Legno & Tostato
-        if normalized.contains("vaniglia") || normalized.contains("vanilla") { return "🍮" }
-        if normalized.contains("tostato") || normalized.contains("toasted") { return "🍞" }
-        if normalized.contains("caffè") || normalized.contains("coffee") { return "☕" }
-        if normalized.contains("cioccolat") || normalized.contains("chocolate") { return "🍫" }
-        if normalized.contains("cacao") || normalized.contains("cocoa") { return "🍫" }
-        if normalized.contains("legno") || normalized.contains("wood") { return "🌲" }
-        if normalized.contains("quercia") || normalized.contains("oak") { return "🌳" }
-        if normalized.contains("cedro") { return "🌲" }
-        
-        // Terre & Minerale
-        if normalized.contains("mineral") { return "🪨" }
-        if normalized.contains("pietra") || normalized.contains("stone") { return "🪨" }
-        if normalized.contains("terr") || normalized.contains("earth") { return "🌍" }
-        if normalized.contains("fungo") || normalized.contains("mushroom") { return "🍄" }
-        if normalized.contains("tartufo") || normalized.contains("truffle") { return "⭐" }
-        
-        // Altri
-        if normalized.contains("cuoio") || normalized.contains("leather") { return "🧥" }
-        if normalized.contains("tabacco") || normalized.contains("tobacco") { return "🍃" }
-        if normalized.contains("miele") || normalized.contains("honey") { return "🍯" }
-        if normalized.contains("cereali") || normalized.contains("cereal") { return "🌾" }
-        if normalized.contains("pane") || normalized.contains("bread") { return "🍞" }
-        if normalized.contains("burro") || normalized.contains("butter") { return "🧈" }
-        if normalized.contains("noci") || normalized.contains("nuts") { return "🥜" }
-        if normalized.contains("mandorl") || normalized.contains("almond") { return "🥜" }
-        
-        // Default
-        return "🍇" // Uva
-    }
-}
-
-// MARK: - Expanded Detail View (per bottone "Più dettagli")
-
-struct WineDetailExpandedView: View {
-    let wine: WineCard
-    let userQuery: String
-    
-    @State private var tastingNotes: String = ""
-    @State private var isLoadingNotes: Bool = false
-    @State private var similarWines: [WineCard] = []
-    @State private var isLoadingSimilar: Bool = false
-    
-    private let api = APIClient()
-    
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                
-                // ❌ Profilo aromatico RIMOSSO per richiesta utente
-                
-                // Tasting Notes
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Note di degustazione")
+            
+            // Vitigni
+            if let grapes = wine.grapes, !grapes.isEmpty {
+                section(title: "Vitigni") {
+                    Text(grapes)
+                        .font(.body)
+                        .foregroundColor(AppColors.textPrimary)
+                }
+            }
+            
+            // Denominazione
+            if let denom = wine.denomination {
+                section(title: "Denominazione") {
+                    Text(denom.uppercased())
                         .font(.headline)
-                    
-                    if isLoadingNotes {
-                        ProgressView()
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding()
-                    } else if !tastingNotes.isEmpty {
-                        Text(tastingNotes)
-                            .font(.body)
-                            .foregroundStyle(.secondary)
-                    } else {
-                        Text("Caricamento...")
-                            .font(.body)
-                            .foregroundStyle(.secondary)
-                    }
+                        .foregroundColor(AppColors.primaryWine)
                 }
-                .padding()
-                .background(AppColors.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                
-                // ❌ SENTORI RIMOSSI per richiesta utente
-                
-                // ✅ SEZIONE 1: VALUTAZIONI (punteggi numerici)
-                if wine.quality != nil || wine.balance != nil || wine.persistence != nil {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Valutazioni")
-                            .font(.headline)
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            if let q = wine.quality {
-                                CharacteristicRow(label: "Qualità", value: q)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 24)
+    }
+    
+    // MARK: - Tasting Content
+    
+    private var tastingContent: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            // Aromi
+            if let aromas = wine.aromas, !aromas.isEmpty {
+                section(title: "Profilo aromatico") {
+                    FlowLayout(spacing: 8) {
+                        ForEach(aromas.prefix(10).map { $0 }, id: \.self) { aroma in
+                            HStack(spacing: 6) {
+                                Text(aromaEmoji(aroma))
+                                    .font(.title3)
+                                Text(aroma.replacingOccurrences(of: "_", with: " ").capitalized)
+                                    .font(.subheadline)
                             }
-                            if let b = wine.balance {
-                                CharacteristicRow(label: "Equilibrio", value: b)
-                            }
-                            if let p = wine.persistence {
-                                CharacteristicRow(label: "Persistenza", value: p)
-                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(AppColors.cardBackground)
+                            .clipShape(Capsule())
                         }
                     }
-                    .padding()
-                    .background(AppColors.cardBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
                 }
-                
-                // ✅ SEZIONE 2: PROFILO ORGANOLETTICO (valori testuali)
-                if wine.intensity != nil || wine.tannins != nil || wine.acidity != nil || wine.color_detail != nil {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Profilo organolettico")
-                            .font(.headline)
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            if let i = wine.intensity {
-                                CharacteristicRow(label: "Intensità", value: WineLocalizer.intensity(i))
-                            }
-                            if let t = wine.tannins {
-                                CharacteristicRow(label: "Tannicità", value: WineLocalizer.tannins(t))
-                            }
-                            if let a = wine.acidity {
-                                CharacteristicRow(label: "Acidità", value: WineLocalizer.acidity(a))
-                            }
-                            if let c = wine.color_detail {
-                                CharacteristicRow(label: "Colore", value: WineLocalizer.color(c))
-                            }
-                        }
-                    }
-                    .padding()
-                    .background(AppColors.cardBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                }
-                
-                // 📏 GRAFICO CARATTERISTICHE (barre orizzontali)
+            }
+            
+            // Caratteristiche
+            section(title: "Caratteristiche") {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Profilo sensoriale")
-                        .font(.headline)
-                    
-                    VStack(spacing: 10) {
-                        // Intensità
-                        if let intensity = wine.intensity {
-                            CharacteristicBar(label: "INTENSO", value: barValue(intensity))
+                    if let color = wine.color_detail {
+                        charRow("Colore", WineLocalizer.color(color))
+                    }
+                    if let intensity = wine.intensity {
+                        charRow("Intensità", WineLocalizer.intensity(intensity))
+                    }
+                    if let sweetness = wine.sweetness {
+                        charRow("Dolcezza", WineLocalizer.sweetness(sweetness))
+                    }
+                    if let tannins = wine.tannins {
+                        charRow("Tannini", WineLocalizer.tannin(tannins))
+                    }
+                    if let acidity = wine.acidity {
+                        charRow("Acidità", WineLocalizer.acidity(acidity))
+                    }
+                }
+            }
+            
+            // Giudizi
+            if let quality = wine.quality {
+                section(title: "Valutazione") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        charRow("Qualità", quality.capitalized)
+                        if let balance = wine.balance {
+                            charRow("Equilibrio", balance.capitalized)
                         }
-                        
-                        // Tannicità
-                        if let tannins = wine.tannins {
-                            CharacteristicBar(label: "TANNICO", value: barValue(tannins))
-                        }
-                        
-                        // Morbido (inverso di tannins)
-                        if let tannins = wine.tannins {
-                            CharacteristicBar(label: "MORBIDO", value: 1.0 - barValue(tannins))
-                        }
-                        
-                        // Acidità (Fresco)
-                        if let acidity = wine.acidity {
-                            CharacteristicBar(label: "FRESCO", value: barValue(acidity))
-                        }
-                        
-                        // Sapido (da freshness)
-                        if let freshness = wine.freshness {
-                            CharacteristicBar(label: "SAPIDO", value: barValue(freshness))
-                        }
-                        
-                        // Frizzante
-                        if let sparkling = wine.sparkling {
-                            CharacteristicBar(label: "FRIZZANTE", value: sparklingBarValue(sparkling))
-                        }
-                        
-                        // Dolcezza
-                        if let sweetness = wine.sweetness {
-                            CharacteristicBar(label: "DOLCE", value: sweetnessBarValue(sweetness))
-                        }
-                        
-                        // Alcolico
-                        if let alcohol = wine.alcohol_level {
-                            CharacteristicBar(label: "ALCOLICO", value: barValue(alcohol))
-                        }
-                        
-                        // Persistente
                         if let persistence = wine.persistence {
-                            CharacteristicBar(label: "PERSISTENTE", value: persistenceBarValue(persistence))
+                            charRow("Persistenza", persistence.capitalized)
                         }
-                        
-                        // Corposo/Cospicuo (da intensity)
-                        if let intensity = wine.intensity {
-                            CharacteristicBar(label: "CORPOSO", value: barValue(intensity))
-                        }
-                    }
-                }
-                .padding()
-                .background(AppColors.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                
-                // Similar Wines (SPOSTATO IN FONDO)
-                if !similarWines.isEmpty {
-                    VStack(alignment: .leading, spacing: 16) {
-                        HStack {
-                            Image(systemName: "sparkles")
-                                .foregroundStyle(AppColors.gold)
-                            Text("Gli Imperdibili")
-                                .font(.headline)
-                        }
-                        
-                        Text("Vini simili che potrebbero piacerti")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        
-                        ForEach(similarWines) { similar in
-                            NavigationLink {
-                                WineDetailView(wine: similar, userQuery: userQuery)
-                            } label: {
-                                HStack(spacing: 12) {
-                                    // 🍾 ICONA BOTTIGLIA in base al tipo
-                                    Text(bottleIcon(for: similar))
-                                        .font(.system(size: 32))
-                                    
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(similar.name.isEmpty ? "ID: \(similar.id)" : similar.name)
-                                            .font(.subheadline.weight(.semibold))
-                                            .foregroundStyle(.primary)
-                                            .lineLimit(2)
-                                        
-                                        if let price = similar.price {
-                                            Text(String(format: "€%.2f", price))
-                                                .font(.caption)
-                                                .foregroundStyle(.secondary)
-                                        }
-                                    }
-                                    
-                                    Spacer()
-                                }
-                                .padding()
-                                .background(Color.gray.opacity(0.05))
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                    .padding()
-                    .background(AppColors.cardBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                } else if isLoadingSimilar {
-                    VStack {
-                        ProgressView()
-                        Text("Caricamento vini simili...")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                }
-                
-                // Purchase Link
-                if let url = wine.purchase_url, !url.isEmpty, let validURL = URL(string: url) {
-                    Link(destination: validURL) {
-                        HStack {
-                            Image(systemName: "cart.fill")
-                            Text("Acquista online")
-                                .font(.subheadline.weight(.semibold))
-                        }
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(AppColors.accentWine)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                 }
             }
-            .padding()
         }
-        .background(AppColors.backgroundPrimary)
-        .navigationTitle("Dettagli completi")
-        .navigationBarTitleDisplayMode(.inline)
-        .task {
-            await loadTastingNotes()
-            await loadSimilarWines()
-        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 24)
     }
     
-    private func loadTastingNotes() async {
-        isLoadingNotes = true
-        defer { isLoadingNotes = false }
-        
-        do {
-            let notes = try await api.getTastingNotes(wineId: wine.id, query: userQuery)
-            tastingNotes = notes
-        } catch {
-            tastingNotes = "Non disponibili al momento."
+    // MARK: - Pairing Content
+    
+    private var pairingContent: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            if let pairings = wine.food_pairings, !pairings.isEmpty {
+                section(title: "Abbinamenti consigliati") {
+                    VStack(alignment: .leading, spacing: 12) {
+                        ForEach(pairings.prefix(8).map { $0 }, id: \.self) { pairing in
+                            HStack(spacing: 12) {
+                                Text(pairingEmoji(pairing))
+                                    .font(.system(size: 32))
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(pairing.replacingOccurrences(of: "_", with: " ").capitalized)
+                                        .font(.body.weight(.medium))
+                                        .foregroundColor(AppColors.textPrimary)
+                                    
+                                    Text("Abbinamento classico")
+                                        .font(.caption)
+                                        .foregroundColor(AppColors.textSecondary)
+                                }
+                                
+                                Spacer()
+                            }
+                            .padding(12)
+                            .background(AppColors.cardBackground)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                    }
+                }
+            } else {
+                section(title: "Abbinamenti") {
+                    Text("Informazioni non disponibili")
+                        .font(.body)
+                        .foregroundColor(AppColors.textSecondary)
+                        .italic()
+                }
+            }
         }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 24)
     }
     
-    private func loadSimilarWines() async {
-        isLoadingSimilar = true
-        defer { isLoadingSimilar = false }
-        
-        do {
-            let wines = try await api.getSimilarWines(wineId: wine.id, limit: 3)
-            similarWines = wines
-        } catch {
-            similarWines = []
-        }
-    }
+    // MARK: - Helpers
     
-    private func aromaIcon(for aroma: String) -> String {
-        switch aroma.lowercased() {
-        case "agrumi": return "leaf.fill"
-        case "frutta rossa": return "heart.fill"
-        case "frutta nera": return "circle.fill"
-        case "fiori": return "sparkles"
-        case "spezie": return "flame.fill"
-        case "vaniglia": return "moon.fill"
-        case "tostato": return "cup.and.saucer.fill"
-        case "erbaceo": return "leaf"
-        case "minerale": return "mountain.2.fill"
-        case "balsamico": return "wind"
-        default: return "circle"
-        }
-    }
-    
-    // 📏 Helper per convertire valori low/medium/high in 0.0...1.0
-    private func barValue(_ value: String) -> Double {
-        switch value.lowercased() {
-        case "low", "bassa", "basso": return 0.33
-        case "medium", "media", "medio": return 0.66
-        case "medium_plus", "media-alta": return 0.83
-        case "high", "alta", "alto": return 1.0
-        default: return 0.5
-        }
-    }
-    
-    private func sparklingBarValue(_ value: String) -> Double {
-        switch value.lowercased() {
-        case "fermo": return 0.0
-        case "frizzante": return 0.66
-        case "spumante": return 1.0
-        default: return 0.0
+    @ViewBuilder
+    private func section<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(AppColors.textPrimary)
+            
+            content()
         }
     }
     
-    private func sweetnessBarValue(_ value: String) -> Double {
-        switch value.lowercased() {
-        case "secco", "dry": return 0.0
-        case "abboccato", "off-dry": return 0.5
-        case "dolce", "sweet": return 1.0
-        default: return 0.0
+    private func scoreCard(title: String, score: Int, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption2)
+                .foregroundColor(AppColors.textSecondary)
+            
+            Text("\(score)%")
+                .font(.system(size: 24, weight: .bold))
+                .foregroundColor(color)
         }
     }
     
-    private func persistenceBarValue(_ value: String) -> Double {
-        // Persistence è un valore numerico 0-5, convertiamo in 0.0-1.0
-        if let numeric = Double(value) {
-            return min(max(numeric / 5.0, 0.0), 1.0)
-        }
-        return 0.5
+    private func pillBadge(_ text: String, color: Color) -> some View {
+        Text(text)
+            .font(.subheadline.weight(.medium))
+            .foregroundColor(.white)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(color)
+            .clipShape(Capsule())
     }
     
-    // 🍒 Mappa aromi -> emoji
-    private func aromaEmoji(for aroma: String) -> String {
-        let normalized = aroma.lowercased().trimmingCharacters(in: .whitespaces)
-        
-        // Frutta
-        if normalized.contains("ciliegi") || normalized.contains("cherry") { return "🍒" }
-        if normalized.contains("fragol") || normalized.contains("strawberry") { return "🍓" }
-        if normalized.contains("lampon") || normalized.contains("raspberry") { return "🥝" }
-        if normalized.contains("mora") || normalized.contains("blackberry") { return "🫛" }
-        if normalized.contains("mirtill") || normalized.contains("blueberry") { return "🫐" }
-        if normalized.contains("prun") || normalized.contains("plum") { return "🍑" }
-        if normalized.contains("ribes") { return "🍇" }
-        if normalized.contains("mela") || normalized.contains("apple") { return "🍏" }
-        if normalized.contains("pera") || normalized.contains("pear") { return "🍐" }
-        if normalized.contains("pesca") || normalized.contains("peach") { return "🍑" }
-        if normalized.contains("albicocc") || normalized.contains("apricot") { return "🥝" }
-        if normalized.contains("agrumi") || normalized.contains("citrus") { return "🍋" }
-        if normalized.contains("limon") || normalized.contains("lemon") { return "🍋" }
-        
-        // Fiori
-        if normalized.contains("rosa") || normalized.contains("rose") { return "🌹" }
-        if normalized.contains("viola") || normalized.contains("violet") { return "🌸" }
-        if normalized.contains("gelsomino") || normalized.contains("jasmine") { return "🌼" }
-        if normalized.contains("fiori") || normalized.contains("floral") { return "🌸" }
-        
-        // Spezie & Erbe
-        if normalized.contains("pepe") || normalized.contains("pepper") { return "🌶️" }
-        if normalized.contains("cannella") || normalized.contains("cinnamon") { return "🥤" }
-        if normalized.contains("chiodi") || normalized.contains("clove") { return "✨" }
-        if normalized.contains("menta") || normalized.contains("mint") { return "🌿" }
-        if normalized.contains("timo") || normalized.contains("thyme") { return "🌿" }
-        if normalized.contains("rosmarino") || normalized.contains("rosemary") { return "🌿" }
-        if normalized.contains("salvia") || normalized.contains("sage") { return "🍃" }
-        if normalized.contains("erbace") || normalized.contains("herbal") { return "🌿" }
-        
-        // Legno & Tostato
-        if normalized.contains("vaniglia") || normalized.contains("vanilla") { return "🍮" }
-        if normalized.contains("tostato") || normalized.contains("toasted") { return "🍞" }
-        if normalized.contains("caffè") || normalized.contains("coffee") { return "☕" }
-        if normalized.contains("cioccolat") || normalized.contains("chocolate") { return "🍫" }
-        if normalized.contains("cacao") || normalized.contains("cocoa") { return "🍫" }
-        if normalized.contains("legno") || normalized.contains("wood") { return "🌲" }
-        if normalized.contains("quercia") || normalized.contains("oak") { return "🌳" }
-        if normalized.contains("cedro") { return "🌲" }
-        
-        // Terre & Minerale
-        if normalized.contains("mineral") { return "🪨" }
-        if normalized.contains("pietra") || normalized.contains("stone") { return "🪨" }
-        if normalized.contains("terr") || normalized.contains("earth") { return "🌍" }
-        if normalized.contains("fungo") || normalized.contains("mushroom") { return "🍄" }
-        if normalized.contains("tartufo") || normalized.contains("truffle") { return "⭐" }
-        
-        // Altri
-        if normalized.contains("cuoio") || normalized.contains("leather") { return "🧥" }
-        if normalized.contains("tabacco") || normalized.contains("tobacco") { return "🍃" }
-        if normalized.contains("miele") || normalized.contains("honey") { return "🍯" }
-        if normalized.contains("cereali") || normalized.contains("cereal") { return "🌾" }
-        if normalized.contains("pane") || normalized.contains("bread") { return "🍞" }
-        if normalized.contains("burro") || normalized.contains("butter") { return "🧈" }
-        if normalized.contains("noci") || normalized.contains("nuts") { return "🥜" }
-        if normalized.contains("mandorl") || normalized.contains("almond") { return "🥜" }
-        
-        // Default
-        return "🍇" // Uva
-    }
-}
-
-// MARK: - Supporting Views
-
-struct CharacteristicRow: View {
-    let label: String
-    let value: String
-    
-    var body: some View {
+    private func charRow(_ label: String, _ value: String) -> some View {
         HStack {
             Text(label)
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundColor(AppColors.textSecondary)
             
             Spacer()
             
             Text(value)
                 .font(.subheadline.weight(.medium))
+                .foregroundColor(AppColors.textPrimary)
         }
+        .padding(.vertical, 4)
+    }
+    
+    private func cleanMarkdown(_ text: String) -> String {
+        text
+            .replacingOccurrences(of: "# ", with: "")
+            .replacingOccurrences(of: "## ", with: "")
+            .replacingOccurrences(of: "### ", with: "")
+            .replacingOccurrences(of: "**", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    
+    private func aromaEmoji(_ aroma: String) -> String {
+        let a = aroma.lowercased()
+        
+        // Frutti
+        if a.contains("cilieg") || a.contains("cherry") { return "🍒" }
+        if a.contains("fragol") || a.contains("strawberry") { return "🍓" }
+        if a.contains("lampone") || a.contains("raspberry") { return "🫐" }
+        if a.contains("mirtillo") || a.contains("blueberry") { return "🫐" }
+        if a.contains("prugna") || a.contains("plum") { return "🍑" }
+        if a.contains("pesca") || a.contains("peach") { return "🍑" }
+        if a.contains("albicocca") || a.contains("apricot") { return "🍑" }
+        if a.contains("mela") || a.contains("apple") { return "🍎" }
+        if a.contains("pera") || a.contains("pear") { return "🍐" }
+        if a.contains("agrumi") || a.contains("citrus") || a.contains("limone") { return "🍋" }
+        if a.contains("arancia") || a.contains("orange") { return "🍊" }
+        if a.contains("pompelmo") || a.contains("grapefruit") { return "🍊" }
+        if a.contains("ananas") || a.contains("pineapple") { return "🍍" }
+        if a.contains("banana") { return "🍌" }
+        if a.contains("melone") || a.contains("melon") { return "🍈" }
+        if a.contains("frutt") || a.contains("fruit") { return "🍇" }
+        
+        // Fiori
+        if a.contains("fior") || a.contains("flor") || a.contains("rosa") { return "🌸" }
+        if a.contains("viola") || a.contains("violet") { return "🌸" }
+        if a.contains("gelsomino") || a.contains("jasmine") { return "🌺" }
+        
+        // Spezie & Aromi
+        if a.contains("pepe") || a.contains("pepper") { return "🌶️" }
+        if a.contains("vaniglia") || a.contains("vanilla") { return "🌿" }
+        if a.contains("cannella") || a.contains("cinnamon") { return "🌿" }
+        if a.contains("chiodi") || a.contains("clove") { return "🌿" }
+        if a.contains("liquirizia") || a.contains("licorice") { return "🌿" }
+        if a.contains("menta") || a.contains("mint") { return "🌿" }
+        if a.contains("erbe") || a.contains("herb") || a.contains("basilico") { return "🌿" }
+        
+        // Legno & Terra
+        if a.contains("legno") || a.contains("wood") || a.contains("oak") { return "🪵" }
+        if a.contains("terra") || a.contains("earth") || a.contains("mineral") { return "🪨" }
+        if a.contains("tabacco") || a.contains("tobacco") { return "🍂" }
+        if a.contains("cuoio") || a.contains("leather") { return "🧳" }
+        
+        // Dolci & Tostati
+        if a.contains("cacao") || a.contains("chocolate") || a.contains("cioccolat") { return "🍫" }
+        if a.contains("caffè") || a.contains("coffee") { return "☕" }
+        if a.contains("caramello") || a.contains("caramel") { return "🍮" }
+        if a.contains("miele") || a.contains("honey") { return "🍯" }
+        if a.contains("tostato") || a.contains("toasted") { return "🍞" }
+        
+        return "🍷"
+    }
+    
+    private func pairingEmoji(_ pairing: String) -> String {
+        let p = pairing.lowercased()
+        
+        if p.contains("carne") || p.contains("steak") || p.contains("beef") { return "🥩" }
+        if p.contains("selvaggina") || p.contains("game") { return "🦌" }
+        if p.contains("formag") || p.contains("cheese") { return "🧀" }
+        if p.contains("pesce") || p.contains("fish") || p.contains("seafood") { return "🐟" }
+        if p.contains("crostace") || p.contains("shellfish") { return "🦞" }
+        if p.contains("sushi") { return "🍣" }
+        if p.contains("pasta") { return "🍝" }
+        if p.contains("pizza") { return "🍕" }
+        if p.contains("barbecue") || p.contains("grill") { return "🍖" }
+        if p.contains("aperitiv") { return "🥂" }
+        if p.contains("dessert") || p.contains("dolc") { return "🍰" }
+        
+        return "🍽"
     }
 }
 
-// 📏 Barra orizzontale per caratteristiche (MAX 50% width)
-struct CharacteristicBar: View {
-    let label: String
-    let value: Double // 0.0 ... 1.0
+// MARK: - Imperdibili Section (Similar Wines)
+// TODO: Backend deve fornire array di vini simili nel response
+// Placeholder per ora - da attivare quando backend è pronto
+/*
+private struct ImperdibiliSection: View {
+    let similarWines: [SimilarWine]  // Array da backend
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-            
-            GeometryReader { geo in
-                // ✅ FIX: MAX 50% della larghezza totale
-                let maxBarWidth = geo.size.width * 0.5
-                
-                ZStack(alignment: .leading) {
-                    // Background (full 50% width)
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(Color.gray.opacity(0.15))
-                        .frame(width: maxBarWidth)
+        if !similarWines.isEmpty {
+            VStack(alignment: .leading, spacing: 16) {
+                // Header
+                HStack(spacing: 8) {
+                    Image(systemName: "sparkles")
+                        .font(.title3)
+                        .foregroundColor(AppColors.accentWine)
                     
-                    // Foreground bar (value * 50%)
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(AppColors.primaryWine)
-                        .frame(width: maxBarWidth * value)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Gli Imperdibili")
+                            .font(.title3.weight(.bold))
+                            .foregroundColor(AppColors.textPrimary)
+                        
+                        Text("Vini simili che potrebbero piacerti")
+                            .font(.caption)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
                 }
+                .padding(.horizontal, 16)
+                
+                // Lista vini simili
+                VStack(spacing: 12) {
+                    ForEach(similarWines) { wine in
+                        HStack {
+                            // Numero/ID
+                            Text("\(wine.id)")
+                                .font(.headline)
+                                .foregroundColor(AppColors.textSecondary)
+                                .frame(width: 40, alignment: .leading)
+                            
+                            // Nome
+                            Text(wine.name)
+                                .font(.body)
+                                .foregroundColor(AppColors.textPrimary)
+                            
+                            Spacer()
+                            
+                            // Prezzo
+                            Text("€\(wine.price, specifier: "%.0f")")
+                                .font(.body.weight(.semibold))
+                                .foregroundColor(AppColors.accentWine)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(AppColors.cardBackground)
+                        .cornerRadius(8)
+                    }
+                }
+                .padding(.horizontal, 16)
             }
-            .frame(height: 8)
+            .padding(.vertical, 20)
         }
     }
 }
 
-// MARK: - FlowLayout
-
-struct FlowLayout: Layout {
-    var spacing: CGFloat = 8
-    
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let result = FlowResult(in: proposal.replacingUnspecifiedDimensions().width, subviews: subviews, spacing: spacing)
-        return CGSize(width: proposal.width ?? 0, height: result.height)
-    }
-    
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let result = FlowResult(in: bounds.width, subviews: subviews, spacing: spacing)
-        for (index, subview) in subviews.enumerated() {
-            let position = result.positions[index]
-            subview.place(at: CGPoint(x: bounds.minX + position.x, y: bounds.minY + position.y), proposal: .unspecified)
-        }
-    }
-    
-    struct FlowResult {
-        var positions: [CGPoint] = []
-        var height: CGFloat = 0
-        
-        init(in maxWidth: CGFloat, subviews: Subviews, spacing: CGFloat) {
-            var x: CGFloat = 0
-            var y: CGFloat = 0
-            var lineHeight: CGFloat = 0
-            
-            for subview in subviews {
-                let size = subview.sizeThatFits(.unspecified)
-                
-                if x + size.width > maxWidth && x > 0 {
-                    x = 0
-                    y += lineHeight + spacing
-                    lineHeight = 0
-                }
-                
-                positions.append(CGPoint(x: x, y: y))
-                lineHeight = max(lineHeight, size.height)
-                x += size.width + spacing
-            }
-            
-            height = y + lineHeight
-        }
-    }
+struct SimilarWine: Identifiable {
+    let id: Int
+    let name: String
+    let price: Double
 }
+*/

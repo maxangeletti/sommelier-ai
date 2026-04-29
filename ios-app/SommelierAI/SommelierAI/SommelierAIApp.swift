@@ -4,7 +4,9 @@ import UIKit
 @main
 struct SommelierAIApp: App {
     @StateObject private var favoritesStore = FavoritesStore()
-    @StateObject private var tierStore = TierStore()   // ✅ NEW
+    @StateObject private var tierStore = TierStore()
+    @StateObject private var searchHistoryStore = SearchHistoryStore()
+    @StateObject private var tastingSheetStore = TastingSheetStore()   // ✅ NEW
 
     init() {
         let bordeaux = UIColor(red: 0.45, green: 0.05, blue: 0.15, alpha: 1.0)
@@ -47,6 +49,8 @@ struct SommelierAIApp: App {
                 .tint(Color(red: 0.45, green: 0.05, blue: 0.15))
                 .environmentObject(favoritesStore)
                 .environmentObject(tierStore)
+                .environmentObject(searchHistoryStore)
+                .environmentObject(tastingSheetStore)   // ✅ NEW
         }
     }
 }
